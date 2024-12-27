@@ -17,7 +17,8 @@ jobs:
       - name: Checkout Frontend
         uses: actions/checkout@v4
         with:
-          repository: '${{ secrets.FRONTEND_REPO }}'
+          repository: '${{ vars.FRONTEND_REPO }}'
+          ref: ${{ vars.FRONTEND_REF }}
           token: ${{ secrets.GITHUB_TOKEN }}
           path: 'frontend-code'
       # build frontend 
