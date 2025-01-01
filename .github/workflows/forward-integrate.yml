@@ -1,0 +1,53 @@
+name: Forward Integrate
+
+on:
+  schedule:
+  - cron: '*/5 * * * *'
+
+jobs:
+  merge-main:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout main branch
+      uses: actions/checkout@v2
+      with:
+        ref: main
+    - name: Fetch upstream
+      run: git fetch upstream/main
+    - name: Merge upstream/main into main
+      id: merge
+      run: |
+        git merge upstream/main
+        if [ -z "$(git log origin/main..HEAD)" ]; then
+          echo "::set-output name=new-commits::false"
+        else
+          echo "::set-output name=new-commits::true"
+        fi
+    - name: Check for merge conficts
+      if: steps.merge.outputs.new-commits == 'true'
+      run: |
+        if git diff --quiet; then
+          echo "No merge conflicts"
+        else
+          echo "Merge conflicts found"
+          git diff
+          exit 1
+        fi
+    - name: Create new branch and push changes
+      id: create-branch
+      if: steps.merge.outputs.new-commits == 'true'
+      run: |
+        BRANCH_NAME="forward-integration-$(date +%Y%m%d%H%M%S)"
+        git checkout -b $BRANCH_NAME
+        git push origin $BRANCH_NAME
+        echo "::set-output name=BRANCH_NAME::$BRANCH_NAME"
+    - name: Create pull request
+      if: steps.merge.outputs.new-commits == 'true'
+      uses: peter-evans/create-pull-request@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'Forward integration from upstream/main'
+        branch: ${{ steps.create-branch.outputs.BRANCH_NAME }}
+        base: main
+        title: 'Forward integration from upstream/main'
+        body: 'This is an automated pull request to integrate changes from upstream/main'
