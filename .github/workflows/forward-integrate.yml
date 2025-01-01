@@ -9,7 +9,7 @@ jobs:
   merge-main:
     runs-on: ubuntu-latest
     outputs:
-      new-commits: ${{ steps.merge.outputs.new-commits }}
+      new-commits: ${{ steps.check-changes.outputs.new-commits }}
     steps:
     - name: Checkout main branch
       uses: actions/checkout@v2
@@ -37,7 +37,6 @@ jobs:
       run: |
         git merge upstream/main
     - name: Check for merge conflicts
-      if: steps.merge.outputs.new-commits == 'true'
       run: |
         if git diff --quiet; then
           echo "No merge conflicts"
@@ -47,7 +46,7 @@ jobs:
           exit 1
         fi
     - name: Check for changes
-      if: steps.merge.outputs.new-commits == 'true'
+      id: check-changes
       run: |
         if [ -z "$(git log origin/main..HEAD)" ]; then
           echo "new-commits=false" >> $GITHUB_OUTPUT
@@ -55,11 +54,11 @@ jobs:
           echo "new-commits=true" >> $GITHUB_OUTPUT
         fi
     - name: Push changes
-      if: steps.merge.outputs.new-commits == 'true'
+      if: steps.check-changes.outputs.new-commits == 'true'
       run: |
         git push origin ${{ steps.create-branch.outputs.BRANCH_NAME }}
     - name: Create pull request
-      if: steps.merge.outputs.new-commits == 'true'
+      if: steps.check-changes.outputs.new-commits == 'true'
       uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -105,7 +104,7 @@ jobs:
           exit 1
         fi
     - name: Check for changes
-      if: steps.merge.outputs.new-commits == 'true'
+      id: check-changes
       run: |
         if [ -z "$(git log origin/develop..HEAD)" ]; then
           echo "new-commits=false" >> $GITHUB_OUTPUT
@@ -113,11 +112,11 @@ jobs:
           echo "new-commits=true" >> $GITHUB_OUTPUT
         fi
     - name: Push changes
-      if: steps.merge.outputs.new-commits == 'true'
+      if: steps.check-changes.outputs.new-commits == 'true'
       run: |
         git push origin ${{ steps.create-branch.outputs.BRANCH_NAME }}
     - name: Create pull request
-      if: steps.merge.outputs.new-commits == 'true'
+      if: steps.check-changes.outputs.new-commits == 'true'
       uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
