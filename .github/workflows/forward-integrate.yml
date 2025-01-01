@@ -8,6 +8,8 @@ on:
 jobs:
   merge-main:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     outputs:
       new-commits: ${{ steps.check-changes.outputs.new-commits }}
     steps:
@@ -24,7 +26,7 @@ jobs:
         fi
     - name: Fetch upstream
       run: |
-        git remote add upstream https://github.com/donetick/donetick.git
+        git remote add upstream https://github.com/donetick/frontend.git
         git fetch upstream main
     - name: Create new branch
       id: create-branch
@@ -35,16 +37,9 @@ jobs:
     - name: Merge upstream/main into local main
       id: merge
       run: |
+        git config --global user.email "automerge@dkhalife.com"
+        git config --global user.name "AutoMerge"
         git merge upstream/main
-    - name: Check for merge conflicts
-      run: |
-        if git diff --quiet; then
-          echo "No merge conflicts"
-        else
-          echo "Merge conflicts found"
-          git diff
-          exit 1
-        fi
     - name: Check for changes
       id: check-changes
       run: |
@@ -93,16 +88,9 @@ jobs:
     - name: Merge main into local develop
       id: merge
       run: |
+        git config --global user.email "automerge@dkhalife.com"
+        git config --global user.name "AutoMerge"
         git merge origin/main
-    - name: Check for merge conflicts
-      run: |
-        if git diff --quiet; then
-          echo "No merge conflicts"
-        else
-          echo "Merge conflicts found"
-          git diff
-          exit 1
-        fi
     - name: Check for changes
       id: check-changes
       run: |
