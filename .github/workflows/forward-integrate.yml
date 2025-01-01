@@ -14,6 +14,12 @@ jobs:
       with:
         ref: main
         fetch-depth: 0
+    - name: Check for existing automerge branches
+      run: |
+        if git ls-remote --heads origin | grep -q "refs/heads/automerge/upstream/to/main/"; then
+          echo "An existing automerge branch already exists."
+          exit 1
+        fi
     - name: Fetch upstream
       run: |
         git remote add upstream https://github.com/donetick/donetick.git
