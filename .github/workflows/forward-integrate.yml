@@ -70,7 +70,7 @@ jobs:
   merge-develop:
     needs: merge-main
     runs-on: ubuntu-latest
-    if: ${{ needs.merge-main.result == 'skipped' }}
+    if: ${{ needs.merge-main.outputs.new-commits == 'false' }}
     steps:
     - name: Checkout develop branch
       uses: actions/checkout@v2
