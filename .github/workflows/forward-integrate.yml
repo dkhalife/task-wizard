@@ -41,7 +41,7 @@ jobs:
       id: create-branch
       if: steps.merge.outputs.new-commits == 'true'
       run: |
-        BRANCH_NAME="forward-integration-$(date +%Y%m%d%H%M%S)"
+        BRANCH_NAME="automerge/upstream/to/main/$(date +%Y%m%d%H%M%S)"
         git checkout -b $BRANCH_NAME
         git push origin $BRANCH_NAME
         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
