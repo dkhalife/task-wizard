@@ -8,6 +8,8 @@ on:
 jobs:
   merge-main:
     runs-on: ubuntu-latest
+    outputs:
+      new-commits: ${{ steps.check-changes.outputs.new-commits }}
     steps:
     - name: Checkout main branch
       uses: actions/checkout@v2
@@ -34,13 +36,7 @@ jobs:
       id: merge
       run: |
         git merge upstream/main
-        if [ -z "$(git log origin/main..HEAD)" ]; then
-          echo "new-commits=false" >> $GITHUB_OUTPUT
-        else
-          echo "new-commits=true" >> $GITHUB_OUTPUT
-        fi
     - name: Check for merge conflicts
-      if: steps.merge.outputs.new-commits == 'true'
       run: |
         if git diff --quiet; then
           echo "No merge conflicts"
@@ -49,12 +45,20 @@ jobs:
           git diff
           exit 1
         fi
+    - name: Check for changes
+      id: check-changes
+      run: |
+        if [ -z "$(git log origin/main..HEAD)" ]; then
+          echo "new-commits=false" >> $GITHUB_OUTPUT
+        else
+          echo "new-commits=true" >> $GITHUB_OUTPUT
+        fi
     - name: Push changes
-      if: steps.merge.outputs.new-commits == 'true'
+      if: steps.check-changes.outputs.new-commits == 'true'
       run: |
         git push origin ${{ steps.create-branch.outputs.BRANCH_NAME }}
     - name: Create pull request
-      if: steps.merge.outputs.new-commits == 'true'
+      if: steps.check-changes.outputs.new-commits == 'true'
       uses: peter-evans/create-pull-request@v3
       with:
         token: ${{ secrets.GITHUB_TOKEN }}
@@ -63,3 +67,61 @@ jobs:
         base: main
         title: 'Forward integration from upstream/main'
         body: 'This is an automated pull request to integrate changes from upstream/main'
+
+  merge-develop:
+    needs: merge-main
+    runs-on: ubuntu-latest
+    if: ${{ needs.merge-main.outputs.new-commits == 'false' }}
+    steps:
+    - name: Checkout develop branch
+      uses: actions/checkout@v2
+      with:
+        ref: develop
+        fetch-depth: 0
+    - name: Check for existing automerge branches
+      run: |
+        if git ls-remote --heads origin | grep -q "refs/heads/automerge/main/to/develop/"; then
+          echo "An existing automerge branch already exists."
+          exit 1
+        fi
+    - name: Create new branch
+      id: create-branch
+      run: |
+        BRANCH_NAME="automerge/main/to/develop/$(date +%Y%m%d%H%M%S)"
+        git checkout -b $BRANCH_NAME
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
+    - name: Merge main into local develop
+      id: merge
+      run: |
+        git merge origin/main
+    - name: Check for merge conflicts
+      run: |
+        if git diff --quiet; then
+          echo "No merge conflicts"
+        else
+          echo "Merge conflicts found"
+          git diff
+          exit 1
+        fi
+    - name: Check for changes
+      id: check-changes
+      run: |
+        if [ -z "$(git log origin/develop..HEAD)" ]; then
+          echo "new-commits=false" >> $GITHUB_OUTPUT
+        else
+          echo "new-commits=true" >> $GITHUB_OUTPUT
+        fi
+    - name: Push changes
+      if: steps.check-changes.outputs.new-commits == 'true'
+      run: |
+        git push origin ${{ steps.create-branch.outputs.BRANCH_NAME }}
+    - name: Create pull request
+      if: steps.check-changes.outputs.new-commits == 'true'
+      uses: peter-evans/create-pull-request@v3
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        commit-message: 'Forward integration from main to develop'
+        branch: ${{ steps.create-branch.outputs.BRANCH_NAME }}
+        base: develop
+        title: 'Forward integration from main to develop'
+        body: 'This is an automated pull request to integrate changes from main'
