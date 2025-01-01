@@ -3,8 +3,6 @@ name: Forward Integrate
 on:
   schedule:
   - cron: '*/5 * * * *'
-  pull_request:
-    branches: [ "workflows/*" ]
 
 jobs:
   merge-main:
@@ -24,9 +22,9 @@ jobs:
       run: |
         git merge upstream/main
         if [ -z "$(git log origin/main..HEAD)" ]; then
-          echo "::set-output name=new-commits::false"
+          echo "new-commits=false" >> $GITHUB_OUTPUT
         else
-          echo "::set-output name=new-commits::true"
+          echo "new-commits=true" >> $GITHUB_OUTPUT
         fi
     - name: Check for merge conflicts
       if: steps.merge.outputs.new-commits == 'true'
@@ -45,7 +43,7 @@ jobs:
         BRANCH_NAME="forward-integration-$(date +%Y%m%d%H%M%S)"
         git checkout -b $BRANCH_NAME
         git push origin $BRANCH_NAME
-        echo "::set-output name=BRANCH_NAME::$BRANCH_NAME"
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
     - name: Create pull request
       if: steps.merge.outputs.new-commits == 'true'
       uses: peter-evans/create-pull-request@v3
