@@ -23,7 +23,7 @@ jobs:
         else
           echo "::set-output name=new-commits::true"
         fi
-    - name: Check for merge conficts
+    - name: Check for merge conflicts
       if: steps.merge.outputs.new-commits == 'true'
       run: |
         if git diff --quiet; then
