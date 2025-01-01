@@ -8,6 +8,8 @@ on:
 jobs:
   merge-main:
     runs-on: ubuntu-latest
+    outputs:
+      new-commits: ${{ steps.merge.outputs.new-commits }}
     steps:
     - name: Checkout main branch
       uses: actions/checkout@v2
