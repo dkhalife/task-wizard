@@ -14,11 +14,23 @@ jobs:
       with:
         ref: main
         fetch-depth: 0
+    - name: Check for existing automerge branches
+      run: |
+        if git ls-remote --heads origin | grep -q "refs/heads/automerge/upstream/to/main/"; then
+          echo "An existing automerge branch already exists."
+          exit 1
+        fi
     - name: Fetch upstream
       run: |
         git remote add upstream https://github.com/donetick/donetick.git
         git fetch upstream main
-    - name: Merge upstream/main into main
+    - name: Create new branch
+      id: create-branch
+      run: |
+        BRANCH_NAME="automerge/upstream/to/main/$(date +%Y%m%d%H%M%S)"
+        git checkout -b $BRANCH_NAME
+        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
+    - name: Merge upstream/main into local main
       id: merge
       run: |
         git merge upstream/main
@@ -37,14 +49,10 @@ jobs:
           git diff
           exit 1
         fi
-    - name: Create new branch and push changes
-      id: create-branch
+    - name: Push changes
       if: steps.merge.outputs.new-commits == 'true'
       run: |
-        BRANCH_NAME="forward-integration-$(date +%Y%m%d%H%M%S)"
-        git checkout -b $BRANCH_NAME
-        git push origin $BRANCH_NAME
-        echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
+        git push origin ${{ steps.create-branch.outputs.BRANCH_NAME }}
     - name: Create pull request
       if: steps.merge.outputs.new-commits == 'true'
       uses: peter-evans/create-pull-request@v3
