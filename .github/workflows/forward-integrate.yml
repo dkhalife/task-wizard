@@ -18,6 +18,7 @@ jobs:
       with:
         ref: main
         fetch-depth: 0
+        token: ${{ secrets.WORKFLOW_TOKEN }}
     - name: Check for existing automerge branches
       run: |
         if git ls-remote --heads origin | grep -q "refs/heads/automerge/upstream/to/main/"; then
@@ -36,6 +37,8 @@ jobs:
         echo "BRANCH_NAME=$BRANCH_NAME" >> $GITHUB_OUTPUT
     - name: Merge upstream/main into local main
       id: merge
+      env:
+        GITHUB_TOKEN: ${{ github.token }}
       run: |
         git config --global user.email "automerge@dkhalife.com"
         git config --global user.name "AutoMerge"
