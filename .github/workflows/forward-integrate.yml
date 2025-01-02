@@ -26,7 +26,7 @@ jobs:
         fi
     - name: Fetch upstream
       run: |
-        git remote add upstream https://github.com/donetick/frontend.git
+        git remote add upstream https://github.com/donetick/donetick.git
         git fetch upstream main
     - name: Create new branch
       id: create-branch
