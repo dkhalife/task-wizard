@@ -15,7 +15,6 @@ import (
 type IUserRepository interface {
 	GetUserByUsername(username string) (*uModel.User, error)
 	GetUser(id int) (*uModel.User, error)
-	GetAllUsers() ([]*uModel.User, error)
 	CreateUser(user *uModel.User) error
 	UpdateUser(user *uModel.User) error
 	FindByEmail(email string) (*uModel.User, error)
