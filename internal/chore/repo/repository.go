@@ -48,6 +48,11 @@ func (r *ChoreRepository) GetChores(c context.Context, userID int, includeArchiv
 	if !includeArchived {
 		query = query.Where("chores.is_active = ?", true)
 	}
+
+	if err := query.Find(&chores).Error; err != nil {
+		return nil, err
+	}
+
 	return chores, nil
 }
 

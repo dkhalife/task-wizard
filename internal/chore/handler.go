@@ -71,11 +71,7 @@ func (h *Handler) getChores(c *gin.Context) {
 		})
 		return
 	}
-	includeArchived := false
-
-	if c.Query("includeArchived") == "true" {
-		includeArchived = true
-	}
+	includeArchived := c.Query("includeArchived") == "true"
 
 	chores, err := h.choreRepo.GetChores(c, u.ID, includeArchived)
 	if err != nil {
@@ -738,7 +734,6 @@ func (h *Handler) GetChoreHistory(c *gin.Context) {
 }
 
 func (h *Handler) GetChoreDetail(c *gin.Context) {
-
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -775,7 +770,6 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 }
 
 func (h *Handler) getChoresHistory(c *gin.Context) {
-
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -809,7 +803,6 @@ func (h *Handler) getChoresHistory(c *gin.Context) {
 }
 
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
-
 	choresRoutes := router.Group("api/v1/chores")
 	choresRoutes.Use(auth.MiddlewareFunc())
 	{
@@ -828,5 +821,4 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 		choresRoutes.PUT("/:id/unarchive", h.UnarchiveChore)
 		choresRoutes.DELETE("/:id", h.deleteChore)
 	}
-
 }
