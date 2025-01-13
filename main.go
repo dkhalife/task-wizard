@@ -27,6 +27,7 @@ import (
 	notifier "donetick.com/core/internal/notifier"
 	nRepo "donetick.com/core/internal/notifier/repo"
 	nps "donetick.com/core/internal/notifier/service"
+	uRepo "donetick.com/core/internal/user/repo"
 	"donetick.com/core/internal/utils"
 	"donetick.com/core/logging"
 )

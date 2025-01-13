@@ -471,7 +471,7 @@ func (h *Handler) skipChore(c *gin.Context) {
 		return
 	}
 
-	if err := h.choreRepo.CompleteChore(c, chore, nil, currentUser.ID, nextDueDate, nil); err != nil {
+	if err := h.choreRepo.CompleteChore(c, chore, currentUser.ID, nextDueDate, nil); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error completing chore",
 		})
@@ -536,6 +536,13 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 		})
 		return
 	}
+
+	if currentUser.ID != chore.CreatedBy {
+		c.JSON(403, gin.H{
+			"error": "You are not allowed to update this chore",
+		})
+	}
+
 	chore.NextDueDate = &dueDate
 	if err := h.choreRepo.UpsertChore(c, chore); err != nil {
 		c.JSON(500, gin.H{
@@ -756,6 +763,12 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 		return
 	}
 
+	if currentUser.ID != detailed.CreatedBy {
+		c.JSON(403, gin.H{
+			"error": "You are not allowed to view this chore",
+		})
+	}
+
 	c.JSON(200, gin.H{
 		"res": detailed,
 	})
@@ -792,61 +805,6 @@ func (h *Handler) getChoresHistory(c *gin.Context) {
 	}
 	c.JSON(200, gin.H{
 		"res": choreHistories,
-	})
-}
-
-func (h *Handler) DeleteHistory(c *gin.Context) {
-
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
-		})
-		return
-	}
-
-	rawID := c.Param("id")
-	choreID, err := strconv.Atoi(rawID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid Chore ID",
-		})
-		return
-	}
-
-	rawHistoryID := c.Param("history_id")
-	historyID, err := strconv.Atoi(rawHistoryID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid History ID",
-		})
-		return
-	}
-
-	history, err := h.choreRepo.GetChoreHistoryByID(c, choreID, historyID)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting chore history",
-		})
-		return
-	}
-
-	if currentUser.ID != history.CompletedBy || currentUser.ID != history.CreatedBy {
-		c.JSON(403, gin.H{
-			"error": "You are not allowed to delete this history",
-		})
-		return
-	}
-
-	if err := h.choreRepo.DeleteChoreHistory(c, historyID); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error deleting history",
-		})
-		return
-	}
-
-	c.JSON(200, gin.H{
-		"message": "History deleted successfully",
 	})
 }
 
