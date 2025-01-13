@@ -29,6 +29,7 @@ COPY --from=builder /usr/src/app/config /config
 
 # Set environment variables
 ENV DT_ENV="selfhosted"
+ENV GIN_MODE="release"
 
 # Expose the application port
 EXPOSE 2021
