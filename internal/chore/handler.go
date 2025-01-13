@@ -2,11 +2,8 @@ package chore
 
 import (
 	"encoding/json"
-	"fmt"
 	"html"
 	"log"
-	"math"
-	"math/rand"
 	"strconv"
 	"strings"
 	"time"
@@ -14,13 +11,10 @@ import (
 	auth "donetick.com/core/internal/authorization"
 	chModel "donetick.com/core/internal/chore/model"
 	chRepo "donetick.com/core/internal/chore/repo"
-	cRepo "donetick.com/core/internal/circle/repo"
 	lRepo "donetick.com/core/internal/label/repo"
 	"donetick.com/core/internal/notifier"
 	nRepo "donetick.com/core/internal/notifier/repo"
 	nps "donetick.com/core/internal/notifier/service"
-	tRepo "donetick.com/core/internal/thing/repo"
-	uModel "donetick.com/core/internal/user/model"
 	"donetick.com/core/logging"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -41,9 +35,6 @@ type ChoreReq struct {
 	FrequencyType        chModel.FrequencyType         `json:"frequencyType"`
 	ID                   int                           `json:"id"`
 	DueDate              string                        `json:"dueDate"`
-	Assignees            []chModel.ChoreAssignees      `json:"assignees"`
-	AssignStrategy       string                        `json:"assignStrategy" binding:"required"`
-	AssignedTo           int                           `json:"assignedTo"`
 	IsRolling            bool                          `json:"isRolling"`
 	IsActive             bool                          `json:"isActive"`
 	Frequency            int                           `json:"frequency"`
@@ -52,30 +43,23 @@ type ChoreReq struct {
 	NotificationMetadata *chModel.NotificationMetadata `json:"notificationMetadata"`
 	Labels               []string                      `json:"labels"`
 	LabelsV2             *[]LabelReq                   `json:"labelsV2"`
-	ThingTrigger         *ThingTrigger                 `json:"thingTrigger"`
-	Points               *int                          `json:"points"`
-	CompletionWindow     *int                          `json:"completionWindow"`
 }
 type Handler struct {
-	choreRepo  *chRepo.ChoreRepository
-	circleRepo *cRepo.CircleRepository
-	notifier   *notifier.Notifier
-	nPlanner   *nps.NotificationPlanner
-	nRepo      *nRepo.NotificationRepository
-	tRepo      *tRepo.ThingRepository
-	lRepo      *lRepo.LabelRepository
+	choreRepo *chRepo.ChoreRepository
+	notifier  *notifier.Notifier
+	nPlanner  *nps.NotificationPlanner
+	nRepo     *nRepo.NotificationRepository
+	lRepo     *lRepo.LabelRepository
 }
 
-func NewHandler(cr *chRepo.ChoreRepository, circleRepo *cRepo.CircleRepository, nt *notifier.Notifier,
-	np *nps.NotificationPlanner, nRepo *nRepo.NotificationRepository, tRepo *tRepo.ThingRepository, lRepo *lRepo.LabelRepository) *Handler {
+func NewHandler(cr *chRepo.ChoreRepository, nt *notifier.Notifier,
+	np *nps.NotificationPlanner, nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *Handler {
 	return &Handler{
-		choreRepo:  cr,
-		circleRepo: circleRepo,
-		notifier:   nt,
-		nPlanner:   np,
-		nRepo:      nRepo,
-		tRepo:      tRepo,
-		lRepo:      lRepo,
+		choreRepo: cr,
+		notifier:  nt,
+		nPlanner:  np,
+		nRepo:     nRepo,
+		lRepo:     lRepo,
 	}
 }
 
@@ -83,7 +67,7 @@ func (h *Handler) getChores(c *gin.Context) {
 	u, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
-			"error": "Error getting current circle",
+			"error": "Error getting current user",
 		})
 		return
 	}
@@ -93,7 +77,7 @@ func (h *Handler) getChores(c *gin.Context) {
 		includeArchived = true
 	}
 
-	chores, err := h.choreRepo.GetChores(c, u.CircleID, u.ID, includeArchived)
+	chores, err := h.choreRepo.GetChores(c, u.ID, includeArchived)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error getting chores",
@@ -110,11 +94,11 @@ func (h *Handler) getArchivedChores(c *gin.Context) {
 	u, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
-			"error": "Error getting current circle",
+			"error": "Error getting current user",
 		})
 		return
 	}
-	chores, err := h.choreRepo.GetArchivedChores(c, u.CircleID, u.ID)
+	chores, err := h.choreRepo.GetArchivedChores(c, u.ID)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error getting chores",
@@ -152,16 +136,8 @@ func (h *Handler) getChore(c *gin.Context) {
 		})
 		return
 	}
-	isAssignee := false
 
-	for _, assignee := range chore.Assignees {
-		if assignee.UserID == currentUser.ID {
-			isAssignee = true
-			break
-		}
-	}
-
-	if currentUser.ID != chore.CreatedBy && !isAssignee {
+	if currentUser.ID != chore.CreatedBy {
 		c.JSON(403, gin.H{
 			"error": "You are not allowed to view this chore",
 		})
@@ -192,33 +168,6 @@ func (h *Handler) createChore(c *gin.Context) {
 			"error": "Invalid request",
 		})
 		return
-	}
-
-	circleUsers, err := h.circleRepo.GetCircleUsers(c, currentUser.CircleID)
-	if err != nil {
-		log.Print(err)
-		c.JSON(500, gin.H{"error": "Error getting circle users"})
-		return
-	}
-	for _, assignee := range choreReq.Assignees {
-		userFound := false
-		for _, circleUser := range circleUsers {
-			if assignee.UserID == circleUser.UserID {
-				userFound = true
-				break
-			}
-		}
-		if !userFound {
-			c.JSON(400, gin.H{
-				"error": "Assignee not found in circle",
-			})
-			return
-		}
-
-	}
-	if choreReq.AssignedTo <= 0 && len(choreReq.Assignees) > 0 {
-		// if the assigned to field is not set, randomly assign the chore to one of the assignees
-		choreReq.AssignedTo = choreReq.Assignees[rand.Intn(len(choreReq.Assignees))].UserID
 	}
 
 	var dueDate *time.Time
@@ -271,19 +220,13 @@ func (h *Handler) createChore(c *gin.Context) {
 		Frequency:            choreReq.Frequency,
 		FrequencyMetadata:    &stringFrequencyMetadata,
 		NextDueDate:          dueDate,
-		AssignStrategy:       choreReq.AssignStrategy,
-		AssignedTo:           choreReq.AssignedTo,
+		CreatedBy:            currentUser.ID,
 		IsRolling:            choreReq.IsRolling,
-		UpdatedBy:            currentUser.ID,
 		IsActive:             true,
 		Notification:         choreReq.Notification,
 		NotificationMetadata: &stringNotificationMetadata,
 		Labels:               stringLabels,
-		CreatedBy:            currentUser.ID,
 		CreatedAt:            time.Now().UTC(),
-		CircleID:             currentUser.CircleID,
-		Points:               choreReq.Points,
-		CompletionWindow:     choreReq.CompletionWindow,
 	}
 	id, err := h.choreRepo.CreateChore(c, createdChore)
 	createdChore.ID = id
@@ -295,38 +238,21 @@ func (h *Handler) createChore(c *gin.Context) {
 		return
 	}
 
-	var choreAssignees []*chModel.ChoreAssignees
-	for _, assignee := range choreReq.Assignees {
-		choreAssignees = append(choreAssignees, &chModel.ChoreAssignees{
-			ChoreID: id,
-			UserID:  assignee.UserID,
-		})
-	}
-
 	labelsV2 := make([]int, len(*choreReq.LabelsV2))
 	for i, label := range *choreReq.LabelsV2 {
 		labelsV2[i] = int(label.LabelID)
 	}
-	if err := h.lRepo.AssignLabelsToChore(c, createdChore.ID, currentUser.ID, currentUser.CircleID, labelsV2, []int{}); err != nil {
+	if err := h.lRepo.AssignLabelsToChore(c, createdChore.ID, currentUser.ID, labelsV2, []int{}); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
 		return
 	}
 
-	if err := h.choreRepo.UpdateChoreAssignees(c, choreAssignees); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error adding chore assignees",
-		})
-		return
-	}
 	go func() {
 		h.nPlanner.GenerateNotifications(c, createdChore)
 	}()
-	shouldReturn := HandleThingAssociation(choreReq, h, c, currentUser)
-	if shouldReturn {
-		return
-	}
+
 	c.JSON(200, gin.H{
 		"res": id,
 	})
@@ -351,69 +277,6 @@ func (h *Handler) editChore(c *gin.Context) {
 		return
 	}
 
-	circleUsers, err := h.circleRepo.GetCircleUsers(c, currentUser.CircleID)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting circle users",
-		})
-		return
-	}
-
-	existedChoreAssignees, err := h.choreRepo.GetChoreAssignees(c, choreReq.ID)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting chore assignees",
-		})
-		return
-	}
-
-	var choreAssigneesToAdd []*chModel.ChoreAssignees
-	var choreAssigneesToDelete []*chModel.ChoreAssignees
-
-	//  filter assignees that not in the circle
-	for _, assignee := range choreReq.Assignees {
-		userFound := false
-		for _, circleUser := range circleUsers {
-			if assignee.UserID == circleUser.UserID {
-				userFound = true
-				break
-			}
-		}
-		if !userFound {
-			c.JSON(400, gin.H{
-				"error": "Assignee not found in circle",
-			})
-			return
-		}
-		userAlreadyAssignee := false
-		for _, existedChoreAssignee := range existedChoreAssignees {
-			if existedChoreAssignee.UserID == assignee.UserID {
-				userAlreadyAssignee = true
-				break
-			}
-		}
-		if !userAlreadyAssignee {
-			choreAssigneesToAdd = append(choreAssigneesToAdd, &chModel.ChoreAssignees{
-				ChoreID: choreReq.ID,
-				UserID:  assignee.UserID,
-			})
-		}
-	}
-
-	//  remove assignees if they are not in the assignees list anymore
-	for _, existedChoreAssignee := range existedChoreAssignees {
-		userFound := false
-		for _, assignee := range choreReq.Assignees {
-			if existedChoreAssignee.UserID == assignee.UserID {
-				userFound = true
-				break
-			}
-		}
-		if !userFound {
-			choreAssigneesToDelete = append(choreAssigneesToDelete, existedChoreAssignee)
-		}
-	}
-
 	var dueDate *time.Time
 
 	if choreReq.DueDate != "" {
@@ -429,25 +292,6 @@ func (h *Handler) editChore(c *gin.Context) {
 
 	}
 
-	//  validate assignedTo part of the assignees:
-	assigneeFound := false
-	for _, assignee := range choreReq.Assignees {
-		if assignee.UserID == choreReq.AssignedTo {
-			assigneeFound = true
-			break
-		}
-	}
-	if !assigneeFound {
-		c.JSON(400, gin.H{
-			"error": "Assigned to not found in assignees",
-		})
-		return
-	}
-
-	if choreReq.AssignedTo <= 0 && len(choreReq.Assignees) > 0 {
-		// if the assigned to field is not set, randomly assign the chore to one of the assignees
-		choreReq.AssignedTo = choreReq.Assignees[rand.Intn(len(choreReq.Assignees))].UserID
-	}
 	oldChore, err := h.choreRepo.GetChore(c, choreReq.ID)
 
 	if err != nil {
@@ -517,7 +361,7 @@ func (h *Handler) editChore(c *gin.Context) {
 		}
 	}
 
-	if err := h.lRepo.AssignLabelsToChore(c, choreReq.ID, currentUser.ID, currentUser.CircleID, labelsV2ToAdd, labelsV2ToBeRemoved); err != nil {
+	if err := h.lRepo.AssignLabelsToChore(c, choreReq.ID, currentUser.ID, labelsV2ToAdd, labelsV2ToBeRemoved); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
@@ -525,26 +369,19 @@ func (h *Handler) editChore(c *gin.Context) {
 	}
 
 	updatedChore := &chModel.Chore{
-		ID:                choreReq.ID,
-		Name:              choreReq.Name,
-		FrequencyType:     choreReq.FrequencyType,
-		Frequency:         choreReq.Frequency,
-		FrequencyMetadata: &stringFrequencyMetadata,
-		// Assignees:         &assignees,
+		ID:                   choreReq.ID,
+		Name:                 choreReq.Name,
+		FrequencyType:        choreReq.FrequencyType,
+		Frequency:            choreReq.Frequency,
+		FrequencyMetadata:    &stringFrequencyMetadata,
 		NextDueDate:          dueDate,
-		AssignStrategy:       choreReq.AssignStrategy,
-		AssignedTo:           choreReq.AssignedTo,
+		CreatedBy:            currentUser.ID,
 		IsRolling:            choreReq.IsRolling,
 		IsActive:             choreReq.IsActive,
 		Notification:         choreReq.Notification,
 		NotificationMetadata: &stringNotificationMetadata,
 		Labels:               stringLabels,
-		CircleID:             oldChore.CircleID,
-		UpdatedBy:            currentUser.ID,
-		CreatedBy:            oldChore.CreatedBy,
 		CreatedAt:            oldChore.CreatedAt,
-		Points:               choreReq.Points,
-		CompletionWindow:     choreReq.CompletionWindow,
 	}
 	if err := h.choreRepo.UpsertChore(c, updatedChore); err != nil {
 		c.JSON(500, gin.H{
@@ -552,67 +389,14 @@ func (h *Handler) editChore(c *gin.Context) {
 		})
 		return
 	}
-	if len(choreAssigneesToAdd) > 0 {
-		err = h.choreRepo.UpdateChoreAssignees(c, choreAssigneesToAdd)
 
-		if err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error updating chore assignees",
-			})
-			return
-		}
-	}
-	if len(choreAssigneesToDelete) > 0 {
-		err = h.choreRepo.DeleteChoreAssignees(c, choreAssigneesToDelete)
-		if err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error deleting chore assignees",
-			})
-			return
-		}
-	}
 	go func() {
 		h.nPlanner.GenerateNotifications(c, updatedChore)
 	}()
-	if oldChore.ThingChore != nil {
-		// TODO: Add check to see if dissociation is necessary
-		h.tRepo.DissociateThingWithChore(c, oldChore.ThingChore.ThingID, oldChore.ID)
-
-	}
-	shouldReturn := HandleThingAssociation(choreReq, h, c, currentUser)
-	if shouldReturn {
-		return
-	}
 
 	c.JSON(200, gin.H{
 		"message": "Chore added successfully",
 	})
-}
-
-func HandleThingAssociation(choreReq ChoreReq, h *Handler, c *gin.Context, currentUser *uModel.User) bool {
-	if choreReq.ThingTrigger != nil {
-		thing, err := h.tRepo.GetThingByID(c, choreReq.ThingTrigger.ID)
-		if err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error getting thing",
-			})
-			return true
-		}
-		if thing.UserID != currentUser.ID {
-			c.JSON(403, gin.H{
-				"error": "You are not allowed to trigger this thing",
-			})
-			return true
-		}
-		if err := h.tRepo.AssociateThingWithChore(c, choreReq.ThingTrigger.ID, choreReq.ID, choreReq.ThingTrigger.TriggerState, choreReq.ThingTrigger.Condition); err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error associating thing with chore",
-			})
-			return true
-		}
-
-	}
-	return false
 }
 
 func (h *Handler) deleteChore(c *gin.Context) {
@@ -648,99 +432,9 @@ func (h *Handler) deleteChore(c *gin.Context) {
 		return
 	}
 	h.nRepo.DeleteAllChoreNotifications(id)
-	h.tRepo.DissociateChoreWithThing(c, id)
 
 	c.JSON(200, gin.H{
 		"message": "Chore deleted successfully",
-	})
-}
-
-// func (h *Handler) createChore(c *gin.Context) {
-// 	logger := logging.FromContext(c)
-// 	currentUser, ok := auth.CurrentUser(c)
-
-// 	logger.Debug("Create chore", "currentUser", currentUser)
-// 	if !ok {
-// 		c.JSON(500, gin.H{
-// 			"error": "Error getting current user",
-// 		})
-// 		return
-// 	}
-// 	id, err := h.choreRepo.CreateChore(currentUser.ID, currentUser.CircleID)
-// 	if err != nil {
-// 		c.JSON(500, gin.H{
-// 			"error": "Error creating chore",
-// 		})
-// 		return
-// 	}
-
-// 	c.JSON(200, gin.H{
-// 		"res": id,
-// 	})
-// }
-
-func (h *Handler) updateAssignee(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
-		})
-		return
-	}
-	rawID := c.Param("id")
-	id, err := strconv.Atoi(rawID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid ID",
-		})
-		return
-	}
-	type AssigneeReq struct {
-		Assignee int `json:"assignee" binding:"required"`
-	}
-
-	var assigneeReq AssigneeReq
-	if err := c.ShouldBindJSON(&assigneeReq); err != nil {
-		log.Print(err)
-		c.JSON(400, gin.H{
-			"error": "Invalid request",
-		})
-		return
-	}
-	chore, err := h.choreRepo.GetChore(c, id)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting chore",
-		})
-		return
-	}
-	// confirm that the assignee is one of the assignees:
-	assigneeFound := false
-	for _, assignee := range chore.Assignees {
-
-		if assignee.UserID == assigneeReq.Assignee {
-			assigneeFound = true
-			break
-		}
-	}
-	if !assigneeFound {
-		c.JSON(400, gin.H{
-			"error": "Assignee not found in assignees",
-		})
-		return
-	}
-
-	chore.UpdatedBy = currentUser.ID
-	chore.AssignedTo = assigneeReq.Assignee
-	if err := h.choreRepo.UpsertChore(c, chore); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error updating assignee",
-		})
-		return
-	}
-
-	c.JSON(200, gin.H{
-		"res": chore,
 	})
 }
 
@@ -777,8 +471,7 @@ func (h *Handler) skipChore(c *gin.Context) {
 		return
 	}
 
-	nextAssigedTo := chore.AssignedTo
-	if err := h.choreRepo.CompleteChore(c, chore, nil, currentUser.ID, nextDueDate, nil, nextAssigedTo); err != nil {
+	if err := h.choreRepo.CompleteChore(c, chore, nil, currentUser.ID, nextDueDate, nil); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error completing chore",
 		})
@@ -844,7 +537,6 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 		return
 	}
 	chore.NextDueDate = &dueDate
-	chore.UpdatedBy = currentUser.ID
 	if err := h.choreRepo.UpsertChore(c, chore); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error updating due date",
@@ -948,12 +640,7 @@ func (h *Handler) completeChore(c *gin.Context) {
 		}
 	}
 
-	var additionalNotes *string
 	_ = c.ShouldBind(&req)
-
-	if req.Note != "" {
-		additionalNotes = &req.Note
-	}
 
 	id, err := strconv.Atoi(completeChoreID)
 	if err != nil {
@@ -968,15 +655,6 @@ func (h *Handler) completeChore(c *gin.Context) {
 			"error": "Error getting chore",
 		})
 		return
-	}
-	// confirm that the chore in completion window:
-	if chore.CompletionWindow != nil {
-		if completedDate.After(chore.NextDueDate.Add(time.Hour * time.Duration(*chore.CompletionWindow))) {
-			c.JSON(400, gin.H{
-				"error": "Chore is out of completion window",
-			})
-			return
-		}
 	}
 
 	var nextDueDate *time.Time
@@ -1007,24 +685,8 @@ func (h *Handler) completeChore(c *gin.Context) {
 			return
 		}
 	}
-	choreHistory, err := h.choreRepo.GetChoreHistory(c, chore.ID)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting chore history",
-		})
-		return
-	}
 
-	nextAssignedTo, err := checkNextAssignee(chore, choreHistory, currentUser.ID)
-	if err != nil {
-		log.Printf("Error checking next assignee: %s", err)
-		c.JSON(500, gin.H{
-			"error": "Error checking next assignee",
-		})
-		return
-	}
-
-	if err := h.choreRepo.CompleteChore(c, chore, additionalNotes, currentUser.ID, nextDueDate, &completedDate, nextAssignedTo); err != nil {
+	if err := h.choreRepo.CompleteChore(c, chore, currentUser.ID, nextDueDate, &completedDate); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error completing chore",
 		})
@@ -1037,10 +699,7 @@ func (h *Handler) completeChore(c *gin.Context) {
 		})
 		return
 	}
-	// go func() {
 
-	// 	h.notifier.SendChoreCompletion(c, chore, currentUser)
-	// }()
 	h.nPlanner.GenerateNotifications(c, updatedChore)
 
 	c.JSON(200, gin.H{
@@ -1089,7 +748,7 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 		return
 	}
 
-	detailed, err := h.choreRepo.GetChoreDetailByID(c, id, currentUser.CircleID)
+	detailed, err := h.choreRepo.GetChoreDetailByID(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error getting chore history",
@@ -1099,126 +758,6 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 
 	c.JSON(200, gin.H{
 		"res": detailed,
-	})
-}
-
-func (h *Handler) ModifyHistory(c *gin.Context) {
-
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
-		})
-		return
-	}
-
-	rawID := c.Param("id")
-	choreID, err := strconv.Atoi(rawID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid Chore ID",
-		})
-		return
-	}
-	type ModifyHistoryReq struct {
-		CompletedAt *time.Time `json:"completedAt"`
-		DueDate     *time.Time `json:"dueDate"`
-		Notes       *string    `json:"notes"`
-	}
-
-	var req ModifyHistoryReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		log.Print(err)
-		c.JSON(400, gin.H{
-			"error": "Invalid request",
-		})
-		return
-	}
-	rawHistoryID := c.Param("history_id")
-	historyID, err := strconv.Atoi(rawHistoryID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid History ID",
-		})
-		return
-	}
-
-	history, err := h.choreRepo.GetChoreHistoryByID(c, choreID, historyID)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting chore history",
-		})
-		return
-	}
-
-	if currentUser.ID != history.CompletedBy || currentUser.ID != history.AssignedTo {
-		c.JSON(403, gin.H{
-			"error": "You are not allowed to modify this history",
-		})
-		return
-	}
-	if req.CompletedAt != nil {
-		history.CompletedAt = req.CompletedAt
-	}
-	if req.DueDate != nil {
-		history.DueDate = req.DueDate
-	}
-	if req.Notes != nil {
-		history.Note = req.Notes
-	}
-
-	if err := h.choreRepo.UpdateChoreHistory(c, history); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error updating history",
-		})
-		return
-	}
-
-	c.JSON(200, gin.H{
-		"res": history,
-	})
-}
-
-func (h *Handler) updatePriority(c *gin.Context) {
-	type PriorityReq struct {
-		Priority *int `json:"priority" binding:"required,gt=-1,lt=5"`
-	}
-
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
-		})
-		return
-	}
-
-	var priorityReq PriorityReq
-	if err := c.ShouldBindJSON(&priorityReq); err != nil {
-		log.Print(err)
-		c.JSON(400, gin.H{
-			"error": "Invalid request",
-		})
-		return
-	}
-
-	rawID := c.Param("id")
-	id, err := strconv.Atoi(rawID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid ID",
-		})
-		return
-	}
-
-	if err := h.choreRepo.UpdateChorePriority(c, currentUser.ID, id, *priorityReq.Priority); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error updating priority",
-		})
-		return
-	}
-
-	c.JSON(200, gin.H{
-		"message": "Priority updated successfully",
 	})
 }
 
@@ -1243,13 +782,8 @@ func (h *Handler) getChoresHistory(c *gin.Context) {
 		})
 		return
 	}
-	includeCircleRaw := c.Query("members")
-	includeCircle := false
-	if includeCircleRaw == "true" {
-		includeCircle = true
-	}
 
-	choreHistories, err := h.choreRepo.GetChoresHistoryByUserID(c, currentUser.ID, currentUser.CircleID, duration, includeCircle)
+	choreHistories, err := h.choreRepo.GetChoresHistoryByUserID(c, currentUser.ID, duration)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error getting chore history",
@@ -1297,7 +831,7 @@ func (h *Handler) DeleteHistory(c *gin.Context) {
 		return
 	}
 
-	if currentUser.ID != history.CompletedBy || currentUser.ID != history.AssignedTo {
+	if currentUser.ID != history.CompletedBy || currentUser.ID != history.CreatedBy {
 		c.JSON(403, gin.H{
 			"error": "You are not allowed to delete this history",
 		})
@@ -1315,108 +849,6 @@ func (h *Handler) DeleteHistory(c *gin.Context) {
 		"message": "History deleted successfully",
 	})
 }
-func checkNextAssignee(chore *chModel.Chore, choresHistory []*chModel.ChoreHistory, performerID int) (int, error) {
-	// copy the history to avoid modifying the original:
-	history := make([]*chModel.ChoreHistory, len(choresHistory))
-	copy(history, choresHistory)
-
-	assigneesMap := map[int]bool{}
-	for _, assignee := range chore.Assignees {
-		assigneesMap[assignee.UserID] = true
-	}
-	var nextAssignee int
-	if len(history) == 0 {
-		// if there is no history, just assume the current operation as the first
-		history = append(history, &chModel.ChoreHistory{
-			AssignedTo: performerID,
-		})
-
-	}
-
-	switch chore.AssignStrategy {
-	case "least_assigned":
-		// find the assignee with the least number of chores
-		assigneeChores := map[int]int{}
-		for _, performer := range chore.Assignees {
-			assigneeChores[performer.UserID] = 0
-		}
-		for _, history := range history {
-			if ok := assigneesMap[history.AssignedTo]; !ok {
-				// calculate the number of chores assigned to each assignee
-				assigneeChores[history.AssignedTo]++
-			}
-		}
-
-		var minChores int64 = math.MaxInt64
-		for assignee, numChores := range assigneeChores {
-			// if this is the first assignee or if the number of
-			// chores assigned to this assignee is less than the current minimum
-			if int64(numChores) < minChores {
-				minChores = int64(numChores)
-				// set the next assignee to this assignee
-				nextAssignee = assignee
-			}
-		}
-	case "least_completed":
-		// find the assignee who has completed the least number of chores
-		assigneeChores := map[int]int{}
-		for _, performer := range chore.Assignees {
-			assigneeChores[performer.UserID] = 0
-		}
-		for _, history := range history {
-			// calculate the number of chores completed by each assignee
-			assigneeChores[history.CompletedBy]++
-		}
-
-		// max Int value
-		var minChores int64 = math.MaxInt64
-
-		for assignee, numChores := range assigneeChores {
-			// if this is the first assignee or if the number of
-			// chores completed by this assignee is less than the current minimum
-			if int64(numChores) < minChores {
-				minChores = int64(numChores)
-				// set the next assignee to this assignee
-				nextAssignee = assignee
-			}
-		}
-	case "random":
-		nextAssignee = chore.Assignees[rand.Intn(len(chore.Assignees))].UserID
-	case "keep_last_assigned":
-		// keep the last assignee
-		nextAssignee = chore.AssignedTo
-	case "random_except_last_assigned":
-		var lastAssigned = chore.AssignedTo
-		AssigneesCopy := make([]chModel.ChoreAssignees, len(chore.Assignees))
-		copy(AssigneesCopy, chore.Assignees)
-		var removeLastAssigned = remove(AssigneesCopy, lastAssigned)
-		nextAssignee = removeLastAssigned[rand.Intn(len(removeLastAssigned))].UserID
-
-	default:
-		return chore.AssignedTo, fmt.Errorf("invalid assign strategy")
-
-	}
-	return nextAssignee, nil
-}
-
-func remove(s []chModel.ChoreAssignees, i int) []chModel.ChoreAssignees {
-	var removalIndex = indexOf(s, i)
-	if removalIndex == -1 {
-		return s
-	}
-
-	s[removalIndex] = s[len(s)-1]
-	return s[:len(s)-1]
-}
-
-func indexOf(arr []chModel.ChoreAssignees, value int) int {
-	for i, v := range arr {
-		if v.UserID == value {
-			return i
-		}
-	}
-	return -1 // Return -1 if the value is not found
-}
 
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 
@@ -1427,16 +859,12 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 		choresRoutes.GET("/archived", h.getArchivedChores)
 		choresRoutes.GET("/history", h.getChoresHistory)
 		choresRoutes.PUT("/", h.editChore)
-		choresRoutes.PUT("/:id/priority", h.updatePriority)
 		choresRoutes.POST("/", h.createChore)
 		choresRoutes.GET("/:id", h.getChore)
 		choresRoutes.GET("/:id/details", h.GetChoreDetail)
 		choresRoutes.GET("/:id/history", h.GetChoreHistory)
-		choresRoutes.PUT("/:id/history/:history_id", h.ModifyHistory)
-		choresRoutes.DELETE("/:id/history/:history_id", h.DeleteHistory)
 		choresRoutes.POST("/:id/do", h.completeChore)
 		choresRoutes.POST("/:id/skip", h.skipChore)
-		choresRoutes.PUT("/:id/assignee", h.updateAssignee)
 		choresRoutes.PUT("/:id/dueDate", h.updateDueDate)
 		choresRoutes.PUT("/:id/archive", h.archiveChore)
 		choresRoutes.PUT("/:id/unarchive", h.UnarchiveChore)

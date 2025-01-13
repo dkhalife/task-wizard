@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"math"
-	"math/rand"
 	"strings"
 	"time"
 
@@ -168,18 +167,4 @@ func scheduleAdaptiveNextDueDate(chore *chModel.Chore, completedDate time.Time, 
 	nextDueDate := completedDate.UTC().Add(time.Duration(averageDelay) * time.Second)
 
 	return &nextDueDate, nil
-}
-func RemoveAssigneeAndReassign(chore *chModel.Chore, userID int) {
-	for i, assignee := range chore.Assignees {
-		if assignee.UserID == userID {
-			chore.Assignees = append(chore.Assignees[:i], chore.Assignees[i+1:]...)
-			break
-		}
-	}
-	if len(chore.Assignees) == 0 {
-		chore.AssignedTo = chore.CreatedBy
-	} else {
-		chore.AssignedTo = chore.Assignees[rand.Intn(len(chore.Assignees))].UserID
-	}
-	chore.UpdatedAt = time.Now()
 }

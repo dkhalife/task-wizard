@@ -11,8 +11,6 @@ import (
 
 	"donetick.com/core/config"
 	auth "donetick.com/core/internal/authorization"
-	cModel "donetick.com/core/internal/circle/model"
-	cRepo "donetick.com/core/internal/circle/repo"
 	"donetick.com/core/internal/email"
 	nModel "donetick.com/core/internal/notifier/model"
 	uModel "donetick.com/core/internal/user/model"
@@ -27,57 +25,20 @@ import (
 )
 
 type Handler struct {
-	userRepo               *uRepo.UserRepository
-	circleRepo             *cRepo.CircleRepository
-	jwtAuth                *jwt.GinJWTMiddleware
-	email                  *email.EmailSender
-	isDonetickDotCom       bool
-	IsUserCreationDisabled bool
+	userRepo *uRepo.UserRepository
+	jwtAuth  *jwt.GinJWTMiddleware
+	email    *email.EmailSender
 }
 
-func NewHandler(ur *uRepo.UserRepository, cr *cRepo.CircleRepository, jwtAuth *jwt.GinJWTMiddleware, email *email.EmailSender, config *config.Config) *Handler {
+func NewHandler(ur *uRepo.UserRepository, jwtAuth *jwt.GinJWTMiddleware, email *email.EmailSender, config *config.Config) *Handler {
 	return &Handler{
-		userRepo:               ur,
-		circleRepo:             cr,
-		jwtAuth:                jwtAuth,
-		email:                  email,
-		isDonetickDotCom:       config.IsDoneTickDotCom,
-		IsUserCreationDisabled: config.IsUserCreationDisabled,
-	}
-}
-
-func (h *Handler) GetAllUsers() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		currentUser, ok := auth.CurrentUser(c)
-		if !ok {
-			c.JSON(500, gin.H{
-				"error": "Error getting current user",
-			})
-			return
-		}
-
-		users, err := h.userRepo.GetAllUsers(c, currentUser.CircleID)
-		if err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error getting users",
-			})
-			return
-		}
-
-		c.JSON(200, gin.H{
-			"res": users,
-		})
+		userRepo: ur,
+		jwtAuth:  jwtAuth,
+		email:    email,
 	}
 }
 
 func (h *Handler) signUp(c *gin.Context) {
-	if h.IsUserCreationDisabled {
-		c.JSON(403, gin.H{
-			"error": "User creation is disabled",
-		})
-		return
-	}
-
 	type SignUpReq struct {
 		Username    string `json:"username" binding:"required,min=4,max=20"`
 		Password    string `json:"password" binding:"required,min=8,max=45"`
@@ -104,8 +65,8 @@ func (h *Handler) signUp(c *gin.Context) {
 		})
 		return
 	}
-	var insertedUser *uModel.User
-	if insertedUser, err = h.userRepo.CreateUser(c, &uModel.User{
+
+	if err = h.userRepo.CreateUser(c, &uModel.User{
 		Username:    signupReq.Username,
 		Password:    password,
 		DisplayName: signupReq.DisplayName,
@@ -115,42 +76,6 @@ func (h *Handler) signUp(c *gin.Context) {
 	}); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error creating user, email already exists or username is taken",
-		})
-		return
-	}
-	// var userCircle *circle.Circle
-	// var userRole string
-	userCircle, err := h.circleRepo.CreateCircle(c, &cModel.Circle{
-		Name:       signupReq.DisplayName + "'s circle",
-		CreatedAt:  time.Now(),
-		UpdatedAt:  time.Now(),
-		InviteCode: utils.GenerateInviteCode(c),
-	})
-
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error creating circle",
-		})
-		return
-	}
-
-	if err := h.circleRepo.AddUserToCircle(c, &cModel.UserCircle{
-		UserID:    insertedUser.ID,
-		CircleID:  userCircle.ID,
-		Role:      "admin",
-		IsActive:  true,
-		CreatedAt: time.Now(),
-		UpdatedAt: time.Now(),
-	}); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error adding user to circle",
-		})
-		return
-	}
-	insertedUser.CircleID = userCircle.ID
-	if err := h.userRepo.UpdateUser(c, insertedUser); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error updating user",
 		})
 		return
 	}
@@ -221,48 +146,13 @@ func (h *Handler) thirdPartyAuthCallback(c *gin.Context) {
 				DisplayName: userinfo.GivenName,
 				Provider:    2,
 			}
-			createdUser, err := h.userRepo.CreateUser(c, acc)
+			err = h.userRepo.CreateUser(c, acc)
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{
 					"error": "Unable to create user",
 				})
 				return
 
-			}
-			// Create Circle for the user:
-			userCircle, err := h.circleRepo.CreateCircle(c, &cModel.Circle{
-				Name:       userinfo.GivenName + "'s circle",
-				CreatedAt:  time.Now(),
-				UpdatedAt:  time.Now(),
-				InviteCode: utils.GenerateInviteCode(c),
-			})
-
-			if err != nil {
-				c.JSON(500, gin.H{
-					"error": "Error creating circle",
-				})
-				return
-			}
-
-			if err := h.circleRepo.AddUserToCircle(c, &cModel.UserCircle{
-				UserID:    createdUser.ID,
-				CircleID:  userCircle.ID,
-				Role:      "admin",
-				IsActive:  true,
-				CreatedAt: time.Now(),
-				UpdatedAt: time.Now(),
-			}); err != nil {
-				c.JSON(500, gin.H{
-					"error": "Error adding user to circle",
-				})
-				return
-			}
-			createdUser.CircleID = userCircle.ID
-			if err := h.userRepo.UpdateUser(c, createdUser); err != nil {
-				c.JSON(500, gin.H{
-					"error": "Error updating user",
-				})
-				return
 			}
 		}
 		// use auth to generate a token for the user:
@@ -388,7 +278,6 @@ func (h *Handler) updateUserPassword(c *gin.Context) {
 func (h *Handler) UpdateUserDetails(c *gin.Context) {
 	type UpdateUserReq struct {
 		DisplayName *string `json:"displayName" binding:"omitempty"`
-		ChatID      *int64  `json:"chatID" binding:"omitempty"`
 		Image       *string `json:"image" binding:"omitempty"`
 	}
 	user, ok := auth.CurrentUser(c)
@@ -408,9 +297,6 @@ func (h *Handler) UpdateUserDetails(c *gin.Context) {
 	// update non-nil fields:
 	if req.DisplayName != nil {
 		user.DisplayName = *req.DisplayName
-	}
-	if req.ChatID != nil {
-		user.ChatID = *req.ChatID
 	}
 	if req.Image != nil {
 		user.Image = *req.Image
@@ -525,13 +411,13 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 		return
 	}
 
-	err := h.userRepo.UpdateNotificationTarget(c, currentUser.ID, req.Target, req.Type)
+	err := h.userRepo.UpdateNotificationTarget(c, currentUser.ID, req.Type)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update notification target"})
 		return
 	}
 
-	err = h.userRepo.UpdateNotificationTargetForAllNotifications(c, currentUser.ID, req.Target, req.Type)
+	err = h.userRepo.UpdateNotificationTargetForAllNotifications(c, currentUser.ID, req.Type)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update notification target for all notifications"})
 		return
@@ -541,11 +427,6 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 }
 
 func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
-	if h.isDonetickDotCom {
-		// only enable this feature for self-hosted instances
-		c.JSON(http.StatusForbidden, gin.H{"error": "This action is not allowed on donetick.com"})
-		return
-	}
 	logger := logging.FromContext(c)
 	type RequestBody struct {
 		Password string `json:"password" binding:"required,min=8,max=32"`
@@ -589,7 +470,6 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter 
 	userRoutes := router.Group("api/v1/users")
 	userRoutes.Use(auth.MiddlewareFunc(), utils.RateLimitMiddleware(limiter))
 	{
-		userRoutes.GET("/", h.GetAllUsers())
 		userRoutes.GET("/profile", h.GetUserProfile)
 		userRoutes.PUT("", h.UpdateUserDetails)
 		userRoutes.POST("/tokens", h.CreateLongLivedToken)

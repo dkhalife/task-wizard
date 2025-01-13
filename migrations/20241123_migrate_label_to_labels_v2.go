@@ -29,14 +29,12 @@ func (m MigrateLabels20241123) Up(ctx context.Context, db *gorm.DB) error {
 		ID        int    `gorm:"column:id;primary_key"`
 		Name      string `gorm:"column:name"`
 		CreatedBy int    `gorm:"column:created_by"`
-		CircleID  *int   `gorm:"column:circle_id"`
 		ChoresId  []int  `gorm:"-"`
 	}
 
 	type Chore struct {
 		Labels    *string `gorm:"column:labels"`
 		ID        int     `gorm:"column:id;primary_key"`
-		CircleID  int     `gorm:"column:circle_id"`
 		CreatedBy int     `gorm:"column:created_by"`
 	}
 
@@ -50,7 +48,7 @@ func (m MigrateLabels20241123) Up(ctx context.Context, db *gorm.DB) error {
 	return db.Transaction(func(tx *gorm.DB) error {
 		// Get all chores with labels
 		var choreRecords []Chore
-		if err := tx.Table("chores").Select("id, labels, circle_id, created_by").Find(&choreRecords).Error; err != nil {
+		if err := tx.Table("chores").Select("id, labels, created_by").Find(&choreRecords).Error; err != nil {
 			log.Errorf("Failed to fetch chores with label: %v", err)
 			return err
 		}
@@ -66,7 +64,6 @@ func (m MigrateLabels20241123) Up(ctx context.Context, db *gorm.DB) error {
 						newLabelsMap[label] = Label{
 							Name:      label,
 							CreatedBy: choreRecord.CreatedBy,
-							CircleID:  &choreRecord.CircleID,
 							ChoresId:  []int{choreRecord.ID},
 						}
 					} else {
@@ -82,7 +79,7 @@ func (m MigrateLabels20241123) Up(ctx context.Context, db *gorm.DB) error {
 		for labelName, label := range newLabelsMap {
 			// Check if the label already exists
 			var existingLabel Label
-			if err := tx.Table("labels").Where("name = ? AND created_by = ? AND circle_id = ?", labelName, label.CreatedBy, label.CircleID).First(&existingLabel).Error; err != nil {
+			if err := tx.Table("labels").Where("name = ? AND created_by = ?", labelName, label.CreatedBy).First(&existingLabel).Error; err != nil {
 				if err == gorm.ErrRecordNotFound {
 					// Insert new label
 					if err := tx.Table("labels").Create(&label).Error; err != nil {

@@ -40,7 +40,7 @@ func (h *Handler) getLabels(c *gin.Context) {
 		return
 	}
 
-	labels, err := h.lRepo.GetUserLabels(c, currentUser.ID, currentUser.CircleID)
+	labels, err := h.lRepo.GetUserLabels(c, currentUser.ID)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error getting labels",

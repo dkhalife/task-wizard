@@ -6,12 +6,11 @@ import (
 	"time"
 
 	"gorm.io/driver/postgres"
-	// "gorm.io/driver/sqlite" // Sqlite driver based on CGO
 	"gorm.io/gorm/logger"
 
 	"donetick.com/core/config"
 	"donetick.com/core/logging"
-	"github.com/glebarez/sqlite" // Pure go SQLite driver, checkout https://github.com/glebarez/sqlite for details
+	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -38,7 +37,6 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 			path = "donetick.db"
 		}
 		db, err = gorm.Open(sqlite.Open(path), &gorm.Config{})
-
 	}
 
 	if err != nil {

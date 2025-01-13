@@ -13,16 +13,11 @@ type User struct {
 	Email       string    `json:"email" gorm:"column:email;unique"`       // Email (unique)
 	Provider    int       `json:"provider" gorm:"column:provider"`        // Provider
 	Password    string    `json:"-" gorm:"column:password"`               // Password
-	CircleID    int       `json:"circleID" gorm:"column:circle_id"`       // Circle ID
-	ChatID      int64     `json:"chatID" gorm:"column:chat_id"`           // Telegram chat ID
 	Image       string    `json:"image" gorm:"column:image"`              // Image
 	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at"`    // Created at
 	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`    // Updated at
 	Disabled    bool      `json:"disabled" gorm:"column:disabled"`        // Disabled
 	// Email    string `json:"email" gorm:"column:email"`       // Email
-	CustomerID              *string                `gorm:"column:customer_id;<-:false"`                      // read only column
-	Subscription            *string                `json:"subscription" gorm:"column:subscription;<-:false"` // read only column
-	Expiration              *string                `json:"expiration" gorm:"column:expiration;<-:false"`     // read only column
 	UserNotificationTargets UserNotificationTarget `json:"notification_target" gorm:"foreignKey:UserID;references:ID"`
 }
 
@@ -45,6 +40,5 @@ type APIToken struct {
 type UserNotificationTarget struct {
 	UserID    int                     `json:"userId" gorm:"column:user_id;index;primaryKey"` // Index on userID
 	Type      nModel.NotificationType `json:"type" gorm:"column:type"`                       // Type
-	TargetID  string                  `json:"target_id" gorm:"column:target_id"`             // Target ID
 	CreatedAt time.Time               `json:"-" gorm:"column:created_at"`
 }
