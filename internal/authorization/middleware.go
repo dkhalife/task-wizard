@@ -73,7 +73,6 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 					return "", jwt.ErrMissingLoginValues
 				}
 
-				// ctx := cache.WithCacheSkip(c.Request.Context(), true)
 				user, err := userRepo.GetUserByUsername(c.Request.Context(), req.Username)
 				if err != nil || user.Disabled {
 					return nil, jwt.ErrFailedAuthentication
@@ -93,11 +92,9 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 					CreatedAt: user.CreatedAt,
 					UpdatedAt: user.UpdatedAt,
 					Disabled:  user.Disabled,
-					CircleID:  user.CircleID,
 				}, nil
 			case "3rdPartyAuth":
 				// we should only reach this stage if a handler mannually call authenticator with it's context:
-
 				var authObject *uModel.User
 				v := c.Value("user_account")
 				authObject = v.(*uModel.User)
@@ -110,7 +107,6 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 		},
 
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-
 			if _, ok := data.(*uModel.User); ok {
 				return true
 			}

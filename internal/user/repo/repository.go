@@ -15,53 +15,27 @@ import (
 type IUserRepository interface {
 	GetUserByUsername(username string) (*uModel.User, error)
 	GetUser(id int) (*uModel.User, error)
-	GetAllUsers() ([]*uModel.User, error)
 	CreateUser(user *uModel.User) error
 	UpdateUser(user *uModel.User) error
-	UpdateUserCircle(userID, circleID int) error
 	FindByEmail(email string) (*uModel.User, error)
 }
 
 type UserRepository struct {
-	db               *gorm.DB
-	isDonetickDotCom bool
+	db *gorm.DB
 }
 
 func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
-	return &UserRepository{db, cfg.IsDoneTickDotCom}
+	return &UserRepository{db}
 }
 
-func (r *UserRepository) GetAllUsers(c context.Context, circleID int) ([]*uModel.User, error) {
-	var users []*uModel.User
-	if err := r.db.WithContext(c).Where("circle_id = ?", circleID).Find(&users).Error; err != nil {
-		return nil, err
-	}
-	return users, nil
+func (r *UserRepository) CreateUser(c context.Context, user *uModel.User) error {
+	return r.db.WithContext(c).Save(user).Error
 }
 
-func (r *UserRepository) GetAllUsersForSystemOnly(c context.Context) ([]*uModel.User, error) {
-	var users []*uModel.User
-	if err := r.db.WithContext(c).Find(&users).Error; err != nil {
-		return nil, err
-	}
-	return users, nil
-}
-func (r *UserRepository) CreateUser(c context.Context, user *uModel.User) (*uModel.User, error) {
-	if err := r.db.WithContext(c).Save(user).Error; err != nil {
-		return nil, err
-	}
-	return user, nil
-}
 func (r *UserRepository) GetUserByUsername(c context.Context, username string) (*uModel.User, error) {
 	var user *uModel.User
-	if r.isDonetickDotCom {
-		if err := r.db.WithContext(c).Preload("UserNotificationTargets").Table("users u").Select("u.*, ss.status as  subscription, ss.expired_at as expiration").Joins("left join stripe_customers sc on sc.user_id = u.id ").Joins("left join stripe_subscriptions ss on sc.customer_id = ss.customer_id").Where("username = ?", username).First(&user).Error; err != nil {
-			return nil, err
-		}
-	} else {
-		if err := r.db.WithContext(c).Preload("UserNotificationTargets").Table("users u").Select("u.*, 'active' as  subscription, '2999-12-31' as expiration").Where("username = ?", username).First(&user).Error; err != nil {
-			return nil, err
-		}
+	if err := r.db.WithContext(c).Preload("UserNotificationTargets").Table("users u").Where("username = ?", username).First(&user).Error; err != nil {
+		return nil, err
 	}
 
 	return user, nil
@@ -69,10 +43,6 @@ func (r *UserRepository) GetUserByUsername(c context.Context, username string) (
 
 func (r *UserRepository) UpdateUser(c context.Context, user *uModel.User) error {
 	return r.db.WithContext(c).Save(user).Error
-}
-
-func (r *UserRepository) UpdateUserCircle(c context.Context, userID, circleID int) error {
-	return r.db.WithContext(c).Model(&uModel.User{}).Where("id = ?", userID).Update("circle_id", circleID).Error
 }
 
 func (r *UserRepository) FindByEmail(c context.Context, email string) (*uModel.User, error) {
@@ -84,12 +54,11 @@ func (r *UserRepository) FindByEmail(c context.Context, email string) (*uModel.U
 }
 
 func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token string) error {
-	// confirm user exists with email:
 	user, err := r.FindByEmail(c, email)
 	if err != nil {
 		return err
 	}
-	// save new token:
+
 	if err := r.db.WithContext(c).Model(&uModel.UserPasswordReset{}).Save(&uModel.UserPasswordReset{
 		UserID:         user.ID,
 		Token:          token,
@@ -98,6 +67,7 @@ func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token s
 	}).Error; err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -113,7 +83,7 @@ func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string
 	if result.RowsAffected <= 0 {
 		return fmt.Errorf("invalid token")
 	}
-	// find account by email and update password:
+
 	chain := r.db.WithContext(ctx).Model(&uModel.User{}).Where("email = ?", email).UpdateColumns(map[string]interface{}{"password": password})
 	if chain.Error != nil {
 		return chain.Error
@@ -160,10 +130,9 @@ func (r *UserRepository) DeleteAPIToken(c context.Context, userID int, tokenID s
 	return r.db.WithContext(c).Where("id = ? AND user_id = ?", tokenID, userID).Delete(&uModel.APIToken{}).Error
 }
 
-func (r *UserRepository) UpdateNotificationTarget(c context.Context, userID int, targetID string, targetType nModel.NotificationType) error {
+func (r *UserRepository) UpdateNotificationTarget(c context.Context, userID int, targetType nModel.NotificationType) error {
 	return r.db.WithContext(c).Save(&uModel.UserNotificationTarget{
 		UserID:    userID,
-		TargetID:  targetID,
 		Type:      targetType,
 		CreatedAt: time.Now().UTC(),
 	}).Error
@@ -173,8 +142,8 @@ func (r *UserRepository) DeleteNotificationTarget(c context.Context, userID int)
 	return r.db.WithContext(c).Where("user_id = ?", userID).Delete(&uModel.UserNotificationTarget{}).Error
 }
 
-func (r *UserRepository) UpdateNotificationTargetForAllNotifications(c context.Context, userID int, targetID string, targetType nModel.NotificationType) error {
-	return r.db.WithContext(c).Model(&nModel.Notification{}).Where("user_id = ?", userID).Update("target_id", targetID).Update("type", targetType).Error
+func (r *UserRepository) UpdateNotificationTargetForAllNotifications(c context.Context, userID int, targetType nModel.NotificationType) error {
+	return r.db.WithContext(c).Model(&nModel.Notification{}).Where("user_id = ?", userID).Update("type", targetType).Error
 }
 func (r *UserRepository) UpdatePasswordByUserId(c context.Context, userID int, password string) error {
 	return r.db.WithContext(c).Model(&uModel.User{}).Where("id = ?", userID).Update("password", password).Error

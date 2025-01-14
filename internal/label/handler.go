@@ -31,7 +31,6 @@ func NewHandler(lRepo *lRepo.LabelRepository) *Handler {
 }
 
 func (h *Handler) getLabels(c *gin.Context) {
-	// get current user:
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -40,7 +39,7 @@ func (h *Handler) getLabels(c *gin.Context) {
 		return
 	}
 
-	labels, err := h.lRepo.GetUserLabels(c, currentUser.ID, currentUser.CircleID)
+	labels, err := h.lRepo.GetUserLabels(c, currentUser.ID)
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error getting labels",
@@ -53,7 +52,6 @@ func (h *Handler) getLabels(c *gin.Context) {
 }
 
 func (h *Handler) createLabel(c *gin.Context) {
-	// get current user:
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -123,7 +121,6 @@ func (h *Handler) updateLabel(c *gin.Context) {
 
 func (h *Handler) deleteLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
-	// read label id from path:
 
 	if !ok {
 		c.JSON(500, gin.H{
@@ -148,7 +145,6 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 		return
 	}
 
-	// unassociate label from all chores:
 	if err := h.lRepo.DeassignLabelFromAllChoreAndDelete(c, currentUser.ID, labelID); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error unassociating label from chores",

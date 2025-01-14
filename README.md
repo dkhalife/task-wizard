@@ -23,8 +23,6 @@ Donetick is an open-source, user-friendly app designed to help you organize task
 ## ✨ Features
 
 
-🏰 Group-Based Task Management: Create and manage tasks for solo or with your family or friends in shared circles.
-
 🔄 Smart Assignments: Assign tasks to individuals with rotation strategies like random or least completed.
 
 ⏰ Recurring Tasks: Automate task scheduling with flexible recurrence options:

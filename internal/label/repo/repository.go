@@ -20,9 +20,9 @@ func NewLabelRepository(db *gorm.DB, cfg *config.Config) *LabelRepository {
 	return &LabelRepository{db: db}
 }
 
-func (r *LabelRepository) GetUserLabels(ctx context.Context, userID int, circleID int) ([]*lModel.Label, error) {
+func (r *LabelRepository) GetUserLabels(ctx context.Context, userID int) ([]*lModel.Label, error) {
 	var labels []*lModel.Label
-	if err := r.db.WithContext(ctx).Where("created_by = ? OR circle_id = ? ", userID, circleID).Find(&labels).Error; err != nil {
+	if err := r.db.WithContext(ctx).Where("created_by = ?", userID).Find(&labels).Error; err != nil {
 		return nil, err
 	}
 	return labels, nil
@@ -43,24 +43,23 @@ func (r *LabelRepository) GetLabelsByIDs(ctx context.Context, ids []int) ([]*lMo
 	return labels, nil
 }
 
-func (r *LabelRepository) isLabelsAssignableByUser(ctx context.Context, userID int, circleID int, toBeAdded []int, toBeRemoved []int) bool {
-	// combine both toBeAdded and toBeRemoved:
+func (r *LabelRepository) isLabelsAssignableByUser(ctx context.Context, userID int, toBeAdded []int, toBeRemoved []int) bool {
 	labelIDs := append(toBeAdded, toBeRemoved...)
 
 	log := logging.FromContext(ctx)
 	var count int64
-	if err := r.db.WithContext(ctx).Model(&lModel.Label{}).Where("id IN (?) AND (created_by = ?  OR circle_id = ?) ", labelIDs, userID, circleID).Count(&count).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&lModel.Label{}).Where("id IN (?) AND created_by = ?", labelIDs, userID).Count(&count).Error; err != nil {
 		log.Error(err)
 		return false
 	}
 	return count == int64(len(labelIDs))
 }
 
-func (r *LabelRepository) AssignLabelsToChore(ctx context.Context, choreID int, userID int, circleID int, toBeAdded []int, toBeRemoved []int) error {
+func (r *LabelRepository) AssignLabelsToChore(ctx context.Context, choreID int, userID int, toBeAdded []int, toBeRemoved []int) error {
 	if len(toBeAdded) < 1 && len(toBeRemoved) < 1 {
 		return nil
 	}
-	if !r.isLabelsAssignableByUser(ctx, userID, circleID, toBeAdded, toBeRemoved) {
+	if !r.isLabelsAssignableByUser(ctx, userID, toBeAdded, toBeRemoved) {
 		return errors.New("labels are not assignable by user")
 	}
 

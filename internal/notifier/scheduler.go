@@ -44,6 +44,7 @@ func (s *Scheduler) Start(c context.Context) {
 	go s.runScheduler(c, " NOTIFICATION_SCHEDULER ", s.loadAndSendNotificationJob, 3*time.Minute)
 	go s.runScheduler(c, " NOTIFICATION_CLEANUP ", s.cleanupSentNotifications, 24*time.Hour*30)
 }
+
 func (s *Scheduler) cleanupSentNotifications(c context.Context) (time.Duration, error) {
 	log := logging.FromContext(c)
 	deleteBefore := time.Now().UTC().Add(-time.Hour * 24 * 30)
@@ -78,6 +79,7 @@ func (s *Scheduler) loadAndSendNotificationJob(c context.Context) (time.Duration
 	s.notificationRepo.MarkNotificationsAsSent(getAllPendingNotifications)
 	return time.Since(startTime), nil
 }
+
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) (time.Duration, error), interval time.Duration) {
 
 	for {

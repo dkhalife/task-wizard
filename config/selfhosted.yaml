@@ -1,18 +1,4 @@
 name: "selhosted"
-is_done_tick_dot_com: false
-is_user_creation_disabled: false
-telegram:
-  token: ""
-pushover:
-  token: ""
-mqtt:
-  host: ""
-  port: 8883
-  use_tls: true
-  username: ""
-  password: ""
-  client_id: "donetick"
-  topic: "donetick"
 database:
   type: "sqlite"
   migration: true
@@ -27,11 +13,8 @@ server:
   rate_period: 60s
   rate_limit: 300
   cors_allow_origins:
-    - "http://localhost:5173"
-    - "http://localhost:7926"
-    # the below are required for the android app to work
-    - "https://localhost"
-    - "capacitor://localhost"
+  - "http://localhost:5173"
+  - "http://localhost:7926"
   serve_frontend: true
 scheduler_jobs:
   due_job: 30m
