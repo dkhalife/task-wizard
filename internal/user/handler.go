@@ -198,42 +198,6 @@ func (h *Handler) updateUserPassword(c *gin.Context) {
 
 }
 
-func (h *Handler) UpdateUserDetails(c *gin.Context) {
-	type UpdateUserReq struct {
-		DisplayName *string `json:"displayName" binding:"omitempty"`
-		Image       *string `json:"image" binding:"omitempty"`
-	}
-	user, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting user",
-		})
-		return
-	}
-	var req UpdateUserReq
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid request",
-		})
-		return
-	}
-	// update non-nil fields:
-	if req.DisplayName != nil {
-		user.DisplayName = *req.DisplayName
-	}
-	if req.Image != nil {
-		user.Image = *req.Image
-	}
-
-	if err := h.userRepo.UpdateUser(c, user); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error updating user",
-		})
-		return
-	}
-	c.JSON(200, user)
-}
-
 func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
@@ -393,13 +357,11 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter 
 	userRoutes.Use(auth.MiddlewareFunc(), utils.RateLimitMiddleware(limiter))
 	{
 		userRoutes.GET("/profile", h.GetUserProfile)
-		userRoutes.PUT("", h.UpdateUserDetails)
 		userRoutes.POST("/tokens", h.CreateLongLivedToken)
 		userRoutes.GET("/tokens", h.GetAllUserToken)
 		userRoutes.DELETE("/tokens/:id", h.DeleteUserToken)
 		userRoutes.PUT("/targets", h.UpdateNotificationTarget)
 		userRoutes.PUT("change_password", h.updateUserPasswordLoggedInOnly)
-
 	}
 
 	authRoutes := router.Group("api/v1/auth")

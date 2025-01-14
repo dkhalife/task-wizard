@@ -740,46 +740,12 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 	})
 }
 
-func (h *Handler) getChoresHistory(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
-		})
-		return
-	}
-	durationRaw := c.Query("limit")
-	if durationRaw == "" {
-		durationRaw = "7"
-	}
-
-	duration, err := strconv.Atoi(durationRaw)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid duration",
-		})
-		return
-	}
-
-	choreHistories, err := h.choreRepo.GetChoresHistoryByUserID(c, currentUser.ID, duration)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting chore history",
-		})
-		return
-	}
-	c.JSON(200, gin.H{
-		"res": choreHistories,
-	})
-}
-
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 	choresRoutes := router.Group("api/v1/chores")
 	choresRoutes.Use(auth.MiddlewareFunc())
 	{
 		choresRoutes.GET("/", h.getChores)
 		choresRoutes.GET("/archived", h.getArchivedChores)
-		choresRoutes.GET("/history", h.getChoresHistory)
 		choresRoutes.PUT("/", h.editChore)
 		choresRoutes.POST("/", h.createChore)
 		choresRoutes.GET("/:id", h.getChore)
