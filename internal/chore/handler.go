@@ -2,10 +2,8 @@ package chore
 
 import (
 	"encoding/json"
-	"html"
 	"log"
 	"strconv"
-	"strings"
 	"time"
 
 	auth "donetick.com/core/internal/authorization"
@@ -41,8 +39,7 @@ type ChoreReq struct {
 	FrequencyMetadata    *chModel.FrequencyMetadata    `json:"frequencyMetadata"`
 	Notification         bool                          `json:"notification"`
 	NotificationMetadata *chModel.NotificationMetadata `json:"notificationMetadata"`
-	Labels               []string                      `json:"labels"`
-	LabelsV2             *[]LabelReq                   `json:"labelsV2"`
+	Labels               *[]LabelReq                   `json:"labels"`
 }
 type Handler struct {
 	choreRepo *chRepo.ChoreRepository
@@ -106,8 +103,8 @@ func (h *Handler) getArchivedChores(c *gin.Context) {
 		"res": chores,
 	})
 }
-func (h *Handler) getChore(c *gin.Context) {
 
+func (h *Handler) getChore(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -156,7 +153,7 @@ func (h *Handler) createChore(c *gin.Context) {
 		})
 		return
 	}
-	// Validate chore:
+
 	var choreReq ChoreReq
 	if err := c.ShouldBindJSON(&choreReq); err != nil {
 		log.Print(err)
@@ -199,18 +196,7 @@ func (h *Handler) createChore(c *gin.Context) {
 	}
 	stringNotificationMetadata := string(notificationMetadataBytes)
 
-	var stringLabels *string
-	if len(choreReq.Labels) > 0 {
-		var escapedLabels []string
-		for _, label := range choreReq.Labels {
-			escapedLabels = append(escapedLabels, html.EscapeString(label))
-		}
-
-		labels := strings.Join(escapedLabels, ",")
-		stringLabels = &labels
-	}
 	createdChore := &chModel.Chore{
-
 		Name:                 choreReq.Name,
 		FrequencyType:        choreReq.FrequencyType,
 		Frequency:            choreReq.Frequency,
@@ -221,7 +207,6 @@ func (h *Handler) createChore(c *gin.Context) {
 		IsActive:             true,
 		Notification:         choreReq.Notification,
 		NotificationMetadata: &stringNotificationMetadata,
-		Labels:               stringLabels,
 		CreatedAt:            time.Now().UTC(),
 	}
 	id, err := h.choreRepo.CreateChore(c, createdChore)
@@ -234,11 +219,11 @@ func (h *Handler) createChore(c *gin.Context) {
 		return
 	}
 
-	labelsV2 := make([]int, len(*choreReq.LabelsV2))
-	for i, label := range *choreReq.LabelsV2 {
-		labelsV2[i] = int(label.LabelID)
+	labels := make([]int, len(*choreReq.Labels))
+	for i, label := range *choreReq.Labels {
+		labels[i] = int(label.LabelID)
 	}
-	if err := h.lRepo.AssignLabelsToChore(c, createdChore.ID, currentUser.ID, labelsV2, []int{}); err != nil {
+	if err := h.lRepo.AssignLabelsToChore(c, createdChore.ID, currentUser.ID, labels, []int{}); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
@@ -255,7 +240,6 @@ func (h *Handler) createChore(c *gin.Context) {
 }
 
 func (h *Handler) editChore(c *gin.Context) {
-	// logger := logging.FromContext(c)
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -321,43 +305,31 @@ func (h *Handler) editChore(c *gin.Context) {
 	}
 	stringNotificationMetadata := string(notificationMetadataBytes)
 
-	// escape special characters in labels and store them as a string :
-	var stringLabels *string
-	if len(choreReq.Labels) > 0 {
-		var escapedLabels []string
-		for _, label := range choreReq.Labels {
-			escapedLabels = append(escapedLabels, html.EscapeString(label))
-		}
-
-		labels := strings.Join(escapedLabels, ",")
-		stringLabels = &labels
-	}
-
 	// Create a map to store the existing labels for quick lookup
 	oldLabelsMap := make(map[int]struct{})
-	for _, oldLabel := range *oldChore.LabelsV2 {
+	for _, oldLabel := range *oldChore.Labels {
 		oldLabelsMap[oldLabel.ID] = struct{}{}
 	}
 	newLabelMap := make(map[int]struct{})
-	for _, newLabel := range *choreReq.LabelsV2 {
+	for _, newLabel := range *choreReq.Labels {
 		newLabelMap[newLabel.LabelID] = struct{}{}
 	}
 	// check what labels need to be added and what labels need to be deleted:
-	labelsV2ToAdd := make([]int, 0)
-	labelsV2ToBeRemoved := make([]int, 0)
+	labelsToAdd := make([]int, 0)
+	labelsToBeRemoved := make([]int, 0)
 
-	for _, label := range *choreReq.LabelsV2 {
+	for _, label := range *choreReq.Labels {
 		if _, ok := oldLabelsMap[label.LabelID]; !ok {
-			labelsV2ToAdd = append(labelsV2ToAdd, label.LabelID)
+			labelsToAdd = append(labelsToAdd, label.LabelID)
 		}
 	}
-	for _, oldLabel := range *oldChore.LabelsV2 {
+	for _, oldLabel := range *oldChore.Labels {
 		if _, ok := newLabelMap[oldLabel.ID]; !ok {
-			labelsV2ToBeRemoved = append(labelsV2ToBeRemoved, oldLabel.ID)
+			labelsToBeRemoved = append(labelsToBeRemoved, oldLabel.ID)
 		}
 	}
 
-	if err := h.lRepo.AssignLabelsToChore(c, choreReq.ID, currentUser.ID, labelsV2ToAdd, labelsV2ToBeRemoved); err != nil {
+	if err := h.lRepo.AssignLabelsToChore(c, choreReq.ID, currentUser.ID, labelsToAdd, labelsToBeRemoved); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
@@ -376,7 +348,6 @@ func (h *Handler) editChore(c *gin.Context) {
 		IsActive:             choreReq.IsActive,
 		Notification:         choreReq.Notification,
 		NotificationMetadata: &stringNotificationMetadata,
-		Labels:               stringLabels,
 		CreatedAt:            oldChore.CreatedAt,
 	}
 	if err := h.choreRepo.UpsertChore(c, updatedChore); err != nil {

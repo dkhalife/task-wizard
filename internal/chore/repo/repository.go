@@ -36,7 +36,7 @@ func (r *ChoreRepository) CreateChore(c context.Context, chore *chModel.Chore) (
 
 func (r *ChoreRepository) GetChore(c context.Context, choreID int) (*chModel.Chore, error) {
 	var chore chModel.Chore
-	if err := r.db.Debug().WithContext(c).Model(&chModel.Chore{}).Preload("LabelsV2").First(&chore, choreID).Error; err != nil {
+	if err := r.db.Debug().WithContext(c).Model(&chModel.Chore{}).Preload("Labels").First(&chore, choreID).Error; err != nil {
 		return nil, err
 	}
 	return &chore, nil
@@ -44,7 +44,7 @@ func (r *ChoreRepository) GetChore(c context.Context, choreID int) (*chModel.Cho
 
 func (r *ChoreRepository) GetChores(c context.Context, userID int, includeArchived bool) ([]*chModel.Chore, error) {
 	var chores []*chModel.Chore
-	query := r.db.WithContext(c).Preload("LabelsV2").Where("chores.created_by = ?", userID).Group("chores.id").Order("next_due_date asc")
+	query := r.db.WithContext(c).Preload("Labels").Where("chores.created_by = ?", userID).Group("chores.id").Order("next_due_date asc")
 	if !includeArchived {
 		query = query.Where("chores.is_active = ?", true)
 	}
@@ -58,7 +58,7 @@ func (r *ChoreRepository) GetChores(c context.Context, userID int, includeArchiv
 
 func (r *ChoreRepository) GetArchivedChores(c context.Context, userID int) ([]*chModel.Chore, error) {
 	var chores []*chModel.Chore
-	if err := r.db.WithContext(c).Preload("LabelsV2").Where("chores.created_by = ?", userID).Group("chores.id").Order("next_due_date asc").Find(&chores, "is_active = ?", false).Error; err != nil {
+	if err := r.db.WithContext(c).Preload("Labels").Where("chores.created_by = ?", userID).Group("chores.id").Order("next_due_date asc").Find(&chores, "is_active = ?", false).Error; err != nil {
 		return nil, err
 	}
 	return chores, nil

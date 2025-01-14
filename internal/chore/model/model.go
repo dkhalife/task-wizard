@@ -31,8 +31,7 @@ type Chore struct {
 	IsActive             bool          `json:"isActive" gorm:"column:is_active"`                     // Whether the chore is active
 	Notification         bool          `json:"notification" gorm:"column:notification"`              // Whether the chore has notification
 	NotificationMetadata *string       `json:"notificationMetadata" gorm:"column:notification_meta"` // Additional notification information
-	Labels               *string       `json:"labels" gorm:"column:labels"`                          // Labels for the chore
-	LabelsV2             *[]Label      `json:"labelsV2" gorm:"many2many:chore_labels"`               // Labels for the chore
+	Labels               *[]Label      `json:"labels" gorm:"many2many:chore_labels"`                 // Labels for the chore
 	CreatedAt            time.Time     `json:"createdAt" gorm:"column:created_at"`                   // When the chore was created
 	UpdatedAt            time.Time     `json:"updatedAt" gorm:"column:updated_at"`                   // When the chore was last updated
 	Status               int           `json:"status" gorm:"column:status"`
