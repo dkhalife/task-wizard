@@ -34,7 +34,7 @@ func (r *UserRepository) CreateUser(c context.Context, user *uModel.User) error 
 
 func (r *UserRepository) GetUserByUsername(c context.Context, username string) (*uModel.User, error) {
 	var user *uModel.User
-	if err := r.db.WithContext(c).Preload("UserNotificationTargets").Table("users u").Select("u.*, 'active' as  subscription, '2999-12-31' as expiration").Where("username = ?", username).First(&user).Error; err != nil {
+	if err := r.db.WithContext(c).Preload("UserNotificationTargets").Table("users u").Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
 
@@ -54,12 +54,11 @@ func (r *UserRepository) FindByEmail(c context.Context, email string) (*uModel.U
 }
 
 func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token string) error {
-	// confirm user exists with email:
 	user, err := r.FindByEmail(c, email)
 	if err != nil {
 		return err
 	}
-	// save new token:
+
 	if err := r.db.WithContext(c).Model(&uModel.UserPasswordReset{}).Save(&uModel.UserPasswordReset{
 		UserID:         user.ID,
 		Token:          token,
@@ -68,6 +67,7 @@ func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token s
 	}).Error; err != nil {
 		return err
 	}
+
 	return nil
 }
 
@@ -83,7 +83,7 @@ func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string
 	if result.RowsAffected <= 0 {
 		return fmt.Errorf("invalid token")
 	}
-	// find account by email and update password:
+
 	chain := r.db.WithContext(ctx).Model(&uModel.User{}).Where("email = ?", email).UpdateColumns(map[string]interface{}{"password": password})
 	if chain.Error != nil {
 		return chain.Error

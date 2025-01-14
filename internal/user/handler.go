@@ -20,8 +20,6 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	limiter "github.com/ulule/limiter/v3"
-	"google.golang.org/api/googleapi"
-	"google.golang.org/api/oauth2/v1"
 )
 
 type Handler struct {
@@ -94,81 +92,6 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 	c.JSON(200, gin.H{
 		"res": user,
 	})
-}
-
-func (h *Handler) thirdPartyAuthCallback(c *gin.Context) {
-
-	// read :provider from path param, if param is google check the token with google if it's valid and fetch the user details:
-	logger := logging.FromContext(c)
-	provider := c.Param("provider")
-	logger.Infow("account.handler.thirdPartyAuthCallback", "provider", provider)
-
-	if provider == "google" {
-		c.Set("auth_provider", "3rdPartyAuth")
-		type OAuthRequest struct {
-			Token    string `json:"token" binding:"required"`
-			Provider string `json:"provider" binding:"required"`
-		}
-		var body OAuthRequest
-		if err := c.ShouldBindJSON(&body); err != nil {
-			logger.Errorw("account.handler.thirdPartyAuthCallback failed to bind", "err", err)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid request",
-			})
-			return
-		}
-
-		// logger.Infow("account.handler.thirdPartyAuthCallback", "token", token)
-		service, err := oauth2.New(http.DefaultClient)
-
-		// tokenInfo, err := service.Tokeninfo().AccessToken(token).Do()
-		userinfo, err := service.Userinfo.Get().Do(googleapi.QueryParameter("access_token", body.Token))
-		logger.Infow("account.handler.thirdPartyAuthCallback", "tokenInfo", userinfo)
-		if err != nil {
-			logger.Errorw("account.handler.thirdPartyAuthCallback failed to get token info", "err", err)
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Invalid token",
-			})
-			return
-		}
-
-		acc, err := h.userRepo.FindByEmail(c, userinfo.Email)
-
-		if err != nil {
-			// create a random password for the user using crypto/rand:
-			password := auth.GenerateRandomPassword(12)
-			encodedPassword, err := auth.EncodePassword(password)
-			acc = &uModel.User{
-				Username:    userinfo.Id,
-				Email:       userinfo.Email,
-				Image:       userinfo.Picture,
-				Password:    encodedPassword,
-				DisplayName: userinfo.GivenName,
-				Provider:    2,
-			}
-			err = h.userRepo.CreateUser(c, acc)
-			if err != nil {
-				c.JSON(http.StatusInternalServerError, gin.H{
-					"error": "Unable to create user",
-				})
-				return
-
-			}
-		}
-		// use auth to generate a token for the user:
-		c.Set("user_account", acc)
-		h.jwtAuth.Authenticator(c)
-		tokenString, expire, err := h.jwtAuth.TokenGenerator(acc)
-		if err != nil {
-			logger.Errorw("Unable to Generate a Token")
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Unable to Generate a Token",
-			})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{"token": tokenString, "expire": expire})
-		return
-	}
 }
 
 func (h *Handler) resetPassword(c *gin.Context) {
@@ -466,7 +389,6 @@ func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 }
 
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {
-
 	userRoutes := router.Group("api/v1/users")
 	userRoutes.Use(auth.MiddlewareFunc(), utils.RateLimitMiddleware(limiter))
 	{
@@ -483,12 +405,10 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter 
 	authRoutes := router.Group("api/v1/auth")
 	authRoutes.Use(utils.RateLimitMiddleware(limiter))
 	{
-		authRoutes.POST("/:provider/callback", h.thirdPartyAuthCallback)
 		authRoutes.POST("/", h.signUp)
 		authRoutes.POST("login", auth.LoginHandler)
 		authRoutes.GET("refresh", auth.RefreshHandler)
 		authRoutes.POST("reset", h.resetPassword)
 		authRoutes.POST("password", h.updateUserPassword)
 	}
-
 }

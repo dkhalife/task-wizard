@@ -13,7 +13,7 @@ import (
 )
 
 const (
-	XRequestIdKey = "X-Request-ID" // request id header key
+	XRequestIdKey = "X-Request-ID"
 )
 
 func NewRateLimiter(cfg *config.Config) *limiter.Limiter {
@@ -25,7 +25,6 @@ func NewRateLimiter(cfg *config.Config) *limiter.Limiter {
 	}
 
 	return limiter.New(store, rate)
-
 }
 
 func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {

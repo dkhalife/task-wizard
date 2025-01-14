@@ -24,12 +24,11 @@ func (r *NotificationRepository) BatchInsertNotifications(notifications []*nMode
 	return r.db.Create(&notifications).Error
 }
 func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*nModel.Notification) error {
-	// Extract IDs from notifications
 	var ids []int
 	for _, notification := range notifications {
 		ids = append(ids, notification.ID)
 	}
-	// Use the extracted IDs in the Where clause
+
 	return r.db.Model(&nModel.Notification{}).Where("id IN (?)", ids).Update("is_sent", true).Error
 }
 func (r *NotificationRepository) GetPendingNotificaiton(c context.Context, lookback time.Duration) ([]*nModel.Notification, error) {

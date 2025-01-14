@@ -107,7 +107,6 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 		},
 
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-
 			if _, ok := data.(*uModel.User); ok {
 				return true
 			}
