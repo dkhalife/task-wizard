@@ -30,11 +30,11 @@ jobs:
       - name: Install Dependencies
         run: |
           cd frontend-code
-          npm install
+          yarn install --frozen-lockfile
       - name: Build Frontend
         run: |
           cd frontend-code
-          npm run build-selfhosted
+          yarn build
 
       - name: Copy Frontend
         run: |
