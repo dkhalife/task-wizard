@@ -3,7 +3,6 @@ package chore
 import (
 	"donetick.com/core/config"
 	chRepo "donetick.com/core/internal/chore/repo"
-	"donetick.com/core/internal/utils"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 
@@ -46,11 +45,10 @@ func (h *API) GetAllChores(c *gin.Context) {
 
 func APIs(cfg *config.Config, api *API, r *gin.Engine, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {
 
-	thingsAPI := r.Group("api/v1/chore")
+	choresAPI := r.Group("api/v1/chore")
 
-	thingsAPI.Use(utils.TimeoutMiddleware(cfg.Server.WriteTimeout), utils.RateLimitMiddleware(limiter))
 	{
-		thingsAPI.GET("", api.GetAllChores)
+		choresAPI.GET("", api.GetAllChores)
 	}
 
 }

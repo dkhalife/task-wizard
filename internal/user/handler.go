@@ -587,7 +587,7 @@ func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {
 
 	userRoutes := router.Group("users")
-	userRoutes.Use(auth.MiddlewareFunc(), utils.RateLimitMiddleware(limiter))
+	userRoutes.Use(auth.MiddlewareFunc())
 	{
 		userRoutes.GET("/", h.GetAllUsers())
 		userRoutes.GET("/profile", h.GetUserProfile)
@@ -601,7 +601,6 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter 
 	}
 
 	authRoutes := router.Group("auth")
-	authRoutes.Use(utils.RateLimitMiddleware(limiter))
 	{
 		authRoutes.POST("/:provider/callback", h.thirdPartyAuthCallback)
 		authRoutes.POST("/", h.signUp)

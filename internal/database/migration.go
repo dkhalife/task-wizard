@@ -9,7 +9,6 @@ import (
 	chModel "donetick.com/core/internal/chore/model"
 	cModel "donetick.com/core/internal/circle/model"
 	nModel "donetick.com/core/internal/notifier/model"
-	tModel "donetick.com/core/internal/thing/model"
 	uModel "donetick.com/core/internal/user/model" // Pure go SQLite driver, checkout https://github.com/glebarez/sqlite for details
 	migrations "donetick.com/core/migrations"
 	migrate "github.com/rubenv/sql-migrate"
@@ -27,9 +26,6 @@ func Migration(db *gorm.DB) error {
 		chModel.ChoreAssignees{},
 		nModel.Notification{},
 		uModel.UserPasswordReset{},
-		tModel.Thing{},
-		tModel.ThingChore{},
-		tModel.ThingHistory{},
 		uModel.APIToken{},
 		uModel.UserNotificationTarget{},
 		chModel.Label{},

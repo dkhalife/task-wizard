@@ -19,18 +19,10 @@ import (
 	"donetick.com/core/internal/notifier"
 	nRepo "donetick.com/core/internal/notifier/repo"
 	nps "donetick.com/core/internal/notifier/service"
-	tRepo "donetick.com/core/internal/thing/repo"
-	uModel "donetick.com/core/internal/user/model"
 	"donetick.com/core/logging"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
-
-type ThingTrigger struct {
-	ID           int    `json:"thingID" binding:"required"`
-	TriggerState string `json:"triggerState" binding:"required"`
-	Condition    string `json:"condition"`
-}
 
 type LabelReq struct {
 	LabelID int `json:"id" binding:"required"`
@@ -52,29 +44,27 @@ type ChoreReq struct {
 	NotificationMetadata *chModel.NotificationMetadata `json:"notificationMetadata"`
 	Labels               []string                      `json:"labels"`
 	LabelsV2             *[]LabelReq                   `json:"labelsV2"`
-	ThingTrigger         *ThingTrigger                 `json:"thingTrigger"`
 	Points               *int                          `json:"points"`
 	CompletionWindow     *int                          `json:"completionWindow"`
 }
+
 type Handler struct {
 	choreRepo  *chRepo.ChoreRepository
 	circleRepo *cRepo.CircleRepository
 	notifier   *notifier.Notifier
 	nPlanner   *nps.NotificationPlanner
 	nRepo      *nRepo.NotificationRepository
-	tRepo      *tRepo.ThingRepository
 	lRepo      *lRepo.LabelRepository
 }
 
 func NewHandler(cr *chRepo.ChoreRepository, circleRepo *cRepo.CircleRepository, nt *notifier.Notifier,
-	np *nps.NotificationPlanner, nRepo *nRepo.NotificationRepository, tRepo *tRepo.ThingRepository, lRepo *lRepo.LabelRepository) *Handler {
+	np *nps.NotificationPlanner, nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *Handler {
 	return &Handler{
 		choreRepo:  cr,
 		circleRepo: circleRepo,
 		notifier:   nt,
 		nPlanner:   np,
 		nRepo:      nRepo,
-		tRepo:      tRepo,
 		lRepo:      lRepo,
 	}
 }
@@ -320,10 +310,7 @@ func (h *Handler) createChore(c *gin.Context) {
 	go func() {
 		h.nPlanner.GenerateNotifications(c, createdChore)
 	}()
-	shouldReturn := HandleThingAssociation(choreReq, h, c, currentUser)
-	if shouldReturn {
-		return
-	}
+
 	c.JSON(200, gin.H{
 		"res": id,
 	})
@@ -571,45 +558,10 @@ func (h *Handler) editChore(c *gin.Context) {
 	go func() {
 		h.nPlanner.GenerateNotifications(c, updatedChore)
 	}()
-	if oldChore.ThingChore != nil {
-		// TODO: Add check to see if dissociation is necessary
-		h.tRepo.DissociateThingWithChore(c, oldChore.ThingChore.ThingID, oldChore.ID)
-
-	}
-	shouldReturn := HandleThingAssociation(choreReq, h, c, currentUser)
-	if shouldReturn {
-		return
-	}
 
 	c.JSON(200, gin.H{
 		"message": "Chore added successfully",
 	})
-}
-
-func HandleThingAssociation(choreReq ChoreReq, h *Handler, c *gin.Context, currentUser *uModel.User) bool {
-	if choreReq.ThingTrigger != nil {
-		thing, err := h.tRepo.GetThingByID(c, choreReq.ThingTrigger.ID)
-		if err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error getting thing",
-			})
-			return true
-		}
-		if thing.UserID != currentUser.ID {
-			c.JSON(403, gin.H{
-				"error": "You are not allowed to trigger this thing",
-			})
-			return true
-		}
-		if err := h.tRepo.AssociateThingWithChore(c, choreReq.ThingTrigger.ID, choreReq.ID, choreReq.ThingTrigger.TriggerState, choreReq.ThingTrigger.Condition); err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error associating thing with chore",
-			})
-			return true
-		}
-
-	}
-	return false
 }
 
 func (h *Handler) deleteChore(c *gin.Context) {
@@ -645,36 +597,11 @@ func (h *Handler) deleteChore(c *gin.Context) {
 		return
 	}
 	h.nRepo.DeleteAllChoreNotifications(id)
-	h.tRepo.DissociateChoreWithThing(c, id)
 
 	c.JSON(200, gin.H{
 		"message": "Chore deleted successfully",
 	})
 }
-
-// func (h *Handler) createChore(c *gin.Context) {
-// 	logger := logging.FromContext(c)
-// 	currentUser, ok := auth.CurrentUser(c)
-
-// 	logger.Debug("Create chore", "currentUser", currentUser)
-// 	if !ok {
-// 		c.JSON(500, gin.H{
-// 			"error": "Error getting current user",
-// 		})
-// 		return
-// 	}
-// 	id, err := h.choreRepo.CreateChore(currentUser.ID, currentUser.CircleID)
-// 	if err != nil {
-// 		c.JSON(500, gin.H{
-// 			"error": "Error creating chore",
-// 		})
-// 		return
-// 	}
-
-// 	c.JSON(200, gin.H{
-// 		"res": id,
-// 	})
-// }
 
 func (h *Handler) updateAssignee(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)

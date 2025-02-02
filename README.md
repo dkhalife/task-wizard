@@ -35,8 +35,6 @@ viewing tasks directly in supported platforms (e.g., Home Assistant with a custo
 
 💿 Labels for Organization: Group and organize tasks with labels. Labels can also be shared within the same group for better collaboration.
 
-🛠️ "Things" Integration: Use entities (numbers, strings, booleans) to trigger tasks, track values, or connect with external systems via webhooks.
-
 
 ---
 

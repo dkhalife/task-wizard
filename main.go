@@ -31,11 +31,8 @@ import (
 	mqtt "donetick.com/core/internal/notifier/service/mqtt"
 	"donetick.com/core/internal/notifier/service/pushover"
 	telegram "donetick.com/core/internal/notifier/service/telegram"
-	"donetick.com/core/internal/thing"
-	tRepo "donetick.com/core/internal/thing/repo"
 	"donetick.com/core/internal/user"
 	uRepo "donetick.com/core/internal/user/repo"
-	"donetick.com/core/internal/utils"
 	"donetick.com/core/logging"
 )
 
@@ -71,37 +68,25 @@ func main() {
 		fx.Provide(mqtt.NewMqttNotifier),
 		fx.Provide(notifier.NewNotifier),
 
-		// Rate limiter
-		fx.Provide(utils.NewRateLimiter),
-
 		// add email sender:
 		fx.Provide(email.NewEmailSender),
 		// add handlers also
 		fx.Provide(newServer),
 		fx.Provide(notifier.NewScheduler),
 
-		// things
-		fx.Provide(tRepo.NewThingRepository),
-
 		// Labels:
 		fx.Provide(lRepo.NewLabelRepository),
 		fx.Provide(label.NewHandler),
-
-		fx.Provide(thing.NewWebhook),
-		fx.Provide(thing.NewHandler),
 
 		fx.Provide(chore.NewAPI),
 
 		fx.Provide(frontend.NewHandler),
 
-		// fx.Invoke(RunApp),
 		fx.Invoke(
 			chore.Routes,
 			chore.APIs,
 			user.Routes,
 			circle.Routes,
-			thing.Routes,
-			thing.Webhooks,
 			label.Routes,
 			frontend.Routes,
 

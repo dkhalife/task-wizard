@@ -61,7 +61,6 @@ type JwtConfig struct {
 type ServerConfig struct {
 	Port             int           `mapstructure:"port" yaml:"port"`
 	RatePeriod       time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
-	RateLimit        int           `mapstructure:"rate_limit" yaml:"rate_limit"`
 	ReadTimeout      time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout     time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
 	CorsAllowOrigins []string      `mapstructure:"cors_allow_origins" yaml:"cors_allow_origins"`
