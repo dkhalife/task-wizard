@@ -70,13 +70,10 @@ func main() {
 		fx.Provide(lRepo.NewLabelRepository),
 		fx.Provide(label.NewHandler),
 
-		fx.Provide(chore.NewAPI),
-
 		fx.Provide(frontend.NewHandler),
 
 		fx.Invoke(
 			chore.Routes,
-			chore.APIs,
 			user.Routes,
 			label.Routes,
 			frontend.Routes,
