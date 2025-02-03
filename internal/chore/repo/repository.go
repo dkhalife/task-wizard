@@ -70,8 +70,18 @@ func (r *ChoreRepository) GetArchivedChores(c context.Context, circleID int, use
 	return chores, nil
 }
 func (r *ChoreRepository) DeleteChore(c context.Context, id int) error {
-	r.db.WithContext(c).Where("chore_id = ?", id).Delete(&chModel.ChoreAssignees{})
-	return r.db.WithContext(c).Delete(&chModel.Chore{}, id).Error
+	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Where("chore_id = ?", id).Delete(&chModel.ChoreAssignees{}).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&chModel.ChoreHistory{}, "chore_id = ?", id).Error; err != nil {
+			return err
+		}
+		if err := tx.Delete(&chModel.Chore{}, id).Error; err != nil {
+			return err
+		}
+		return nil
+	})
 }
 
 func (r *ChoreRepository) SoftDelete(c context.Context, id int, userID int) error {
@@ -87,6 +97,18 @@ func (r *ChoreRepository) IsChoreOwner(c context.Context, choreID int, userID in
 
 func (r *ChoreRepository) CompleteChore(c context.Context, chore *chModel.Chore, note *string, userID int, dueDate *time.Time, completedDate *time.Time, nextAssignedTo int, applyPoints bool) error {
 	err := r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+
+		choreUpdates := map[string]interface{}{}
+		choreUpdates["next_due_date"] = dueDate
+		choreUpdates["status"] = chModel.ChoreStatusNoStatus
+
+		if dueDate != nil {
+			choreUpdates["assigned_to"] = nextAssignedTo
+		} else {
+			// one time task
+			choreUpdates["is_active"] = false
+		}
+		// Create a new chore history record.
 		ch := &chModel.ChoreHistory{
 			ChoreID:     chore.ID,
 			CompletedAt: completedDate,
@@ -95,30 +117,22 @@ func (r *ChoreRepository) CompleteChore(c context.Context, chore *chModel.Chore,
 			DueDate:     chore.NextDueDate,
 			Note:        note,
 		}
-		if err := tx.Create(ch).Error; err != nil {
-			return err
-		}
-		updates := map[string]interface{}{}
-		updates["next_due_date"] = dueDate
-		updates["status"] = chModel.ChoreStatusNoStatus
 
-		if dueDate != nil {
-			updates["assigned_to"] = nextAssignedTo
-		} else {
-			// one time task
-			updates["is_active"] = false
-		}
-		// Perform the update operation once, using the prepared updates map.
-		if err := tx.Model(&chModel.Chore{}).Where("id = ?", chore.ID).Updates(updates).Error; err != nil {
-			return err
-		}
 		// Update UserCirclee Points :
 		if applyPoints && chore.Points != nil && *chore.Points > 0 {
+			ch.Points = chore.Points
 			if err := tx.Model(&cModel.UserCircle{}).Where("user_id = ? AND circle_id = ?", userID, chore.CircleID).Update("points", gorm.Expr("points + ?", chore.Points)).Error; err != nil {
 				return err
 			}
 		}
+		// Perform the update operation once, using the prepared updates map.
+		if err := tx.Model(&chModel.Chore{}).Where("id = ?", chore.ID).Updates(choreUpdates).Error; err != nil {
+			return err
+		}
 
+		if err := tx.Create(ch).Error; err != nil {
+			return err
+		}
 		return nil
 	})
 	return err
@@ -153,6 +167,9 @@ func (r *ChoreRepository) UpdateChoreHistory(c context.Context, history *chModel
 
 func (r *ChoreRepository) DeleteChoreHistory(c context.Context, historyID int) error {
 	return r.db.WithContext(c).Delete(&chModel.ChoreHistory{}, historyID).Error
+}
+func (r *ChoreRepository) DeleteChoreHistoryByChoreID(c context.Context, tx, choreID int) error {
+	return r.db.WithContext(c).Delete(&chModel.ChoreHistory{}, "chore_id = ?", choreID).Error
 }
 
 func (r *ChoreRepository) UpdateChoreAssignees(c context.Context, assignees []*chModel.ChoreAssignees) error {
@@ -264,7 +281,8 @@ func (r *ChoreRepository) GetChoreDetailByID(c context.Context, choreID int, cir
 		Table("chores").
 		Select(`
         chores.id, 
-        chores.name, 
+        chores.name,
+		chores.description, 
         chores.frequency_type, 
         chores.next_due_date, 
         chores.assigned_to,

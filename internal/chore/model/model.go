@@ -11,17 +11,17 @@ import (
 type FrequencyType string
 
 const (
-	FrequancyTypeOnce          FrequencyType = "once"
-	FrequancyTypeDaily         FrequencyType = "daily"
-	FrequancyTypeWeekly        FrequencyType = "weekly"
-	FrequancyTypeMonthly       FrequencyType = "monthly"
-	FrequancyTypeYearly        FrequencyType = "yearly"
-	FrequancyTypeAdaptive      FrequencyType = "adaptive"
-	FrequancyTypeIntervel      FrequencyType = "interval"
-	FrequancyTypeDayOfTheWeek  FrequencyType = "days_of_the_week"
-	FrequancyTypeDayOfTheMonth FrequencyType = "day_of_the_month"
-	FrequancyTypeTrigger       FrequencyType = "trigger"
-	FrequancyTypeNoRepeat      FrequencyType = "no_repeat"
+	FrequencyTypeOnce          FrequencyType = "once"
+	FrequencyTypeDaily         FrequencyType = "daily"
+	FrequencyTypeWeekly        FrequencyType = "weekly"
+	FrequencyTypeMonthly       FrequencyType = "monthly"
+	FrequencyTypeYearly        FrequencyType = "yearly"
+	FrequencyTypeAdaptive      FrequencyType = "adaptive"
+	FrequencyTypeInterval      FrequencyType = "interval"
+	FrequencyTypeDayOfTheWeek  FrequencyType = "days_of_the_week"
+	FrequencyTypeDayOfTheMonth FrequencyType = "day_of_the_month"
+	FrequencyTypeTrigger       FrequencyType = "trigger"
+	FrequencyTypeNoRepeat      FrequencyType = "no_repeat"
 )
 
 type AssignmentStrategy string
@@ -120,6 +120,7 @@ type Tag struct {
 type ChoreDetail struct {
 	ID                  int        `json:"id" gorm:"column:id"`
 	Name                string     `json:"name" gorm:"column:name"`
+	Description         *string    `json:"description" gorm:"column:description"`
 	FrequencyType       string     `json:"frequencyType" gorm:"column:frequency_type"`
 	NextDueDate         *time.Time `json:"nextDueDate" gorm:"column:next_due_date"`
 	AssignedTo          int        `json:"assignedTo" gorm:"column:assigned_to"`
