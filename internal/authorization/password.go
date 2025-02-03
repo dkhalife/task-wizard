@@ -3,7 +3,6 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
-	"math/big"
 
 	"donetick.com/core/logging"
 	"github.com/gin-gonic/gin"
@@ -22,22 +21,6 @@ func EncodePassword(password string) (string, error) {
 
 func Matches(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
-}
-
-func GenerateRandomPassword(length int) string {
-	// Create a buffer to hold the random bytes.
-	buffer := make([]byte, length)
-
-	// Compute the maximum index for the characters.
-	maxIndex := big.NewInt(int64(len(chars)))
-
-	// Generate random bytes and use them to select characters from the set.
-	for i := 0; i < length; i++ {
-		randomIndex, _ := rand.Int(rand.Reader, maxIndex)
-		buffer[i] = chars[randomIndex.Int64()]
-	}
-
-	return string(buffer)
 }
 
 func GenerateEmailResetToken(c *gin.Context) (string, error) {

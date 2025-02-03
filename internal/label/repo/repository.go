@@ -35,14 +35,6 @@ func (r *LabelRepository) CreateLabels(ctx context.Context, labels []*lModel.Lab
 	return nil
 }
 
-func (r *LabelRepository) GetLabelsByIDs(ctx context.Context, ids []int) ([]*lModel.Label, error) {
-	var labels []*lModel.Label
-	if err := r.db.WithContext(ctx).Where("id IN (?)", ids).Find(&labels).Error; err != nil {
-		return nil, err
-	}
-	return labels, nil
-}
-
 func (r *LabelRepository) isLabelsAssignableByUser(ctx context.Context, userID int, toBeAdded []int, toBeRemoved []int) bool {
 	labelIDs := append(toBeAdded, toBeRemoved...)
 
@@ -89,13 +81,6 @@ func (r *LabelRepository) AssignLabelsToChore(ctx context.Context, choreID int, 
 	})
 }
 
-func (r *LabelRepository) DeassignLabelsFromChore(ctx context.Context, choreID int, userID int, labelIDs []int) error {
-	if err := r.db.WithContext(ctx).Where("chore_id = ? AND user_id = ? AND label_id IN (?)", choreID, userID, labelIDs).Delete(&chModel.ChoreLabels{}).Error; err != nil {
-		return err
-	}
-	return nil
-}
-
 func (r *LabelRepository) DeassignLabelFromAllChoreAndDelete(ctx context.Context, userID int, labelID int) error {
 	// create one transaction to confirm if the label is owned by the user then delete all ChoreLabels record for this label:
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
@@ -127,32 +112,6 @@ func (r *LabelRepository) isLabelsOwner(ctx context.Context, userID int, labelID
 	var count int64
 	r.db.WithContext(ctx).Model(&lModel.Label{}).Where("id IN (?) AND user_id = ?", labelIDs, userID).Count(&count)
 	return count == 1
-}
-
-func (r *LabelRepository) DeleteLabels(ctx context.Context, userID int, ids []int) error {
-	// remove all ChoreLabels record for this:
-	if r.isLabelsOwner(ctx, userID, ids) {
-		return errors.New("labels are not owned by user")
-	}
-
-	tx := r.db.WithContext(ctx).Begin()
-
-	if err := tx.Where("label_id IN (?)", ids).Delete(&chModel.ChoreLabels{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Where("id IN (?)", ids).Delete(&lModel.Label{}).Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	if err := tx.Commit().Error; err != nil {
-		tx.Rollback()
-		return err
-	}
-
-	return nil
 }
 
 func (r *LabelRepository) UpdateLabel(ctx context.Context, userID int, label *lModel.Label) error {
