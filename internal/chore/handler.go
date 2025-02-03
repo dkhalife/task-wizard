@@ -1,7 +1,6 @@
 package chore
 
 import (
-	"encoding/json"
 	"log"
 	"strconv"
 	"time"
@@ -17,12 +16,6 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
-
-type ThingTrigger struct {
-	ID           int    `json:"thingID" binding:"required"`
-	TriggerState string `json:"triggerState" binding:"required"`
-	Condition    string `json:"condition"`
-}
 
 type LabelReq struct {
 	LabelID int `json:"id" binding:"required"`
@@ -41,6 +34,7 @@ type ChoreReq struct {
 	NotificationMetadata *chModel.NotificationMetadata `json:"notificationMetadata"`
 	Labels               *[]LabelReq                   `json:"labels"`
 }
+
 type Handler struct {
 	choreRepo *chRepo.ChoreRepository
 	notifier  *notifier.Notifier
@@ -156,35 +150,17 @@ func (h *Handler) createChore(c *gin.Context) {
 
 	}
 
-	freqencyMetadataBytes, err := json.Marshal(choreReq.FrequencyMetadata)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error marshalling frequency metadata",
-		})
-		return
-	}
-	stringFrequencyMetadata := string(freqencyMetadataBytes)
-
-	notificationMetadataBytes, err := json.Marshal(choreReq.NotificationMetadata)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error marshalling notification metadata",
-		})
-		return
-	}
-	stringNotificationMetadata := string(notificationMetadataBytes)
-
 	createdChore := &chModel.Chore{
 		Name:                 choreReq.Name,
 		FrequencyType:        choreReq.FrequencyType,
 		Frequency:            choreReq.Frequency,
-		FrequencyMetadata:    &stringFrequencyMetadata,
+		FrequencyMetadata:    choreReq.FrequencyMetadata,
 		NextDueDate:          dueDate,
 		CreatedBy:            currentUser.ID,
 		IsRolling:            choreReq.IsRolling,
 		IsActive:             true,
 		Notification:         choreReq.Notification,
-		NotificationMetadata: &stringNotificationMetadata,
+		NotificationMetadata: choreReq.NotificationMetadata,
 		CreatedAt:            time.Now().UTC(),
 	}
 	id, err := h.choreRepo.CreateChore(c, createdChore)
@@ -264,24 +240,6 @@ func (h *Handler) editChore(c *gin.Context) {
 		})
 		return
 	}
-	freqencyMetadataBytes, err := json.Marshal(choreReq.FrequencyMetadata)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error marshalling frequency metadata",
-		})
-		return
-	}
-
-	stringFrequencyMetadata := string(freqencyMetadataBytes)
-
-	notificationMetadataBytes, err := json.Marshal(choreReq.NotificationMetadata)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error marshalling notification metadata",
-		})
-		return
-	}
-	stringNotificationMetadata := string(notificationMetadataBytes)
 
 	// Create a map to store the existing labels for quick lookup
 	oldLabelsMap := make(map[int]struct{})
@@ -319,13 +277,13 @@ func (h *Handler) editChore(c *gin.Context) {
 		Name:                 choreReq.Name,
 		FrequencyType:        choreReq.FrequencyType,
 		Frequency:            choreReq.Frequency,
-		FrequencyMetadata:    &stringFrequencyMetadata,
+		FrequencyMetadata:    choreReq.FrequencyMetadata,
 		NextDueDate:          dueDate,
 		CreatedBy:            currentUser.ID,
 		IsRolling:            choreReq.IsRolling,
 		IsActive:             choreReq.IsActive,
 		Notification:         choreReq.Notification,
-		NotificationMetadata: &stringNotificationMetadata,
+		NotificationMetadata: choreReq.NotificationMetadata,
 		CreatedAt:            oldChore.CreatedAt,
 	}
 	if err := h.choreRepo.UpsertChore(c, updatedChore); err != nil {
@@ -547,32 +505,13 @@ func (h *Handler) completeChore(c *gin.Context) {
 	}
 
 	var nextDueDate *time.Time
-	if chore.FrequencyType == "adaptive" {
-		history, err := h.choreRepo.GetChoreHistoryWithLimit(c, chore.ID, 5)
-		if err != nil {
-			c.JSON(500, gin.H{
-				"error": "Error getting chore history",
-			})
-			return
-		}
-		nextDueDate, err = scheduleAdaptiveNextDueDate(chore, completedDate, history)
-		if err != nil {
-			log.Printf("Error scheduling next due date: %s", err)
-			c.JSON(500, gin.H{
-				"error": "Error scheduling next due date",
-			})
-			return
-		}
-
-	} else {
-		nextDueDate, err = scheduleNextDueDate(chore, completedDate)
-		if err != nil {
-			log.Printf("Error scheduling next due date: %s", err)
-			c.JSON(500, gin.H{
-				"error": "Error scheduling next due date",
-			})
-			return
-		}
+	nextDueDate, err = scheduleNextDueDate(chore, completedDate)
+	if err != nil {
+		log.Printf("Error scheduling next due date: %s", err)
+		c.JSON(500, gin.H{
+			"error": "Error scheduling next due date",
+		})
+		return
 	}
 
 	if err := h.choreRepo.CompleteChore(c, chore, currentUser.ID, nextDueDate, &completedDate); err != nil {

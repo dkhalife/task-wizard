@@ -2,14 +2,12 @@ package service
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"time"
 
 	chModel "donetick.com/core/internal/chore/model"
 	nModel "donetick.com/core/internal/notifier/model"
 	nRepo "donetick.com/core/internal/notifier/repo"
-	"donetick.com/core/logging"
 )
 
 type NotificationPlanner struct {
@@ -21,18 +19,12 @@ func NewNotificationPlanner(nr *nRepo.NotificationRepository) *NotificationPlann
 }
 
 func (n *NotificationPlanner) GenerateNotifications(c context.Context, chore *chModel.Chore) bool {
-	log := logging.FromContext(c)
-
 	n.nRepo.DeleteAllChoreNotifications(chore.ID)
 	notifications := make([]*nModel.Notification, 0)
 	if !chore.Notification || chore.FrequencyType == "trigger" {
 		return true
 	}
-	var mt *chModel.NotificationMetadata
-	if err := json.Unmarshal([]byte(*chore.NotificationMetadata), &mt); err != nil {
-		log.Error("Error unmarshalling notification metadata", err)
-		return false
-	}
+	var mt *chModel.NotificationMetadata = chore.NotificationMetadata
 	if chore.NextDueDate == nil {
 		return true
 	}

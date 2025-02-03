@@ -1,9 +1,7 @@
 package chore
 
 import (
-	"encoding/json"
 	"fmt"
-	"math"
 	"strings"
 	"time"
 
@@ -14,11 +12,8 @@ func scheduleNextDueDate(chore *chModel.Chore, completedDate time.Time) (*time.T
 	// if Chore is rolling then the next due date calculated from the completed date, otherwise it's calculated from the due date
 	var nextDueDate time.Time
 	var baseDate time.Time
-	var frequencyMetadata chModel.FrequencyMetadata
-	err := json.Unmarshal([]byte(*chore.FrequencyMetadata), &frequencyMetadata)
-	if err != nil {
-		return nil, fmt.Errorf("error unmarshalling frequency metadata")
-	}
+	var frequencyMetadata chModel.FrequencyMetadata = *chore.FrequencyMetadata
+
 	if chore.FrequencyType == "once" {
 		return nil, nil
 	}
@@ -52,12 +47,6 @@ func scheduleNextDueDate(chore *chModel.Chore, completedDate time.Time) (*time.T
 		nextDueDate = baseDate.AddDate(0, 1, 0)
 	} else if chore.FrequencyType == "yearly" {
 		nextDueDate = baseDate.AddDate(1, 0, 0)
-	} else if chore.FrequencyType == "adaptive" {
-
-		// TODO: calculate next due date based on the history of the chore
-		// calculate the difference between the due date and now in days:
-		diff := completedDate.UTC().Sub(chore.NextDueDate.UTC())
-		nextDueDate = completedDate.UTC().Add(diff)
 	} else if chore.FrequencyType == "once" {
 		// if the chore is a one-time chore, then the next due date is nil
 	} else if chore.FrequencyType == "interval" {
@@ -77,15 +66,6 @@ func scheduleNextDueDate(chore *chModel.Chore, completedDate time.Time) (*time.T
 			return nil, fmt.Errorf("invalid frequency unit, cannot calculate next due date")
 		}
 	} else if chore.FrequencyType == "days_of_the_week" {
-		// TODO : this logic is bad, need to be refactored and be better.
-		// coding at night is almost  always bad idea.
-		// calculate the difference between the due date and now in days:
-		var frequencyMetadata chModel.FrequencyMetadata
-		err := json.Unmarshal([]byte(*chore.FrequencyMetadata), &frequencyMetadata)
-		if err != nil {
-
-			return nil, fmt.Errorf("error unmarshalling frequency metadata")
-		}
 		//we can only assign to days of the week that part of the frequency metadata.days
 		//it's array of days of the week, for example ["monday", "tuesday", "wednesday"]
 
@@ -105,13 +85,6 @@ func scheduleNextDueDate(chore *chModel.Chore, completedDate time.Time) (*time.T
 			}
 		}
 	} else if chore.FrequencyType == "day_of_the_month" {
-		var frequencyMetadata chModel.FrequencyMetadata
-		err := json.Unmarshal([]byte(*chore.FrequencyMetadata), &frequencyMetadata)
-		if err != nil {
-
-			return nil, fmt.Errorf("error unmarshalling frequency metadata")
-		}
-
 		for i := 1; i <= 12; i++ {
 			nextDueDate = baseDate.AddDate(0, i, 0)
 			// set the date to the first day of the month:
@@ -134,37 +107,4 @@ func scheduleNextDueDate(chore *chModel.Chore, completedDate time.Time) (*time.T
 	}
 	return &nextDueDate, nil
 
-}
-func scheduleAdaptiveNextDueDate(chore *chModel.Chore, completedDate time.Time, history []*chModel.ChoreHistory) (*time.Time, error) {
-
-	history = append([]*chModel.ChoreHistory{
-		{
-			CompletedAt: &completedDate,
-		},
-	}, history...)
-
-	if len(history) < 2 {
-		if chore.NextDueDate != nil {
-			diff := completedDate.UTC().Sub(chore.NextDueDate.UTC())
-			nextDueDate := completedDate.UTC().Add(diff)
-			return &nextDueDate, nil
-		}
-		return nil, nil
-	}
-
-	var totalDelay float64
-	var totalWeight float64
-	decayFactor := 0.5 // Adjust this value to control the decay rate
-
-	for i := 0; i < len(history)-1; i++ {
-		delay := history[i].CompletedAt.UTC().Sub(history[i+1].CompletedAt.UTC()).Seconds()
-		weight := math.Pow(decayFactor, float64(i))
-		totalDelay += delay * weight
-		totalWeight += weight
-	}
-
-	averageDelay := totalDelay / totalWeight
-	nextDueDate := completedDate.UTC().Add(time.Duration(averageDelay) * time.Second)
-
-	return &nextDueDate, nil
 }

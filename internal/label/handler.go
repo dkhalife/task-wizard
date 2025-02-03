@@ -152,6 +152,8 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 		return
 	}
 
+	// TODO: Actually delete the label!
+
 	c.JSON(200, gin.H{
 		"res": "Label deleted",
 	})

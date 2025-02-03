@@ -41,10 +41,6 @@ func (r *UserRepository) GetUserByUsername(c context.Context, username string) (
 	return user, nil
 }
 
-func (r *UserRepository) UpdateUser(c context.Context, user *uModel.User) error {
-	return r.db.WithContext(c).Save(user).Error
-}
-
 func (r *UserRepository) FindByEmail(c context.Context, email string) (*uModel.User, error) {
 	var user *uModel.User
 	if err := r.db.WithContext(c).Where("email = ?", email).First(&user).Error; err != nil {
@@ -110,14 +106,6 @@ func (r *UserRepository) StoreAPIToken(c context.Context, userID int, name strin
 	return token, nil
 }
 
-func (r *UserRepository) GetUserByToken(c context.Context, token string) (*uModel.User, error) {
-	var user *uModel.User
-	if err := r.db.WithContext(c).Table("users u").Select("u.*").Joins("left join api_tokens at on at.user_id = u.id").Where("at.token = ?", token).First(&user).Error; err != nil {
-		return nil, err
-	}
-	return user, nil
-}
-
 func (r *UserRepository) GetAllUserTokens(c context.Context, userID int) ([]*uModel.APIToken, error) {
 	var tokens []*uModel.APIToken
 	if err := r.db.WithContext(c).Where("user_id = ?", userID).Find(&tokens).Error; err != nil {
@@ -145,6 +133,7 @@ func (r *UserRepository) DeleteNotificationTarget(c context.Context, userID int)
 func (r *UserRepository) UpdateNotificationTargetForAllNotifications(c context.Context, userID int, targetType nModel.NotificationType) error {
 	return r.db.WithContext(c).Model(&nModel.Notification{}).Where("user_id = ?", userID).Update("type", targetType).Error
 }
+
 func (r *UserRepository) UpdatePasswordByUserId(c context.Context, userID int, password string) error {
 	return r.db.WithContext(c).Model(&uModel.User{}).Where("id = ?", userID).Update("password", password).Error
 }

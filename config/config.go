@@ -18,7 +18,6 @@ type Config struct {
 }
 
 type DatabaseConfig struct {
-	Type      string `mapstructure:"type" yaml:"type"`
 	Host      string `mapstructure:"host" yaml:"host"`
 	Port      int    `mapstructure:"port" yaml:"port"`
 	User      string `mapstructure:"user" yaml:"user"`
