@@ -116,10 +116,6 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notif
 			if cfg.Database.Migration {
 				migration.Migration(db)
 				migrations.Run(context.Background(), db)
-				err := migration.MigrationScripts(db, cfg)
-				if err != nil {
-					panic(err)
-				}
 			}
 			notifier.Start(context.Background())
 			go func() {
