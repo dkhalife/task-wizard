@@ -8,28 +8,28 @@ import (
 
 	"donetick.com/core/config"
 	"donetick.com/core/frontend"
-	"donetick.com/core/migrations"
+	auth "donetick.com/core/internal/middleware/auth"
+	"donetick.com/core/internal/migrations"
+	database "donetick.com/core/internal/utils/database"
+	"donetick.com/core/internal/utils/email"
+	utils "donetick.com/core/internal/utils/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 
-	auth "donetick.com/core/internal/authorization"
-	"donetick.com/core/internal/chore"
-	chRepo "donetick.com/core/internal/chore/repo"
-	"donetick.com/core/internal/database"
-	"donetick.com/core/internal/email"
-	label "donetick.com/core/internal/label"
-	lRepo "donetick.com/core/internal/label/repo"
-	"donetick.com/core/internal/user"
-
-	notifier "donetick.com/core/internal/notifier"
-	nRepo "donetick.com/core/internal/notifier/repo"
-	nps "donetick.com/core/internal/notifier/service"
-	uRepo "donetick.com/core/internal/user/repo"
-	"donetick.com/core/internal/utils"
-	"donetick.com/core/logging"
+	chore "donetick.com/core/internal/api/chore"
+	"donetick.com/core/internal/api/label"
+	user "donetick.com/core/internal/api/user"
+	chRepo "donetick.com/core/internal/repos/chore"
+	lRepo "donetick.com/core/internal/repos/label"
+	nRepo "donetick.com/core/internal/repos/notifier"
+	uRepo "donetick.com/core/internal/repos/user"
+	logging "donetick.com/core/internal/services/logging"
+	notifier "donetick.com/core/internal/services/notifications"
+	"donetick.com/core/internal/services/planner"
+	migration "donetick.com/core/internal/utils/migration"
 )
 
 func main() {
@@ -52,7 +52,7 @@ func main() {
 		fx.Provide(user.NewHandler),
 
 		fx.Provide(nRepo.NewNotificationRepository),
-		fx.Provide(nps.NewNotificationPlanner),
+		fx.Provide(planner.NewNotificationPlanner),
 
 		// add notifier
 		fx.Provide(notifier.NewNotifier),
@@ -110,9 +110,9 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notif
 	lc.Append(fx.Hook{
 		OnStart: func(context.Context) error {
 			if cfg.Database.Migration {
-				database.Migration(db)
+				migration.Migration(db)
 				migrations.Run(context.Background(), db)
-				err := database.MigrationScripts(db, cfg)
+				err := migration.MigrationScripts(db, cfg)
 				if err != nil {
 					panic(err)
 				}

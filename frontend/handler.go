@@ -5,7 +5,7 @@ import (
 	"io/fs"
 	"net/http"
 
-	"donetick.com/core/config"
+	config "donetick.com/core/config"
 	"github.com/gin-gonic/gin"
 )
 
