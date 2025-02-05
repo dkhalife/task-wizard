@@ -12,14 +12,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type IUserRepository interface {
-	GetUserByUsername(username string) (*uModel.User, error)
-	GetUser(id int) (*uModel.User, error)
-	CreateUser(user *uModel.User) error
-	UpdateUser(user *uModel.User) error
-	FindByEmail(email string) (*uModel.User, error)
-}
-
 type UserRepository struct {
 	db *gorm.DB
 }
@@ -32,12 +24,11 @@ func (r *UserRepository) CreateUser(c context.Context, user *uModel.User) error 
 	return r.db.WithContext(c).Save(user).Error
 }
 
-func (r *UserRepository) GetUserByUsername(c context.Context, username string) (*uModel.User, error) {
+func (r *UserRepository) GetUser(c context.Context, id int) (*uModel.User, error) {
 	var user *uModel.User
-	if err := r.db.WithContext(c).Table("users u").Where("username = ?", username).First(&user).Error; err != nil {
+	if err := r.db.WithContext(c).Where("ID = ?", id).First(&user).Error; err != nil {
 		return nil, err
 	}
-
 	return user, nil
 }
 

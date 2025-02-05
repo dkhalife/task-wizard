@@ -38,10 +38,9 @@ func NewHandler(ur *uRepo.UserRepository, jwtAuth *jwt.GinJWTMiddleware, email *
 
 func (h *Handler) signUp(c *gin.Context) {
 	type SignUpReq struct {
-		Username    string `json:"username" binding:"required,min=4,max=20"`
-		Password    string `json:"password" binding:"required,min=8,max=45"`
 		Email       string `json:"email" binding:"required,email"`
-		DisplayName string `json:"displayName"`
+		Password    string `json:"password" binding:"required,min=8,max=45"`
+		DisplayName string `json:"displayName" binding:"required"`
 	}
 	var signupReq SignUpReq
 	if err := c.BindJSON(&signupReq); err != nil {
@@ -50,11 +49,7 @@ func (h *Handler) signUp(c *gin.Context) {
 		})
 		return
 	}
-	if signupReq.DisplayName == "" {
-		signupReq.DisplayName = signupReq.Username
-	}
 	password, err := auth.EncodePassword(signupReq.Password)
-	signupReq.Username = html.EscapeString(signupReq.Username)
 	signupReq.DisplayName = html.EscapeString(signupReq.DisplayName)
 
 	if err != nil {
@@ -65,7 +60,6 @@ func (h *Handler) signUp(c *gin.Context) {
 	}
 
 	if err = h.userRepo.CreateUser(c, &uModel.User{
-		Username:    signupReq.Username,
 		Password:    password,
 		DisplayName: signupReq.DisplayName,
 		Email:       signupReq.Email,
@@ -73,7 +67,7 @@ func (h *Handler) signUp(c *gin.Context) {
 		UpdatedAt:   time.Now(),
 	}); err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error creating user, email already exists or username is taken",
+			"error": "Error creating user, email already exists",
 		})
 		return
 	}
@@ -212,7 +206,7 @@ func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 	}
 
 	timestamp := time.Now().Unix()
-	hashInput := fmt.Sprintf("%s:%d:%x", currentUser.Username, timestamp, randomBytes)
+	hashInput := fmt.Sprintf("%s:%d:%x", currentUser.ID, timestamp, randomBytes)
 	hash := sha256.Sum256([]byte(hashInput))
 
 	token := hex.EncodeToString(hash[:])

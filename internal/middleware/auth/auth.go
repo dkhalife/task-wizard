@@ -2,6 +2,7 @@ package auth
 
 import (
 	"net/http"
+	"strconv"
 	"time"
 
 	"donetick.com/core/config"
@@ -15,7 +16,7 @@ import (
 )
 
 type signIn struct {
-	Username string `form:"username" json:"username" binding:"required"`
+	Email    string `form:"email" json:"email" binding:"required"`
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
@@ -29,18 +30,24 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if u, ok := data.(*uModel.User); ok {
 				return jwt.MapClaims{
-					auth.IdentityKey: u.Username,
+					auth.IdentityKey: u.ID,
 				}
 			}
 			return jwt.MapClaims{}
 		},
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
-			username, ok := claims[auth.IdentityKey].(string)
+			id, ok := claims[auth.IdentityKey].(string)
 			if !ok {
 				return nil
 			}
-			user, err := userRepo.GetUserByUsername(c.Request.Context(), username)
+
+			userID, err := strconv.Atoi(id)
+			if err != nil {
+				return nil
+			}
+
+			user, err := userRepo.GetUser(c.Request.Context(), userID)
 			if err != nil {
 				return nil
 			}
@@ -55,7 +62,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 					return "", jwt.ErrMissingLoginValues
 				}
 
-				user, err := userRepo.GetUserByUsername(c.Request.Context(), req.Username)
+				user, err := userRepo.FindByEmail(c.Request.Context(), req.Email)
 				if err != nil || user.Disabled {
 					return nil, jwt.ErrFailedAuthentication
 				}
@@ -68,7 +75,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 				}
 				return &uModel.User{
 					ID:        user.ID,
-					Username:  user.Username,
+					Email:     user.Email,
 					Password:  "",
 					CreatedAt: user.CreatedAt,
 					UpdatedAt: user.UpdatedAt,

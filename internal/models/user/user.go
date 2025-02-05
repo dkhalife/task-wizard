@@ -9,7 +9,6 @@ import (
 type User struct {
 	ID               int                     `json:"id" gorm:"primary_key"`
 	DisplayName      string                  `json:"display_name" gorm:"column:display_name"`
-	Username         string                  `json:"username" gorm:"column:username;unique"`
 	Email            string                  `json:"email" gorm:"column:email;unique"`
 	Password         string                  `json:"-" gorm:"column:password"`
 	CreatedAt        time.Time               `json:"created_at" gorm:"column:created_at"`
