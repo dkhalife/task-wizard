@@ -7,8 +7,8 @@ import (
 
 	"donetick.com/core/config"
 	nModel "donetick.com/core/internal/models/notifier"
-	chRepo "donetick.com/core/internal/repos/chore"
 	nRepo "donetick.com/core/internal/repos/notifier"
+	tRepo "donetick.com/core/internal/repos/task"
 	uRepo "donetick.com/core/internal/repos/user"
 	"donetick.com/core/internal/services/logging"
 )
@@ -31,7 +31,7 @@ func (n *Notifier) SendNotification(c context.Context, notification *nModel.Noti
 }
 
 type Scheduler struct {
-	choreRepo        *chRepo.ChoreRepository
+	taskRepo         *tRepo.TaskRepository
 	userRepo         *uRepo.UserRepository
 	stopChan         chan bool
 	notifier         *Notifier
@@ -39,9 +39,9 @@ type Scheduler struct {
 	SchedulerJobs    config.SchedulerConfig
 }
 
-func NewScheduler(cfg *config.Config, ur *uRepo.UserRepository, cr *chRepo.ChoreRepository, n *Notifier, nr *nRepo.NotificationRepository) *Scheduler {
+func NewScheduler(cfg *config.Config, ur *uRepo.UserRepository, cr *tRepo.TaskRepository, n *Notifier, nr *nRepo.NotificationRepository) *Scheduler {
 	return &Scheduler{
-		choreRepo:        cr,
+		taskRepo:         cr,
 		userRepo:         ur,
 		stopChan:         make(chan bool),
 		notifier:         n,

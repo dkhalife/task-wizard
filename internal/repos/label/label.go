@@ -5,8 +5,8 @@ import (
 	"errors"
 
 	config "donetick.com/core/config"
-	chModel "donetick.com/core/internal/models/chore"
 	lModel "donetick.com/core/internal/models/label"
+	tModel "donetick.com/core/internal/models/task"
 	"donetick.com/core/internal/services/logging"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
@@ -47,7 +47,7 @@ func (r *LabelRepository) isLabelsAssignableByUser(ctx context.Context, userID i
 	return count == int64(len(labelIDs))
 }
 
-func (r *LabelRepository) AssignLabelsToChore(ctx context.Context, choreID int, userID int, toBeAdded []int, toBeRemoved []int) error {
+func (r *LabelRepository) AssignLabelsToTask(ctx context.Context, taskID int, userID int, toBeAdded []int, toBeRemoved []int) error {
 	if len(toBeAdded) < 1 && len(toBeRemoved) < 1 {
 		return nil
 	}
@@ -55,25 +55,25 @@ func (r *LabelRepository) AssignLabelsToChore(ctx context.Context, choreID int, 
 		return errors.New("labels are not assignable by user")
 	}
 
-	var choreLabels []*chModel.ChoreLabels
+	var taskLabels []*tModel.TaskLabels
 	for _, labelID := range toBeAdded {
-		choreLabels = append(choreLabels, &chModel.ChoreLabels{
-			ChoreID: choreID,
+		taskLabels = append(taskLabels, &tModel.TaskLabels{
+			TaskID:  taskID,
 			LabelID: labelID,
 			UserID:  userID,
 		})
 	}
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		if len(toBeRemoved) > 0 {
-			if err := r.db.WithContext(ctx).Where("chore_id = ? AND user_id = ? AND label_id IN (?)", choreID, userID, toBeRemoved).Delete(&chModel.ChoreLabels{}).Error; err != nil {
+			if err := r.db.WithContext(ctx).Where("task_id = ? AND user_id = ? AND label_id IN (?)", taskID, userID, toBeRemoved).Delete(&tModel.TaskLabels{}).Error; err != nil {
 				return err
 			}
 		}
 		if len(toBeAdded) > 0 {
 			if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-				Columns:   []clause.Column{{Name: "chore_id"}, {Name: "label_id"}, {Name: "user_id"}},
+				Columns:   []clause.Column{{Name: "task_id"}, {Name: "label_id"}, {Name: "user_id"}},
 				DoNothing: true,
-			}).Create(&choreLabels).Error; err != nil {
+			}).Create(&taskLabels).Error; err != nil {
 				return err
 			}
 		}
@@ -81,8 +81,8 @@ func (r *LabelRepository) AssignLabelsToChore(ctx context.Context, choreID int, 
 	})
 }
 
-func (r *LabelRepository) DeassignLabelFromAllChoreAndDelete(ctx context.Context, userID int, labelID int) error {
-	// create one transaction to confirm if the label is owned by the user then delete all ChoreLabels record for this label:
+func (r *LabelRepository) DeassignLabelFromAllTaskAndDelete(ctx context.Context, userID int, labelID int) error {
+	// create one transaction to confirm if the label is owned by the user then delete all TaskLabels record for this label:
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		log := logging.FromContext(ctx)
 		var labelCount int64
@@ -94,8 +94,8 @@ func (r *LabelRepository) DeassignLabelFromAllChoreAndDelete(ctx context.Context
 			return errors.New("label is not owned by user")
 		}
 
-		if err := tx.Where("label_id = ?", labelID).Delete(&chModel.ChoreLabels{}).Error; err != nil {
-			log.Debug("Error deleting chore labels")
+		if err := tx.Where("label_id = ?", labelID).Delete(&tModel.TaskLabels{}).Error; err != nil {
+			log.Debug("Error deleting task labels")
 			return err
 		}
 		// delete the actual label:

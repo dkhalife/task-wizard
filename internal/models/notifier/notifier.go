@@ -4,7 +4,7 @@ import "time"
 
 type Notification struct {
 	ID           int              `json:"id" gorm:"primaryKey"`
-	ChoreID      int              `json:"chore_id" gorm:"column:chore_id"`
+	TaskID       int              `json:"task_id" gorm:"column:task_id"`
 	UserID       int              `json:"user_id" gorm:"column:user_id"`
 	Text         string           `json:"text" gorm:"column:text"`
 	IsSent       bool             `json:"is_sent" gorm:"column:is_sent;index;default:false"`

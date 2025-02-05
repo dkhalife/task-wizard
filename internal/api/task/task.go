@@ -1,14 +1,14 @@
-package chore
+package task
 
 import (
 	"log"
 	"strconv"
 	"time"
 
-	chModel "donetick.com/core/internal/models/chore"
-	chRepo "donetick.com/core/internal/repos/chore"
+	tModel "donetick.com/core/internal/models/task"
 	lRepo "donetick.com/core/internal/repos/label"
 	nRepo "donetick.com/core/internal/repos/notifier"
+	tRepo "donetick.com/core/internal/repos/task"
 	"donetick.com/core/internal/services/logging"
 	notifications "donetick.com/core/internal/services/notifications"
 	planner "donetick.com/core/internal/services/planner"
@@ -21,40 +21,40 @@ type LabelReq struct {
 	LabelID int `json:"id" binding:"required"`
 }
 
-type ChoreReq struct {
-	Name                 string                        `json:"name" binding:"required"`
-	FrequencyType        chModel.FrequencyType         `json:"frequencyType"`
-	ID                   int                           `json:"id"`
-	DueDate              string                        `json:"dueDate"`
-	IsRolling            bool                          `json:"isRolling"`
-	IsActive             bool                          `json:"isActive"`
-	Frequency            int                           `json:"frequency"`
-	FrequencyMetadata    *chModel.FrequencyMetadata    `json:"frequencyMetadata"`
-	Notification         bool                          `json:"notification"`
-	NotificationMetadata *chModel.NotificationMetadata `json:"notificationMetadata"`
-	Labels               *[]LabelReq                   `json:"labels"`
+type TaskReq struct {
+	Name                 string                       `json:"name" binding:"required"`
+	FrequencyType        tModel.FrequencyType         `json:"frequencyType"`
+	ID                   int                          `json:"id"`
+	DueDate              string                       `json:"dueDate"`
+	IsRolling            bool                         `json:"isRolling"`
+	IsActive             bool                         `json:"isActive"`
+	Frequency            int                          `json:"frequency"`
+	FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequencyMetadata"`
+	Notification         bool                         `json:"notification"`
+	NotificationMetadata *tModel.NotificationMetadata `json:"notificationMetadata"`
+	Labels               *[]LabelReq                  `json:"labels"`
 }
 
 type Handler struct {
-	choreRepo *chRepo.ChoreRepository
-	notifier  *notifications.Notifier
-	nPlanner  *planner.NotificationPlanner
-	nRepo     *nRepo.NotificationRepository
-	lRepo     *lRepo.LabelRepository
+	tRepo    *tRepo.TaskRepository
+	notifier *notifications.Notifier
+	nPlanner *planner.NotificationPlanner
+	nRepo    *nRepo.NotificationRepository
+	lRepo    *lRepo.LabelRepository
 }
 
-func NewHandler(cr *chRepo.ChoreRepository, nt *notifications.Notifier,
+func NewHandler(cr *tRepo.TaskRepository, nt *notifications.Notifier,
 	np *planner.NotificationPlanner, nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *Handler {
 	return &Handler{
-		choreRepo: cr,
-		notifier:  nt,
-		nPlanner:  np,
-		nRepo:     nRepo,
-		lRepo:     lRepo,
+		tRepo:    cr,
+		notifier: nt,
+		nPlanner: np,
+		nRepo:    nRepo,
+		lRepo:    lRepo,
 	}
 }
 
-func (h *Handler) getChores(c *gin.Context) {
+func (h *Handler) getTasks(c *gin.Context) {
 	u, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -63,20 +63,20 @@ func (h *Handler) getChores(c *gin.Context) {
 		return
 	}
 
-	chores, err := h.choreRepo.GetChores(c, u.ID)
+	tasks, err := h.tRepo.GetTasks(c, u.ID)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chores",
+			"error": "Error getting tasks",
 		})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"res": chores,
+		"res": tasks,
 	})
 }
 
-func (h *Handler) getChore(c *gin.Context) {
+func (h *Handler) getTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -94,31 +94,31 @@ func (h *Handler) getChore(c *gin.Context) {
 		return
 	}
 
-	chore, err := h.choreRepo.GetChore(c, id)
+	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
 
-	if currentUser.ID != chore.CreatedBy {
+	if currentUser.ID != task.CreatedBy {
 		c.JSON(403, gin.H{
-			"error": "You are not allowed to view this chore",
+			"error": "You are not allowed to view this task",
 		})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"res": chore,
+		"res": task,
 	})
 }
 
-func (h *Handler) createChore(c *gin.Context) {
+func (h *Handler) createTask(c *gin.Context) {
 	logger := logging.FromContext(c)
 	currentUser, ok := auth.CurrentUser(c)
 
-	logger.Debug("Create chore", "currentUser", currentUser)
+	logger.Debug("Create task", "currentUser", currentUser)
 	if !ok {
 		c.JSON(500, gin.H{
 			"error": "Error getting current user",
@@ -126,8 +126,8 @@ func (h *Handler) createChore(c *gin.Context) {
 		return
 	}
 
-	var choreReq ChoreReq
-	if err := c.ShouldBindJSON(&choreReq); err != nil {
+	var TaskReq TaskReq
+	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		log.Print(err)
 		c.JSON(400, gin.H{
 			"error": "Invalid request",
@@ -137,8 +137,8 @@ func (h *Handler) createChore(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if choreReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, choreReq.DueDate)
+	if TaskReq.DueDate != "" {
+		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.DueDate)
 		rawDueDate = rawDueDate.UTC()
 		dueDate = &rawDueDate
 		if err != nil {
@@ -150,34 +150,34 @@ func (h *Handler) createChore(c *gin.Context) {
 
 	}
 
-	createdChore := &chModel.Chore{
-		Name:                 choreReq.Name,
-		FrequencyType:        choreReq.FrequencyType,
-		Frequency:            choreReq.Frequency,
-		FrequencyMetadata:    choreReq.FrequencyMetadata,
+	createdTask := &tModel.Task{
+		Name:                 TaskReq.Name,
+		FrequencyType:        TaskReq.FrequencyType,
+		Frequency:            TaskReq.Frequency,
+		FrequencyMetadata:    TaskReq.FrequencyMetadata,
 		NextDueDate:          dueDate,
 		CreatedBy:            currentUser.ID,
-		IsRolling:            choreReq.IsRolling,
+		IsRolling:            TaskReq.IsRolling,
 		IsActive:             true,
-		Notification:         choreReq.Notification,
-		NotificationMetadata: choreReq.NotificationMetadata,
+		Notification:         TaskReq.Notification,
+		NotificationMetadata: TaskReq.NotificationMetadata,
 		CreatedAt:            time.Now().UTC(),
 	}
-	id, err := h.choreRepo.CreateChore(c, createdChore)
-	createdChore.ID = id
+	id, err := h.tRepo.CreateTask(c, createdTask)
+	createdTask.ID = id
 
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error creating chore",
+			"error": "Error creating task",
 		})
 		return
 	}
 
-	labels := make([]int, len(*choreReq.Labels))
-	for i, label := range *choreReq.Labels {
+	labels := make([]int, len(*TaskReq.Labels))
+	for i, label := range *TaskReq.Labels {
 		labels[i] = int(label.LabelID)
 	}
-	if err := h.lRepo.AssignLabelsToChore(c, createdChore.ID, currentUser.ID, labels, []int{}); err != nil {
+	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentUser.ID, labels, []int{}); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
@@ -185,7 +185,7 @@ func (h *Handler) createChore(c *gin.Context) {
 	}
 
 	go func() {
-		h.nPlanner.GenerateNotifications(c, createdChore)
+		h.nPlanner.GenerateNotifications(c, createdTask)
 	}()
 
 	c.JSON(200, gin.H{
@@ -193,7 +193,7 @@ func (h *Handler) createChore(c *gin.Context) {
 	})
 }
 
-func (h *Handler) editChore(c *gin.Context) {
+func (h *Handler) editTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -202,8 +202,8 @@ func (h *Handler) editChore(c *gin.Context) {
 		return
 	}
 
-	var choreReq ChoreReq
-	if err := c.ShouldBindJSON(&choreReq); err != nil {
+	var TaskReq TaskReq
+	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		log.Print(err)
 		c.JSON(400, gin.H{
 			"error": "Invalid request",
@@ -213,8 +213,8 @@ func (h *Handler) editChore(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if choreReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, choreReq.DueDate)
+	if TaskReq.DueDate != "" {
+		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.DueDate)
 		rawDueDate = rawDueDate.UTC()
 		dueDate = &rawDueDate
 		if err != nil {
@@ -226,83 +226,83 @@ func (h *Handler) editChore(c *gin.Context) {
 
 	}
 
-	oldChore, err := h.choreRepo.GetChore(c, choreReq.ID)
+	oldTask, err := h.tRepo.GetTask(c, TaskReq.ID)
 
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
-	if currentUser.ID != oldChore.CreatedBy {
+	if currentUser.ID != oldTask.CreatedBy {
 		c.JSON(403, gin.H{
-			"error": "You are not allowed to edit this chore",
+			"error": "You are not allowed to edit this task",
 		})
 		return
 	}
 
 	// Create a map to store the existing labels for quick lookup
 	oldLabelsMap := make(map[int]struct{})
-	for _, oldLabel := range *oldChore.Labels {
+	for _, oldLabel := range *oldTask.Labels {
 		oldLabelsMap[oldLabel.ID] = struct{}{}
 	}
 	newLabelMap := make(map[int]struct{})
-	for _, newLabel := range *choreReq.Labels {
+	for _, newLabel := range *TaskReq.Labels {
 		newLabelMap[newLabel.LabelID] = struct{}{}
 	}
 	// check what labels need to be added and what labels need to be deleted:
 	labelsToAdd := make([]int, 0)
 	labelsToBeRemoved := make([]int, 0)
 
-	for _, label := range *choreReq.Labels {
+	for _, label := range *TaskReq.Labels {
 		if _, ok := oldLabelsMap[label.LabelID]; !ok {
 			labelsToAdd = append(labelsToAdd, label.LabelID)
 		}
 	}
-	for _, oldLabel := range *oldChore.Labels {
+	for _, oldLabel := range *oldTask.Labels {
 		if _, ok := newLabelMap[oldLabel.ID]; !ok {
 			labelsToBeRemoved = append(labelsToBeRemoved, oldLabel.ID)
 		}
 	}
 
-	if err := h.lRepo.AssignLabelsToChore(c, choreReq.ID, currentUser.ID, labelsToAdd, labelsToBeRemoved); err != nil {
+	if err := h.lRepo.AssignLabelsToTask(c, TaskReq.ID, currentUser.ID, labelsToAdd, labelsToBeRemoved); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
 		return
 	}
 
-	updatedChore := &chModel.Chore{
-		ID:                   choreReq.ID,
-		Name:                 choreReq.Name,
-		FrequencyType:        choreReq.FrequencyType,
-		Frequency:            choreReq.Frequency,
-		FrequencyMetadata:    choreReq.FrequencyMetadata,
+	updatedTask := &tModel.Task{
+		ID:                   TaskReq.ID,
+		Name:                 TaskReq.Name,
+		FrequencyType:        TaskReq.FrequencyType,
+		Frequency:            TaskReq.Frequency,
+		FrequencyMetadata:    TaskReq.FrequencyMetadata,
 		NextDueDate:          dueDate,
 		CreatedBy:            currentUser.ID,
-		IsRolling:            choreReq.IsRolling,
-		IsActive:             choreReq.IsActive,
-		Notification:         choreReq.Notification,
-		NotificationMetadata: choreReq.NotificationMetadata,
-		CreatedAt:            oldChore.CreatedAt,
+		IsRolling:            TaskReq.IsRolling,
+		IsActive:             TaskReq.IsActive,
+		Notification:         TaskReq.Notification,
+		NotificationMetadata: TaskReq.NotificationMetadata,
+		CreatedAt:            oldTask.CreatedAt,
 	}
-	if err := h.choreRepo.UpsertChore(c, updatedChore); err != nil {
+	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error adding chore",
+			"error": "Error adding task",
 		})
 		return
 	}
 
 	go func() {
-		h.nPlanner.GenerateNotifications(c, updatedChore)
+		h.nPlanner.GenerateNotifications(c, updatedTask)
 	}()
 
 	c.JSON(200, gin.H{
-		"message": "Chore added successfully",
+		"message": "Task added successfully",
 	})
 }
 
-func (h *Handler) deleteChore(c *gin.Context) {
+func (h *Handler) deleteTask(c *gin.Context) {
 	// logger := logging.FromContext(c)
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
@@ -320,28 +320,28 @@ func (h *Handler) deleteChore(c *gin.Context) {
 		})
 		return
 	}
-	// check if the user is the owner of the chore before deleting
-	if err := h.choreRepo.IsChoreOwner(c, id, currentUser.ID); err != nil {
+	// check if the user is the owner of the task before deleting
+	if err := h.tRepo.IsTaskOwner(c, id, currentUser.ID); err != nil {
 		c.JSON(403, gin.H{
-			"error": "You are not allowed to delete this chore",
+			"error": "You are not allowed to delete this task",
 		})
 		return
 	}
 
-	if err := h.choreRepo.DeleteChore(c, id); err != nil {
+	if err := h.tRepo.DeleteTask(c, id); err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error deleting chore",
+			"error": "Error deleting task",
 		})
 		return
 	}
-	h.nRepo.DeleteAllChoreNotifications(id)
+	h.nRepo.DeleteAllTaskNotifications(id)
 
 	c.JSON(200, gin.H{
-		"message": "Chore deleted successfully",
+		"message": "Task deleted successfully",
 	})
 }
 
-func (h *Handler) skipChore(c *gin.Context) {
+func (h *Handler) skipTask(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 
@@ -359,14 +359,14 @@ func (h *Handler) skipChore(c *gin.Context) {
 		return
 	}
 
-	chore, err := h.choreRepo.GetChore(c, id)
+	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
-	nextDueDate, err := chRepo.ScheduleNextDueDate(chore, chore.NextDueDate.UTC())
+	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
 	if err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error scheduling next due date",
@@ -374,22 +374,22 @@ func (h *Handler) skipChore(c *gin.Context) {
 		return
 	}
 
-	if err := h.choreRepo.CompleteChore(c, chore, currentUser.ID, nextDueDate, nil); err != nil {
+	if err := h.tRepo.CompleteTask(c, task, currentUser.ID, nextDueDate, nil); err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error completing chore",
+			"error": "Error completing task",
 		})
 		return
 	}
-	updatedChore, err := h.choreRepo.GetChore(c, id)
+	updatedTask, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"res": updatedChore,
+		"res": updatedTask,
 	})
 }
 
@@ -432,22 +432,22 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 		return
 	}
 	dueDate := rawDueDate.UTC()
-	chore, err := h.choreRepo.GetChore(c, id)
+	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
 
-	if currentUser.ID != chore.CreatedBy {
+	if currentUser.ID != task.CreatedBy {
 		c.JSON(403, gin.H{
-			"error": "You are not allowed to update this chore",
+			"error": "You are not allowed to update this task",
 		})
 	}
 
-	chore.NextDueDate = &dueDate
-	if err := h.choreRepo.UpsertChore(c, chore); err != nil {
+	task.NextDueDate = &dueDate
+	if err := h.tRepo.UpsertTask(c, task); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error updating due date",
 		})
@@ -455,15 +455,15 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": chore,
+		"res": task,
 	})
 }
 
-func (h *Handler) completeChore(c *gin.Context) {
-	type CompleteChoreReq struct {
+func (h *Handler) completeTask(c *gin.Context) {
+	type CompleteTaskReq struct {
 		Note string `json:"note"`
 	}
-	var req CompleteChoreReq
+	var req CompleteTaskReq
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -471,7 +471,7 @@ func (h *Handler) completeChore(c *gin.Context) {
 		})
 		return
 	}
-	completeChoreID := c.Param("id")
+	completeTaskID := c.Param("id")
 	var completedDate time.Time
 	rawCompletedDate := c.Query("completedDate")
 	if rawCompletedDate == "" {
@@ -489,23 +489,23 @@ func (h *Handler) completeChore(c *gin.Context) {
 
 	_ = c.ShouldBind(&req)
 
-	id, err := strconv.Atoi(completeChoreID)
+	id, err := strconv.Atoi(completeTaskID)
 	if err != nil {
 		c.JSON(400, gin.H{
 			"error": "Invalid ID",
 		})
 		return
 	}
-	chore, err := h.choreRepo.GetChore(c, id)
+	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
 
 	var nextDueDate *time.Time
-	nextDueDate, err = chRepo.ScheduleNextDueDate(chore, completedDate)
+	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
 	if err != nil {
 		log.Printf("Error scheduling next due date: %s", err)
 		c.JSON(500, gin.H{
@@ -514,28 +514,28 @@ func (h *Handler) completeChore(c *gin.Context) {
 		return
 	}
 
-	if err := h.choreRepo.CompleteChore(c, chore, currentUser.ID, nextDueDate, &completedDate); err != nil {
+	if err := h.tRepo.CompleteTask(c, task, currentUser.ID, nextDueDate, &completedDate); err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error completing chore",
+			"error": "Error completing task",
 		})
 		return
 	}
-	updatedChore, err := h.choreRepo.GetChore(c, id)
+	updatedTask, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore",
+			"error": "Error getting task",
 		})
 		return
 	}
 
-	h.nPlanner.GenerateNotifications(c, updatedChore)
+	h.nPlanner.GenerateNotifications(c, updatedTask)
 
 	c.JSON(200, gin.H{
-		"res": updatedChore,
+		"res": updatedTask,
 	})
 }
 
-func (h *Handler) GetChoreHistory(c *gin.Context) {
+func (h *Handler) GetTaskHistory(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -545,20 +545,20 @@ func (h *Handler) GetChoreHistory(c *gin.Context) {
 		return
 	}
 
-	choreHistory, err := h.choreRepo.GetChoreHistory(c, id)
+	TaskHistory, err := h.tRepo.GetTaskHistory(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore history",
+			"error": "Error getting task history",
 		})
 		return
 	}
 
 	c.JSON(200, gin.H{
-		"res": choreHistory,
+		"res": TaskHistory,
 	})
 }
 
-func (h *Handler) GetChoreDetail(c *gin.Context) {
+func (h *Handler) GetTaskDetail(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -575,17 +575,17 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 		return
 	}
 
-	detailed, err := h.choreRepo.GetChoreDetailByID(c, id)
+	detailed, err := h.tRepo.GetTaskDetailByID(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error getting chore history",
+			"error": "Error getting task history",
 		})
 		return
 	}
 
 	if currentUser.ID != detailed.CreatedBy {
 		c.JSON(403, gin.H{
-			"error": "You are not allowed to view this chore",
+			"error": "You are not allowed to view this task",
 		})
 	}
 
@@ -595,18 +595,18 @@ func (h *Handler) GetChoreDetail(c *gin.Context) {
 }
 
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
-	choresRoutes := router.Group("api/v1/chores")
-	choresRoutes.Use(auth.MiddlewareFunc())
+	tasksRoutes := router.Group("api/v1/tasks")
+	tasksRoutes.Use(auth.MiddlewareFunc())
 	{
-		choresRoutes.GET("/", h.getChores)
-		choresRoutes.PUT("/", h.editChore)
-		choresRoutes.POST("/", h.createChore)
-		choresRoutes.GET("/:id", h.getChore)
-		choresRoutes.GET("/:id/details", h.GetChoreDetail)
-		choresRoutes.GET("/:id/history", h.GetChoreHistory)
-		choresRoutes.POST("/:id/do", h.completeChore)
-		choresRoutes.POST("/:id/skip", h.skipChore)
-		choresRoutes.PUT("/:id/dueDate", h.updateDueDate)
-		choresRoutes.DELETE("/:id", h.deleteChore)
+		tasksRoutes.GET("/", h.getTasks)
+		tasksRoutes.PUT("/", h.editTask)
+		tasksRoutes.POST("/", h.createTask)
+		tasksRoutes.GET("/:id", h.getTask)
+		tasksRoutes.GET("/:id/details", h.GetTaskDetail)
+		tasksRoutes.GET("/:id/history", h.GetTaskHistory)
+		tasksRoutes.POST("/:id/do", h.completeTask)
+		tasksRoutes.POST("/:id/skip", h.skipTask)
+		tasksRoutes.PUT("/:id/dueDate", h.updateDueDate)
+		tasksRoutes.DELETE("/:id", h.deleteTask)
 	}
 }

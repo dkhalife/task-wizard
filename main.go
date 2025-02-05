@@ -19,12 +19,12 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 
-	chore "donetick.com/core/internal/api/chore"
 	"donetick.com/core/internal/api/label"
+	task "donetick.com/core/internal/api/task"
 	user "donetick.com/core/internal/api/user"
-	chRepo "donetick.com/core/internal/repos/chore"
 	lRepo "donetick.com/core/internal/repos/label"
 	nRepo "donetick.com/core/internal/repos/notifier"
+	tRepo "donetick.com/core/internal/repos/task"
 	uRepo "donetick.com/core/internal/repos/user"
 	logging "donetick.com/core/internal/services/logging"
 	notifier "donetick.com/core/internal/services/notifications"
@@ -46,8 +46,8 @@ func main() {
 		fx.Provide(auth.NewAuthMiddleware),
 
 		fx.Provide(database.NewDatabase),
-		fx.Provide(chRepo.NewChoreRepository),
-		fx.Provide(chore.NewHandler),
+		fx.Provide(tRepo.NewTaskRepository),
+		fx.Provide(task.NewHandler),
 		fx.Provide(uRepo.NewUserRepository),
 		fx.Provide(user.NewHandler),
 
@@ -73,7 +73,7 @@ func main() {
 		fx.Provide(frontend.NewHandler),
 
 		fx.Invoke(
-			chore.Routes,
+			task.Routes,
 			user.Routes,
 			label.Routes,
 			frontend.Routes,

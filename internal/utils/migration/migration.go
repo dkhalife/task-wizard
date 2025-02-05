@@ -6,23 +6,23 @@ import (
 
 	"donetick.com/core/config"
 	migrations "donetick.com/core/internal/migrations"
-	chModel "donetick.com/core/internal/models/chore"
 	lModel "donetick.com/core/internal/models/label"
 	nModel "donetick.com/core/internal/models/notifier"
+	tModel "donetick.com/core/internal/models/task"
 	uModel "donetick.com/core/internal/models/user"
 	migrate "github.com/rubenv/sql-migrate"
 	"gorm.io/gorm"
 )
 
 func Migration(db *gorm.DB) error {
-	if err := db.AutoMigrate(uModel.User{}, chModel.Chore{},
-		chModel.ChoreHistory{},
+	if err := db.AutoMigrate(uModel.User{}, tModel.Task{},
+		tModel.TaskHistory{},
 		nModel.Notification{},
 		uModel.UserPasswordReset{},
 		uModel.APIToken{},
 		uModel.UserNotificationTarget{},
 		lModel.Label{},
-		chModel.ChoreLabels{},
+		tModel.TaskLabels{},
 		migrations.Migration{},
 	); err != nil {
 		return err
