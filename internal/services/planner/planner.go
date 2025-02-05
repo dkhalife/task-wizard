@@ -53,7 +53,7 @@ func generateDueNotifications(task *tModel.Task) []*nModel.Notification {
 		CreatedAt:    time.Now().UTC(),
 		//TypeID:       user.NotificationType,
 		//UserID:       user.ID,
-		Text: fmt.Sprintf("📅 Reminder: *%s* is due today.", task.Name),
+		Text: fmt.Sprintf("📅 Reminder: *%s* is due today.", task.Title),
 	}
 	if notification.IsValid() {
 		notifications = append(notifications, notification)
@@ -72,7 +72,7 @@ func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
 		CreatedAt:    time.Now().UTC().Add(-time.Hour * 3),
 		// TypeID:       user.NotificationType,
 		// UserID:       user.ID,
-		Text: fmt.Sprintf("📢 Heads up! *%s* is due soon (on %s)", task.Name, task.NextDueDate.Format("January 2nd")),
+		Text: fmt.Sprintf("📢 Heads up! *%s* is due soon (on %s)", task.Title, task.NextDueDate.Format("January 2nd")),
 	}
 	if notification.IsValid() {
 		notifications = append(notifications, notification)
@@ -92,7 +92,7 @@ func generateOverdueNotifications(task *tModel.Task) []*nModel.Notification {
 			CreatedAt:    time.Now().UTC(),
 			// TypeID:       user.NotificationType,
 			// UserID:       user.ID,
-			Text: fmt.Sprintf("🚨 *%s* is now %d hours overdue. Please complete it as soon as possible.", task.Name, hours),
+			Text: fmt.Sprintf("🚨 *%s* is now %d hours overdue. Please complete it as soon as possible.", task.Title, hours),
 		}
 		if notification.IsValid() {
 			notifications = append(notifications, notification)
