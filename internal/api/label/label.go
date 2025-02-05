@@ -145,9 +145,9 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 		return
 	}
 
-	if err := h.lRepo.DeassignLabelFromAllChoreAndDelete(c, currentUser.ID, labelID); err != nil {
+	if err := h.lRepo.DeassignLabelFromAllTaskAndDelete(c, currentUser.ID, labelID); err != nil {
 		c.JSON(500, gin.H{
-			"error": "Error unassociating label from chores",
+			"error": "Error unassociating label from task",
 		})
 		return
 	}

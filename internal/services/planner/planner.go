@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"time"
 
-	chModel "donetick.com/core/internal/models/chore"
 	nModel "donetick.com/core/internal/models/notifier"
+	tModel "donetick.com/core/internal/models/task"
 	nRepo "donetick.com/core/internal/repos/notifier"
 )
 
@@ -18,41 +18,41 @@ func NewNotificationPlanner(nr *nRepo.NotificationRepository) *NotificationPlann
 	return &NotificationPlanner{nRepo: nr}
 }
 
-func (n *NotificationPlanner) GenerateNotifications(c context.Context, chore *chModel.Chore) bool {
-	n.nRepo.DeleteAllChoreNotifications(chore.ID)
+func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tModel.Task) bool {
+	n.nRepo.DeleteAllTaskNotifications(task.ID)
 	notifications := make([]*nModel.Notification, 0)
-	if !chore.Notification || chore.FrequencyType == "trigger" {
+	if !task.Notification || task.FrequencyType == "trigger" {
 		return true
 	}
-	var mt *chModel.NotificationMetadata = chore.NotificationMetadata
-	if chore.NextDueDate == nil {
+	var mt *tModel.NotificationMetadata = task.NotificationMetadata
+	if task.NextDueDate == nil {
 		return true
 	}
 	if mt.DueDate {
-		notifications = append(notifications, generateDueNotifications(chore)...)
+		notifications = append(notifications, generateDueNotifications(task)...)
 	}
 	if mt.PreDue {
-		notifications = append(notifications, generatePreDueNotifications(chore)...)
+		notifications = append(notifications, generatePreDueNotifications(task)...)
 	}
 	if mt.Nagging {
-		notifications = append(notifications, generateOverdueNotifications(chore)...)
+		notifications = append(notifications, generateOverdueNotifications(task)...)
 	}
 
 	n.nRepo.BatchInsertNotifications(notifications)
 	return true
 }
 
-func generateDueNotifications(chore *chModel.Chore) []*nModel.Notification {
+func generateDueNotifications(task *tModel.Task) []*nModel.Notification {
 	notifications := make([]*nModel.Notification, 0)
 
 	notification := &nModel.Notification{
-		ChoreID:      chore.ID,
+		TaskID:       task.ID,
 		IsSent:       false,
-		ScheduledFor: *chore.NextDueDate,
+		ScheduledFor: *task.NextDueDate,
 		CreatedAt:    time.Now().UTC(),
 		//TypeID:       user.NotificationType,
 		//UserID:       user.ID,
-		Text: fmt.Sprintf("📅 Reminder: *%s* is due today.", chore.Name),
+		Text: fmt.Sprintf("📅 Reminder: *%s* is due today.", task.Name),
 	}
 	if notification.IsValid() {
 		notifications = append(notifications, notification)
@@ -61,17 +61,17 @@ func generateDueNotifications(chore *chModel.Chore) []*nModel.Notification {
 	return notifications
 }
 
-func generatePreDueNotifications(chore *chModel.Chore) []*nModel.Notification {
+func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
 	notifications := make([]*nModel.Notification, 0)
 
 	notification := &nModel.Notification{
-		ChoreID:      chore.ID,
+		TaskID:       task.ID,
 		IsSent:       false,
-		ScheduledFor: *chore.NextDueDate,
+		ScheduledFor: *task.NextDueDate,
 		CreatedAt:    time.Now().UTC().Add(-time.Hour * 3),
 		// TypeID:       user.NotificationType,
 		// UserID:       user.ID,
-		Text: fmt.Sprintf("📢 Heads up! *%s* is due soon (on %s)", chore.Name, chore.NextDueDate.Format("January 2nd")),
+		Text: fmt.Sprintf("📢 Heads up! *%s* is due soon (on %s)", task.Name, task.NextDueDate.Format("January 2nd")),
 	}
 	if notification.IsValid() {
 		notifications = append(notifications, notification)
@@ -80,18 +80,18 @@ func generatePreDueNotifications(chore *chModel.Chore) []*nModel.Notification {
 	return notifications
 }
 
-func generateOverdueNotifications(chore *chModel.Chore) []*nModel.Notification {
+func generateOverdueNotifications(task *tModel.Task) []*nModel.Notification {
 	notifications := make([]*nModel.Notification, 0)
 	for _, hours := range []int{24, 48, 72} {
-		scheduleTime := chore.NextDueDate.Add(time.Hour * time.Duration(hours))
+		scheduleTime := task.NextDueDate.Add(time.Hour * time.Duration(hours))
 		notification := &nModel.Notification{
-			ChoreID:      chore.ID,
+			TaskID:       task.ID,
 			IsSent:       false,
 			ScheduledFor: scheduleTime,
 			CreatedAt:    time.Now().UTC(),
 			// TypeID:       user.NotificationType,
 			// UserID:       user.ID,
-			Text: fmt.Sprintf("🚨 *%s* is now %d hours overdue. Please complete it as soon as possible.", chore.Name, hours),
+			Text: fmt.Sprintf("🚨 *%s* is now %d hours overdue. Please complete it as soon as possible.", task.Name, hours),
 		}
 		if notification.IsValid() {
 			notifications = append(notifications, notification)

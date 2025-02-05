@@ -16,8 +16,8 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 	return &NotificationRepository{db}
 }
 
-func (r *NotificationRepository) DeleteAllChoreNotifications(choreID int) error {
-	return r.db.Where("chore_id = ?", choreID).Delete(&nModel.Notification{}).Error
+func (r *NotificationRepository) DeleteAllTaskNotifications(taskID int) error {
+	return r.db.Where("task_id = ?", taskID).Delete(&nModel.Notification{}).Error
 }
 
 func (r *NotificationRepository) BatchInsertNotifications(notifications []*nModel.Notification) error {
