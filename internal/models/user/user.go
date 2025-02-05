@@ -7,17 +7,15 @@ import (
 )
 
 type User struct {
-	ID                      int                    `json:"id" gorm:"primary_key"`                  // Unique identifier
-	DisplayName             string                 `json:"displayName" gorm:"column:display_name"` // Display name
-	Username                string                 `json:"username" gorm:"column:username;unique"` // Username (unique)
-	Email                   string                 `json:"email" gorm:"column:email;unique"`       // Email (unique)
-	Provider                int                    `json:"provider" gorm:"column:provider"`        // Provider
-	Password                string                 `json:"-" gorm:"column:password"`               // Password
-	Image                   string                 `json:"image" gorm:"column:image"`              // Image
-	CreatedAt               time.Time              `json:"created_at" gorm:"column:created_at"`    // Created at
-	UpdatedAt               time.Time              `json:"updated_at" gorm:"column:updated_at"`    // Updated at
-	Disabled                bool                   `json:"disabled" gorm:"column:disabled"`        // Disabled
-	UserNotificationTargets UserNotificationTarget `json:"notification_target" gorm:"foreignKey:UserID;references:ID"`
+	ID               int                     `json:"id" gorm:"primary_key"`
+	DisplayName      string                  `json:"display_name" gorm:"column:display_name"`
+	Username         string                  `json:"username" gorm:"column:username;unique"`
+	Email            string                  `json:"email" gorm:"column:email;unique"`
+	Password         string                  `json:"-" gorm:"column:password"`
+	CreatedAt        time.Time               `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt        time.Time               `json:"updated_at" gorm:"column:updated_at"`
+	Disabled         bool                    `json:"disabled" gorm:"column:disabled"`
+	NotificationType nModel.NotificationType `json:"notification_type" gorm:"column:type"`
 }
 
 type UserPasswordReset struct {
@@ -29,15 +27,9 @@ type UserPasswordReset struct {
 }
 
 type APIToken struct {
-	ID        int       `json:"id" gorm:"primary_key"`              // Unique identifier
-	Name      string    `json:"name" gorm:"column:name;unique"`     // Name (unique)
-	UserID    int       `json:"userId" gorm:"column:user_id;index"` // Index on userID
-	Token     string    `json:"token" gorm:"column:token;index"`    // Index on token
-	CreatedAt time.Time `json:"createdAt" gorm:"column:created_at"`
-}
-
-type UserNotificationTarget struct {
-	UserID    int                     `json:"userId" gorm:"column:user_id;index;primaryKey"` // Index on userID
-	Type      nModel.NotificationType `json:"type" gorm:"column:type"`                       // Type
-	CreatedAt time.Time               `json:"-" gorm:"column:created_at"`
+	ID        int       `json:"id" gorm:"primary_key"`
+	Name      string    `json:"name" gorm:"column:name;unique"`
+	UserID    int       `json:"user_id" gorm:"column:user_id;index"`
+	Token     string    `json:"token" gorm:"column:token;index"`
+	CreatedAt time.Time `json:"created_at" gorm:"column:created_at"`
 }

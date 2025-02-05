@@ -34,7 +34,7 @@ func (r *UserRepository) CreateUser(c context.Context, user *uModel.User) error 
 
 func (r *UserRepository) GetUserByUsername(c context.Context, username string) (*uModel.User, error) {
 	var user *uModel.User
-	if err := r.db.WithContext(c).Preload("UserNotificationTargets").Table("users u").Where("username = ?", username).First(&user).Error; err != nil {
+	if err := r.db.WithContext(c).Table("users u").Where("username = ?", username).First(&user).Error; err != nil {
 		return nil, err
 	}
 
@@ -119,15 +119,10 @@ func (r *UserRepository) DeleteAPIToken(c context.Context, userID int, tokenID s
 }
 
 func (r *UserRepository) UpdateNotificationTarget(c context.Context, userID int, targetType nModel.NotificationType) error {
-	return r.db.WithContext(c).Save(&uModel.UserNotificationTarget{
-		UserID:    userID,
-		Type:      targetType,
-		CreatedAt: time.Now().UTC(),
+	return r.db.WithContext(c).Save(&uModel.User{
+		ID:               userID,
+		NotificationType: targetType,
 	}).Error
-}
-
-func (r *UserRepository) DeleteNotificationTarget(c context.Context, userID int) error {
-	return r.db.WithContext(c).Where("user_id = ?", userID).Delete(&uModel.UserNotificationTarget{}).Error
 }
 
 func (r *UserRepository) UpdateNotificationTargetForAllNotifications(c context.Context, userID int, targetType nModel.NotificationType) error {

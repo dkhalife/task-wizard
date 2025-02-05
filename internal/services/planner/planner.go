@@ -24,7 +24,8 @@ func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tMo
 	if !task.Notification || task.FrequencyType == "trigger" {
 		return true
 	}
-	var mt *tModel.NotificationMetadata = task.NotificationMetadata
+	// TODO: Utility to deserialize from task.NotificationMetadata
+	var mt *tModel.NotificationMetadata
 	if task.NextDueDate == nil {
 		return true
 	}

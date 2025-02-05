@@ -106,20 +106,10 @@ func (h *Handler) resetPassword(c *gin.Context) {
 		})
 		return
 	}
-	user, err := h.userRepo.FindByEmail(c, req.Email)
+	_, err := h.userRepo.FindByEmail(c, req.Email)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{})
 		log.Error("account.handler.resetPassword failed to find user")
-		return
-	}
-	if user.Provider != 0 {
-		// user create account thought login with Gmail. they can reset the password they just need to login with google again
-		c.JSON(
-			http.StatusForbidden,
-			gin.H{
-				"error": "User account created with google login. Please login with google",
-			},
-		)
 		return
 	}
 	// generate a random password:
@@ -286,15 +276,6 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 	var req Request
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
-		return
-	}
-	if req.Type == nModel.NotificationTypeNone {
-		err := h.userRepo.DeleteNotificationTarget(c, currentUser.ID)
-		if err != nil {
-			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete notification target"})
-			return
-		}
-		c.JSON(http.StatusOK, gin.H{})
 		return
 	}
 

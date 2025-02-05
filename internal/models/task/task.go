@@ -2,8 +2,6 @@ package task
 
 import (
 	"time"
-
-	lModel "donetick.com/core/internal/models/label"
 )
 
 type FrequencyType string
@@ -23,27 +21,26 @@ const (
 type Task struct {
 	// TODO: Frequency metadata should either be a different set of columns or be deleted
 	// TODO: Notification metadata should be separate columns
-	ID                   int                   `json:"id" gorm:"primary_key"`
-	Name                 string                `json:"name" gorm:"column:name"`
-	FrequencyType        FrequencyType         `json:"frequencyType" gorm:"column:frequency_type"`
-	Frequency            int                   `json:"frequency" gorm:"column:frequency"`
-	FrequencyMetadata    *FrequencyMetadata    `json:"frequencyMetadata" gorm:"column:frequency_meta"`
-	NextDueDate          *time.Time            `json:"nextDueDate" gorm:"column:next_due_date;index"`
-	IsRolling            bool                  `json:"isRolling" gorm:"column:is_rolling"`
-	CreatedBy            int                   `json:"createdBy" gorm:"column:created_by"`
-	IsActive             bool                  `json:"isActive" gorm:"column:is_active"`
-	Notification         bool                  `json:"notification" gorm:"column:notification"`
-	NotificationMetadata *NotificationMetadata `json:"notificationMetadata" gorm:"column:notification_meta"`
-	Labels               *[]lModel.Label       `json:"labels" gorm:"many2many:task_labels"`
-	CreatedAt            time.Time             `json:"createdAt" gorm:"column:created_at"`
-	UpdatedAt            time.Time             `json:"updatedAt" gorm:"column:updated_at"`
+	ID                   int           `json:"id" gorm:"primary_key"`
+	Name                 string        `json:"name" gorm:"column:name"`
+	FrequencyType        FrequencyType `json:"frequency_type" gorm:"column:frequency_type"`
+	Frequency            int           `json:"frequency" gorm:"column:frequency"`
+	FrequencyMetadata    *string       `json:"frequency_metadata" gorm:"column:frequency_metadata"`
+	NextDueDate          *time.Time    `json:"next_due_date" gorm:"column:next_due_date;index"`
+	IsRolling            bool          `json:"is_rolling" gorm:"column:is_rolling"`
+	CreatedBy            int           `json:"created_by" gorm:"column:created_by"`
+	IsActive             bool          `json:"is_active" gorm:"column:is_active"`
+	Notification         bool          `json:"notification" gorm:"column:notification"`
+	NotificationMetadata *string       `json:"notification_metadata" gorm:"column:notification_metadata"`
+	CreatedAt            time.Time     `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt            time.Time     `json:"updated_at" gorm:"column:updated_at"`
 }
 
 type TaskHistory struct {
 	ID          int        `json:"id" gorm:"primary_key"`
-	TaskID      int        `json:"taskId" gorm:"column:task_id"`
-	CompletedAt *time.Time `json:"completedAt" gorm:"column:completed_at"`
-	DueDate     *time.Time `json:"dueDate" gorm:"column:due_date"`
+	TaskID      int        `json:"task_id" gorm:"column:task_id"`
+	CompletedAt *time.Time `json:"completed_at" gorm:"column:completed_at"`
+	DueDate     *time.Time `json:"due_date" gorm:"column:due_date"`
 }
 
 type FrequencyMetadata struct {
@@ -54,7 +51,7 @@ type FrequencyMetadata struct {
 }
 
 type NotificationMetadata struct {
-	DueDate    bool `json:"dueDate,omitempty"`
+	DueDate    bool `json:"due_date,omitempty"`
 	Completion bool `json:"completion,omitempty"`
 	Nagging    bool `json:"nagging,omitempty"`
 	PreDue     bool `json:"predue,omitempty"`
@@ -63,17 +60,15 @@ type NotificationMetadata struct {
 type TaskDetail struct {
 	ID                  int           `json:"id" gorm:"column:id"`
 	Name                string        `json:"name" gorm:"column:name"`
-	FrequencyType       FrequencyType `json:"frequencyType" gorm:"column:frequency_type"`
-	NextDueDate         *time.Time    `json:"nextDueDate" gorm:"column:next_due_date"`
-	LastCompletedDate   *time.Time    `json:"lastCompletedDate" gorm:"column:last_completed_date"`
-	LastCompletedBy     *int          `json:"lastCompletedBy" gorm:"column:last_completed_by"`
-	TotalCompletedCount int           `json:"totalCompletedCount" gorm:"column:total_completed"`
-	CreatedBy           int           `json:"createdBy" gorm:"column:created_by"`
+	FrequencyType       FrequencyType `json:"frequency_type" gorm:"column:frequency_type"`
+	NextDueDate         *time.Time    `json:"next_due_date" gorm:"column:next_due_date"`
+	LastCompletedDate   *time.Time    `json:"last_completed_date" gorm:"column:last_completed_date"`
+	TotalCompletedCount int           `json:"total_completed_count" gorm:"column:total_completed"`
+	CreatedBy           int           `json:"created_by" gorm:"column:created_by"`
 }
 
 type TaskLabels struct {
-	TaskID  int `json:"taskId" gorm:"primaryKey;autoIncrement:false;not null"`
-	LabelID int `json:"labelId" gorm:"primaryKey;autoIncrement:false;not null"`
-	UserID  int `json:"userId" gorm:"primaryKey;autoIncrement:false;not null"`
-	Label   lModel.Label
+	TaskID  int `json:"task_id" gorm:"primaryKey;autoIncrement:false;not null"`
+	LabelID int `json:"label_id" gorm:"primaryKey;autoIncrement:false;not null"`
+	UserID  int `json:"user_id" gorm:"primaryKey;autoIncrement:false;not null"`
 }

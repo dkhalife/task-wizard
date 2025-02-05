@@ -70,18 +70,10 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 					ID:        user.ID,
 					Username:  user.Username,
 					Password:  "",
-					Image:     user.Image,
 					CreatedAt: user.CreatedAt,
 					UpdatedAt: user.UpdatedAt,
 					Disabled:  user.Disabled,
 				}, nil
-			case "3rdPartyAuth":
-				// we should only reach this stage if a handler mannually call authenticator with it's context:
-				var authObject *uModel.User
-				v := c.Value("user_account")
-				authObject = v.(*uModel.User)
-
-				return authObject, nil
 
 			default:
 				return nil, jwt.ErrFailedAuthentication
