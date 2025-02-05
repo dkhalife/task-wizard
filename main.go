@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"os"
 
 	"donetick.com/core/config"
 	"donetick.com/core/frontend"
@@ -91,8 +92,11 @@ func main() {
 }
 
 func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notifier.Scheduler) *gin.Engine {
-	gin.SetMode(gin.DebugMode)
-	// log when http request is made:
+	if os.Getenv("DT_ENV") == "debug" {
+		gin.SetMode(gin.DebugMode)
+	} else {
+		gin.SetMode(gin.ReleaseMode)
+	}
 
 	r := gin.New()
 	srv := &http.Server{
