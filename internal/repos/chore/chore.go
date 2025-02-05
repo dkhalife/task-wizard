@@ -104,7 +104,6 @@ func (r *ChoreRepository) GetChoreDetailByID(c context.Context, choreID int) (*c
         chores.frequency_type, 
         chores.next_due_date, 
         chores.created_by,
-        chores.created_by,
 		chores.completion_window,
         recent_history.last_completed_date,
 		recent_history.notes,
