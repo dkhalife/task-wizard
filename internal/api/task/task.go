@@ -22,7 +22,7 @@ type LabelReq struct {
 }
 
 type TaskReq struct {
-	Name                 string                       `json:"name" binding:"required"`
+	Title                string                       `json:"title" binding:"required"`
 	FrequencyType        tModel.FrequencyType         `json:"frequencyType"`
 	ID                   int                          `json:"id"`
 	DueDate              string                       `json:"dueDate"`
@@ -151,7 +151,7 @@ func (h *Handler) createTask(c *gin.Context) {
 	}
 
 	createdTask := &tModel.Task{
-		Name:          TaskReq.Name,
+		Title:         TaskReq.Title,
 		FrequencyType: TaskReq.FrequencyType,
 		Frequency:     TaskReq.Frequency,
 		// TODO: Serialize utility FrequencyMetadata:    TaskReq.FrequencyMetadata,
@@ -251,7 +251,7 @@ func (h *Handler) editTask(c *gin.Context) {
 
 	updatedTask := &tModel.Task{
 		ID:            TaskReq.ID,
-		Name:          TaskReq.Name,
+		Title:         TaskReq.Title,
 		FrequencyType: TaskReq.FrequencyType,
 		Frequency:     TaskReq.Frequency,
 		// TODO: Serialize utility FrequencyMetadata:    TaskReq.FrequencyMetadata,

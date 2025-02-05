@@ -22,7 +22,7 @@ type Task struct {
 	// TODO: Frequency metadata should either be a different set of columns or be deleted
 	// TODO: Notification metadata should be separate columns
 	ID                   int           `json:"id" gorm:"primary_key"`
-	Name                 string        `json:"name" gorm:"column:name"`
+	Title                string        `json:"title" gorm:"column:title"`
 	FrequencyType        FrequencyType `json:"frequency_type" gorm:"column:frequency_type"`
 	Frequency            int           `json:"frequency" gorm:"column:frequency"`
 	FrequencyMetadata    *string       `json:"frequency_metadata" gorm:"column:frequency_metadata"`
@@ -59,7 +59,7 @@ type NotificationMetadata struct {
 
 type TaskDetail struct {
 	ID                  int           `json:"id" gorm:"column:id"`
-	Name                string        `json:"name" gorm:"column:name"`
+	Title               string        `json:"title" gorm:"column:title"`
 	FrequencyType       FrequencyType `json:"frequency_type" gorm:"column:frequency_type"`
 	NextDueDate         *time.Time    `json:"next_due_date" gorm:"column:next_due_date"`
 	LastCompletedDate   *time.Time    `json:"last_completed_date" gorm:"column:last_completed_date"`

@@ -100,7 +100,7 @@ func (r *TaskRepository) GetTaskDetailByID(c context.Context, taskID int) (*tMod
 		Table("tasks").
 		Select(`
         tasks.id, 
-        tasks.name, 
+        tasks.title, 
         tasks.frequency_type, 
         tasks.next_due_date, 
         tasks.created_by,
