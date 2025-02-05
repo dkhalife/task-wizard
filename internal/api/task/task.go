@@ -151,17 +151,17 @@ func (h *Handler) createTask(c *gin.Context) {
 	}
 
 	createdTask := &tModel.Task{
-		Name:                 TaskReq.Name,
-		FrequencyType:        TaskReq.FrequencyType,
-		Frequency:            TaskReq.Frequency,
-		FrequencyMetadata:    TaskReq.FrequencyMetadata,
-		NextDueDate:          dueDate,
-		CreatedBy:            currentUser.ID,
-		IsRolling:            TaskReq.IsRolling,
-		IsActive:             true,
-		Notification:         TaskReq.Notification,
-		NotificationMetadata: TaskReq.NotificationMetadata,
-		CreatedAt:            time.Now().UTC(),
+		Name:          TaskReq.Name,
+		FrequencyType: TaskReq.FrequencyType,
+		Frequency:     TaskReq.Frequency,
+		// TODO: Serialize utility FrequencyMetadata:    TaskReq.FrequencyMetadata,
+		NextDueDate:  dueDate,
+		CreatedBy:    currentUser.ID,
+		IsRolling:    TaskReq.IsRolling,
+		IsActive:     true,
+		Notification: TaskReq.Notification,
+		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
+		CreatedAt: time.Now().UTC(),
 	}
 	id, err := h.tRepo.CreateTask(c, createdTask)
 	createdTask.ID = id
@@ -241,50 +241,27 @@ func (h *Handler) editTask(c *gin.Context) {
 		return
 	}
 
-	// Create a map to store the existing labels for quick lookup
-	oldLabelsMap := make(map[int]struct{})
-	for _, oldLabel := range *oldTask.Labels {
-		oldLabelsMap[oldLabel.ID] = struct{}{}
-	}
-	newLabelMap := make(map[int]struct{})
-	for _, newLabel := range *TaskReq.Labels {
-		newLabelMap[newLabel.LabelID] = struct{}{}
-	}
-	// check what labels need to be added and what labels need to be deleted:
-	labelsToAdd := make([]int, 0)
-	labelsToBeRemoved := make([]int, 0)
-
-	for _, label := range *TaskReq.Labels {
-		if _, ok := oldLabelsMap[label.LabelID]; !ok {
-			labelsToAdd = append(labelsToAdd, label.LabelID)
-		}
-	}
-	for _, oldLabel := range *oldTask.Labels {
-		if _, ok := newLabelMap[oldLabel.ID]; !ok {
-			labelsToBeRemoved = append(labelsToBeRemoved, oldLabel.ID)
-		}
-	}
-
-	if err := h.lRepo.AssignLabelsToTask(c, TaskReq.ID, currentUser.ID, labelsToAdd, labelsToBeRemoved); err != nil {
+	// TODO: implement
+	/*if err := h.lRepo.AssignLabelsToTask(c, TaskReq.ID, currentUser.ID, labelsToAdd, labelsToBeRemoved); err != nil {
 		c.JSON(500, gin.H{
 			"error": "Error adding labels",
 		})
 		return
-	}
+	}*/
 
 	updatedTask := &tModel.Task{
-		ID:                   TaskReq.ID,
-		Name:                 TaskReq.Name,
-		FrequencyType:        TaskReq.FrequencyType,
-		Frequency:            TaskReq.Frequency,
-		FrequencyMetadata:    TaskReq.FrequencyMetadata,
-		NextDueDate:          dueDate,
-		CreatedBy:            currentUser.ID,
-		IsRolling:            TaskReq.IsRolling,
-		IsActive:             TaskReq.IsActive,
-		Notification:         TaskReq.Notification,
-		NotificationMetadata: TaskReq.NotificationMetadata,
-		CreatedAt:            oldTask.CreatedAt,
+		ID:            TaskReq.ID,
+		Name:          TaskReq.Name,
+		FrequencyType: TaskReq.FrequencyType,
+		Frequency:     TaskReq.Frequency,
+		// TODO: Serialize utility FrequencyMetadata:    TaskReq.FrequencyMetadata,
+		NextDueDate:  dueDate,
+		CreatedBy:    currentUser.ID,
+		IsRolling:    TaskReq.IsRolling,
+		IsActive:     TaskReq.IsActive,
+		Notification: TaskReq.Notification,
+		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
+		CreatedAt: oldTask.CreatedAt,
 	}
 	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
 		c.JSON(500, gin.H{

@@ -68,7 +68,7 @@ func LoadConfig() *Config {
 		viper.SetConfigName("local")
 	}
 
-	fmt.Printf("--ConfigLoad config for environment: %s ", os.Getenv("DT_ENV"))
+	fmt.Printf("[Config] Loading for environment: %s\n", os.Getenv("DT_ENV"))
 
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
@@ -84,6 +84,6 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 
-	fmt.Printf("--ConfigLoad name : %s ", config.Name)
+	fmt.Printf("[Config] Loaded config: %s\n", config.Name)
 	return &config
 }

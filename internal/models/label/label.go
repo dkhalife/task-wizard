@@ -1,5 +1,7 @@
 package label
 
+// TODO: Color should be an enum
+
 type Label struct {
 	ID        int    `json:"id" gorm:"primary_key"`
 	Name      string `json:"name" gorm:"column:name"`

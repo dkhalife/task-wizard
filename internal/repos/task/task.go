@@ -137,7 +137,8 @@ func ScheduleNextDueDate(task *tModel.Task, completedDate time.Time) (*time.Time
 	// if task is rolling then the next due date calculated from the completed date, otherwise it's calculated from the due date
 	var nextDueDate time.Time
 	var baseDate time.Time
-	var frequencyMetadata tModel.FrequencyMetadata = *task.FrequencyMetadata
+	// TODO: Utility to deserialize from task.FrequencyMetadata
+	var frequencyMetadata *tModel.FrequencyMetadata
 
 	if task.FrequencyType == "once" {
 		return nil, nil
