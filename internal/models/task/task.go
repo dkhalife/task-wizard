@@ -57,14 +57,11 @@ type NotificationMetadata struct {
 	PreDue     bool `json:"predue,omitempty"`
 }
 
-type TaskDetail struct {
-	ID                  int           `json:"id" gorm:"column:id"`
-	Title               string        `json:"title" gorm:"column:title"`
-	FrequencyType       FrequencyType `json:"frequency_type" gorm:"column:frequency_type"`
-	NextDueDate         *time.Time    `json:"next_due_date" gorm:"column:next_due_date"`
-	LastCompletedDate   *time.Time    `json:"last_completed_date" gorm:"column:last_completed_date"`
-	TotalCompletedCount int           `json:"total_completed_count" gorm:"column:total_completed"`
-	CreatedBy           int           `json:"created_by" gorm:"column:created_by"`
+type TaskOccurrence struct {
+	ID            int        `json:"id" gorm:"column:id"`
+	Title         string     `json:"title" gorm:"column:title"`
+	DueDate       *time.Time `json:"next_due_date" gorm:"column:next_due_date"`
+	CompletedDate *time.Time `json:"last_completed_date" gorm:"column:last_completed_date"`
 }
 
 type TaskLabels struct {

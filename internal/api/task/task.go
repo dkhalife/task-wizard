@@ -437,10 +437,6 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 }
 
 func (h *Handler) completeTask(c *gin.Context) {
-	type CompleteTaskReq struct {
-		Note string `json:"note"`
-	}
-	var req CompleteTaskReq
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -463,8 +459,6 @@ func (h *Handler) completeTask(c *gin.Context) {
 			return
 		}
 	}
-
-	_ = c.ShouldBind(&req)
 
 	id, err := strconv.Atoi(completeTaskID)
 	if err != nil {
@@ -535,42 +529,6 @@ func (h *Handler) GetTaskHistory(c *gin.Context) {
 	})
 }
 
-func (h *Handler) GetTaskDetail(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
-		})
-		return
-	}
-	rawID := c.Param("id")
-	id, err := strconv.Atoi(rawID)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid ID",
-		})
-		return
-	}
-
-	detailed, err := h.tRepo.GetTaskDetailByID(c, id)
-	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting task history",
-		})
-		return
-	}
-
-	if currentUser.ID != detailed.CreatedBy {
-		c.JSON(403, gin.H{
-			"error": "You are not allowed to view this task",
-		})
-	}
-
-	c.JSON(200, gin.H{
-		"res": detailed,
-	})
-}
-
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 	tasksRoutes := router.Group("api/v1/tasks")
 	tasksRoutes.Use(auth.MiddlewareFunc())
@@ -579,7 +537,6 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 		tasksRoutes.PUT("/", h.editTask)
 		tasksRoutes.POST("/", h.createTask)
 		tasksRoutes.GET("/:id", h.getTask)
-		tasksRoutes.GET("/:id/details", h.GetTaskDetail)
 		tasksRoutes.GET("/:id/history", h.GetTaskHistory)
 		tasksRoutes.POST("/:id/do", h.completeTask)
 		tasksRoutes.POST("/:id/skip", h.skipTask)

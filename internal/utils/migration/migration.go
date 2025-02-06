@@ -15,6 +15,7 @@ func Migration(db *gorm.DB) error {
 		uModel.APIToken{},
 		lModel.Label{},
 		tModel.Task{},
+		tModel.TaskOccurrence{},
 		tModel.TaskLabels{},
 		tModel.TaskHistory{},
 		nModel.Notification{},
