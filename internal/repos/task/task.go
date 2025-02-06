@@ -94,45 +94,6 @@ func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*tMode
 	return histories, nil
 }
 
-func (r *TaskRepository) GetTaskDetailByID(c context.Context, taskID int) (*tModel.TaskDetail, error) {
-	var taskDetail tModel.TaskDetail
-	if err := r.db.WithContext(c).
-		Table("tasks").
-		Select(`
-        tasks.id, 
-        tasks.title, 
-        tasks.frequency_type, 
-        tasks.next_due_date, 
-        tasks.created_by,
-		tasks.completion_window,
-        recent_history.last_completed_date,
-		recent_history.notes,
-        recent_history.last_assigned_to as last_completed_by,
-        COUNT(task_histories.id) as total_completed`).
-		Joins("LEFT JOIN task_histories ON tasks.id = task_histories.task_id").
-		Joins(`LEFT JOIN (
-        SELECT 
-            task_id, 
-            assigned_to AS last_assigned_to, 
-            completed_at AS last_completed_date,
-			notes
-			
-        FROM task_histories
-        WHERE (task_id, completed_at) IN (
-            SELECT task_id, MAX(completed_at)
-            FROM task_histories
-            GROUP BY task_id
-        )
-    ) AS recent_history ON tasks.id = recent_history.task_id`).
-		Where("tasks.id = ?", taskID).
-		Group("tasks.id, recent_history.last_completed_date, recent_history.last_assigned_to, recent_history.notes").
-		First(&taskDetail).Error; err != nil {
-		return nil, err
-
-	}
-	return &taskDetail, nil
-}
-
 func ScheduleNextDueDate(task *tModel.Task, completedDate time.Time) (*time.Time, error) {
 	// if task is rolling then the next due date calculated from the completed date, otherwise it's calculated from the due date
 	var nextDueDate time.Time
