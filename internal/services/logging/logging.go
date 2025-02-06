@@ -20,8 +20,8 @@ var (
 
 var conf = &Config{
 	Encoding:    "console",
-	Level:       zapcore.InfoLevel,
-	Development: true,
+	Level:       zapcore.WarnLevel,
+	Development: false,
 }
 
 type Config struct {
@@ -38,10 +38,6 @@ func SetConfig(c *Config) {
 		Level:       c.Level,
 		Development: c.Development,
 	}
-}
-
-func SetLevel(l zapcore.Level) {
-	conf.Level = l
 }
 
 // NewLogger creates a new logger with the given log level
@@ -68,13 +64,6 @@ func DefaultLogger() *zap.SugaredLogger {
 		defaultLogger = NewLogger(conf)
 	})
 	return defaultLogger
-}
-
-func WithLogger(ctx context.Context, logger *zap.SugaredLogger) context.Context {
-	if gCtx, ok := ctx.(*gin.Context); ok {
-		ctx = gCtx.Request.Context()
-	}
-	return context.WithValue(ctx, loggerKey, logger)
 }
 
 func FromContext(ctx context.Context) *zap.SugaredLogger {

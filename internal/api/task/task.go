@@ -1,6 +1,7 @@
 package task
 
 import (
+	"fmt"
 	"log"
 	"strconv"
 	"time"
@@ -478,9 +479,8 @@ func (h *Handler) completeTask(c *gin.Context) {
 	var nextDueDate *time.Time
 	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
 	if err != nil {
-		log.Printf("Error scheduling next due date: %s", err)
 		c.JSON(500, gin.H{
-			"error": "Error scheduling next due date",
+			"error": fmt.Sprintf("Error scheduling next due date: %s", err),
 		})
 		return
 	}
