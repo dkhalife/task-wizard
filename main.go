@@ -34,11 +34,19 @@ import (
 )
 
 func main() {
-	logging.SetConfig(&logging.Config{
-		Encoding:    "console",
-		Level:       zapcore.Level(zapcore.DebugLevel),
-		Development: true,
-	})
+	if os.Getenv("DT_ENV") == "debug" {
+		logging.SetConfig(&logging.Config{
+			Encoding:    "console",
+			Level:       zapcore.Level(zapcore.DebugLevel),
+			Development: true,
+		})
+	} else {
+		logging.SetConfig(&logging.Config{
+			Encoding:    "console",
+			Level:       zapcore.Level(zapcore.WarnLevel),
+			Development: false,
+		})
+	}
 
 	app := fx.New(
 		fx.Supply(config.LoadConfig()),

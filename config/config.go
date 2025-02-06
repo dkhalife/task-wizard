@@ -1,7 +1,6 @@
 package config
 
 import (
-	"fmt"
 	"os"
 	"time"
 
@@ -58,17 +57,11 @@ type EmailConfig struct {
 }
 
 func LoadConfig() *Config {
-	if os.Getenv("DT_ENV") == "local" {
-		viper.SetConfigName("local")
-	} else if os.Getenv("DT_ENV") == "prod" {
-		viper.SetConfigName("prod")
-	} else if os.Getenv("DT_ENV") == "selfhosted" {
-		viper.SetConfigName("selfhosted")
+	if os.Getenv("DT_ENV") == "debug" {
+		viper.SetConfigName("debug")
 	} else {
-		viper.SetConfigName("local")
+		viper.SetConfigName("prod")
 	}
-
-	fmt.Printf("[Config] Loading for environment: %s\n", os.Getenv("DT_ENV"))
 
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
@@ -84,6 +77,5 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 
-	fmt.Printf("[Config] Loaded config: %s\n", config.Name)
 	return &config
 }
