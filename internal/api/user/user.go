@@ -217,7 +217,12 @@ func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"res": tokenModel})
+	c.JSON(http.StatusOK, gin.H{"token": gin.H{
+		"id":        tokenModel.ID,
+		"name":      tokenModel.Name,
+		"token":     tokenModel.Token,
+		"createdAt": tokenModel.CreatedAt,
+	}})
 }
 
 func (h *Handler) GetAllUserToken(c *gin.Context) {
@@ -233,7 +238,7 @@ func (h *Handler) GetAllUserToken(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"res": tokens})
+	c.JSON(http.StatusOK, gin.H{"tokens": tokens})
 
 }
 
