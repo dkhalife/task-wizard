@@ -40,7 +40,7 @@ func (r *TaskRepository) GetTask(c context.Context, taskID int) (*tModel.Task, e
 
 func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*tModel.Task, error) {
 	var tasks []*tModel.Task
-	query := r.db.WithContext(c).Preload("Labels").Where("tasks.created_by = ?", userID).Group("tasks.id").Order("next_due_date asc")
+	query := r.db.WithContext(c).Where("tasks.created_by = ?", userID).Group("tasks.id").Order("next_due_date asc")
 
 	if err := query.Find(&tasks).Error; err != nil {
 		return nil, err

@@ -23,17 +23,17 @@ type LabelReq struct {
 }
 
 type TaskReq struct {
-	Title                string                       `json:"title" binding:"required"`
-	FrequencyType        tModel.FrequencyType         `json:"frequencyType"`
-	ID                   int                          `json:"id"`
-	DueDate              string                       `json:"dueDate"`
-	IsRolling            bool                         `json:"isRolling"`
-	IsActive             bool                         `json:"isActive"`
-	Frequency            int                          `json:"frequency"`
-	FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequencyMetadata"`
-	Notification         bool                         `json:"notification"`
-	NotificationMetadata *tModel.NotificationMetadata `json:"notificationMetadata"`
-	Labels               *[]LabelReq                  `json:"labels"`
+	Title         string               `json:"title" binding:"required"`
+	FrequencyType tModel.FrequencyType `json:"frequencyType"`
+	ID            int                  `json:"id"`
+	DueDate       string               `json:"dueDate"`
+	IsRolling     bool                 `json:"isRolling"`
+	IsActive      bool                 `json:"isActive"`
+	Frequency     int                  `json:"frequency"`
+	// FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequencyMetadata"`
+	Notification bool `json:"notification"`
+	// NotificationMetadata *tModel.NotificationMetadata `json:"notificationMetadata"`
+	Labels *[]LabelReq `json:"labels"`
 }
 
 type Handler struct {
@@ -73,7 +73,7 @@ func (h *Handler) getTasks(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": tasks,
+		"tasks": tasks,
 	})
 }
 
@@ -111,7 +111,7 @@ func (h *Handler) getTask(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": task,
+		"task": task,
 	})
 }
 
@@ -190,7 +190,7 @@ func (h *Handler) createTask(c *gin.Context) {
 	}()
 
 	c.JSON(200, gin.H{
-		"res": id,
+		"task": id,
 	})
 }
 
@@ -275,9 +275,7 @@ func (h *Handler) editTask(c *gin.Context) {
 		h.nPlanner.GenerateNotifications(c, updatedTask)
 	}()
 
-	c.JSON(200, gin.H{
-		"message": "Task added successfully",
-	})
+	c.JSON(200, gin.H{})
 }
 
 func (h *Handler) deleteTask(c *gin.Context) {
@@ -314,9 +312,7 @@ func (h *Handler) deleteTask(c *gin.Context) {
 	}
 	h.nRepo.DeleteAllTaskNotifications(id)
 
-	c.JSON(200, gin.H{
-		"message": "Task deleted successfully",
-	})
+	c.JSON(200, gin.H{})
 }
 
 func (h *Handler) skipTask(c *gin.Context) {
@@ -329,6 +325,7 @@ func (h *Handler) skipTask(c *gin.Context) {
 		})
 		return
 	}
+
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -344,6 +341,7 @@ func (h *Handler) skipTask(c *gin.Context) {
 		})
 		return
 	}
+
 	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -358,6 +356,7 @@ func (h *Handler) skipTask(c *gin.Context) {
 		})
 		return
 	}
+
 	updatedTask, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -367,7 +366,7 @@ func (h *Handler) skipTask(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": updatedTask,
+		"task": updatedTask,
 	})
 }
 
@@ -433,7 +432,7 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": task,
+		"task": task,
 	})
 }
 
@@ -445,6 +444,7 @@ func (h *Handler) completeTask(c *gin.Context) {
 		})
 		return
 	}
+
 	completeTaskID := c.Param("id")
 	var completedDate time.Time
 	rawCompletedDate := c.Query("completedDate")
@@ -468,6 +468,7 @@ func (h *Handler) completeTask(c *gin.Context) {
 		})
 		return
 	}
+
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -491,6 +492,7 @@ func (h *Handler) completeTask(c *gin.Context) {
 		})
 		return
 	}
+
 	updatedTask, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -502,7 +504,7 @@ func (h *Handler) completeTask(c *gin.Context) {
 	h.nPlanner.GenerateNotifications(c, updatedTask)
 
 	c.JSON(200, gin.H{
-		"res": updatedTask,
+		"task": updatedTask,
 	})
 }
 
@@ -525,7 +527,7 @@ func (h *Handler) GetTaskHistory(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": TaskHistory,
+		"history": TaskHistory,
 	})
 }
 
