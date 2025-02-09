@@ -84,7 +84,10 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{
-		"res": user,
+		"user": gin.H{
+			"display_name":      user.DisplayName,
+			"notification_type": user.NotificationType,
+		},
 	})
 }
 
@@ -268,8 +271,7 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 	}
 
 	type Request struct {
-		Type   nModel.NotificationType `json:"type"`
-		Target string                  `json:"target"`
+		Type nModel.NotificationType `json:"type" binding:"required"`
 	}
 
 	var req Request
