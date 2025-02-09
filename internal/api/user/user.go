@@ -84,7 +84,10 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 		return
 	}
 	c.JSON(200, gin.H{
-		"res": user,
+		"user": gin.H{
+			"display_name":      user.DisplayName,
+			"notification_type": user.NotificationType,
+		},
 	})
 }
 
@@ -217,7 +220,12 @@ func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"res": tokenModel})
+	c.JSON(http.StatusOK, gin.H{"token": gin.H{
+		"id":        tokenModel.ID,
+		"name":      tokenModel.Name,
+		"token":     tokenModel.Token,
+		"createdAt": tokenModel.CreatedAt,
+	}})
 }
 
 func (h *Handler) GetAllUserToken(c *gin.Context) {
@@ -233,7 +241,7 @@ func (h *Handler) GetAllUserToken(c *gin.Context) {
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"res": tokens})
+	c.JSON(http.StatusOK, gin.H{"tokens": tokens})
 
 }
 
@@ -263,8 +271,7 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 	}
 
 	type Request struct {
-		Type   nModel.NotificationType `json:"type"`
-		Target string                  `json:"target"`
+		Type nModel.NotificationType `json:"type" binding:"required"`
 	}
 
 	var req Request

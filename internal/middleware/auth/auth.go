@@ -1,6 +1,7 @@
 package auth
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 	"time"
@@ -22,7 +23,7 @@ type signIn struct {
 
 func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt.GinJWTMiddleware, error) {
 	return jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "test zone",
+		Realm:       "Donetick",
 		Key:         []byte(cfg.Jwt.Secret),
 		Timeout:     cfg.Jwt.SessionTime,
 		MaxRefresh:  cfg.Jwt.MaxRefresh, // 7 days as long as their token is valid they can refresh it
@@ -30,7 +31,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
 			if u, ok := data.(*uModel.User); ok {
 				return jwt.MapClaims{
-					auth.IdentityKey: u.ID,
+					auth.IdentityKey: fmt.Sprintf("%d", u.ID),
 				}
 			}
 			return jwt.MapClaims{}
@@ -54,39 +55,31 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 			return user
 		},
 		Authenticator: func(c *gin.Context) (interface{}, error) {
-			provider := c.Value("auth_provider")
-			switch provider {
-			case nil:
-				var req signIn
-				if err := c.ShouldBindJSON(&req); err != nil {
-					return "", jwt.ErrMissingLoginValues
-				}
+			var req signIn
+			if err := c.ShouldBindJSON(&req); err != nil {
+				return "", jwt.ErrMissingLoginValues
+			}
 
-				user, err := userRepo.FindByEmail(c.Request.Context(), req.Email)
-				if err != nil || user.Disabled {
-					return nil, jwt.ErrFailedAuthentication
-				}
-				err = auth.Matches(user.Password, req.Password)
-				if err != nil {
-					if err != bcrypt.ErrMismatchedHashAndPassword {
-						logging.FromContext(c).Warnw("middleware.jwt.Authenticator found unknown error when matches password", "err", err)
-					}
-					return nil, jwt.ErrFailedAuthentication
-				}
-				return &uModel.User{
-					ID:        user.ID,
-					Email:     user.Email,
-					Password:  "",
-					CreatedAt: user.CreatedAt,
-					UpdatedAt: user.UpdatedAt,
-					Disabled:  user.Disabled,
-				}, nil
-
-			default:
+			user, err := userRepo.FindByEmail(c.Request.Context(), req.Email)
+			if err != nil || user.Disabled {
 				return nil, jwt.ErrFailedAuthentication
 			}
+			err = auth.Matches(user.Password, req.Password)
+			if err != nil {
+				if err != bcrypt.ErrMismatchedHashAndPassword {
+					logging.FromContext(c).Warnw("middleware.jwt.Authenticator found unknown error when matches password", "err", err)
+				}
+				return nil, jwt.ErrFailedAuthentication
+			}
+			return &uModel.User{
+				ID:        user.ID,
+				Email:     user.Email,
+				Password:  "",
+				CreatedAt: user.CreatedAt,
+				UpdatedAt: user.UpdatedAt,
+				Disabled:  user.Disabled,
+			}, nil
 		},
-
 		Authorizator: func(data interface{}, c *gin.Context) bool {
 			if _, ok := data.(*uModel.User); ok {
 				return true
@@ -96,15 +89,19 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 		Unauthorized: func(c *gin.Context, code int, message string) {
 			logging.FromContext(c).Info("middleware.jwt.Unauthorized", "code", code, "message", message)
 			c.JSON(code, gin.H{
-				"code":    code,
-				"message": message,
+				"error": message,
 			})
 		},
 		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
 			c.JSON(http.StatusOK, gin.H{
-				"code":   code,
-				"token":  token,
-				"expire": expire,
+				"token":      token,
+				"expiration": expire,
+			})
+		},
+		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(http.StatusOK, gin.H{
+				"token":      token,
+				"expiration": expire,
 			})
 		},
 		TokenLookup:   "header: Authorization",

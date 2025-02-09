@@ -22,7 +22,7 @@ func NewLabelRepository(db *gorm.DB, cfg *config.Config) *LabelRepository {
 
 func (r *LabelRepository) GetUserLabels(ctx context.Context, userID int) ([]*lModel.Label, error) {
 	var labels []*lModel.Label
-	if err := r.db.WithContext(ctx).Where("created_by = ?", userID).Find(&labels).Error; err != nil {
+	if err := r.db.WithContext(ctx).Select("id", "name", "color").Where("created_by = ?", userID).Find(&labels).Error; err != nil {
 		return nil, err
 	}
 	return labels, nil
