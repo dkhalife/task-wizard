@@ -46,9 +46,19 @@ func (h *Handler) getLabels(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(200,
-		labels,
-	)
+
+	labelResponses := make([]gin.H, len(labels))
+	for i, label := range labels {
+		labelResponses[i] = gin.H{
+			"id":    label.ID,
+			"name":  label.Name,
+			"color": label.Color,
+		}
+	}
+
+	c.JSON(200, gin.H{
+		"labels": labelResponses,
+	})
 }
 
 func (h *Handler) createLabel(c *gin.Context) {
@@ -81,7 +91,11 @@ func (h *Handler) createLabel(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": label,
+		"label": gin.H{
+			"id":    label.ID,
+			"name":  label.Name,
+			"color": label.Color,
+		},
 	})
 }
 
@@ -115,7 +129,11 @@ func (h *Handler) updateLabel(c *gin.Context) {
 	}
 
 	c.JSON(200, gin.H{
-		"res": label,
+		"label": gin.H{
+			"id":    label.ID,
+			"name":  label.Name,
+			"color": label.Color,
+		},
 	})
 }
 
@@ -154,10 +172,7 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 
 	// TODO: Actually delete the label!
 
-	c.JSON(200, gin.H{
-		"res": "Label deleted",
-	})
-
+	c.JSON(200, gin.H{})
 }
 
 func Routes(r *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
@@ -170,5 +185,4 @@ func Routes(r *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
 		labelRoutes.PUT("", h.updateLabel)
 		labelRoutes.DELETE("/:id", h.deleteLabel)
 	}
-
 }
