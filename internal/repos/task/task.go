@@ -32,7 +32,7 @@ func (r *TaskRepository) CreateTask(c context.Context, task *tModel.Task) (int, 
 
 func (r *TaskRepository) GetTask(c context.Context, taskID int) (*tModel.Task, error) {
 	var task tModel.Task
-	if err := r.db.Debug().WithContext(c).Model(&tModel.Task{}).Preload("Labels").First(&task, taskID).Error; err != nil {
+	if err := r.db.Debug().WithContext(c).Model(&tModel.Task{}).First(&task, taskID).Error; err != nil {
 		return nil, err
 	}
 	return &task, nil
