@@ -98,6 +98,12 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 				"expiration": expire,
 			})
 		},
+		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
+			c.JSON(http.StatusOK, gin.H{
+				"token":      token,
+				"expiration": expire,
+			})
+		},
 		TokenLookup:   "header: Authorization",
 		TokenHeadName: "Bearer",
 		TimeFunc:      time.Now,
