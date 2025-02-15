@@ -268,7 +268,6 @@ func (h *Handler) editTask(c *gin.Context) {
 }
 
 func (h *Handler) deleteTask(c *gin.Context) {
-	// logger := logging.FromContext(c)
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(500, gin.H{
@@ -369,7 +368,7 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 	}
 
 	type DueDateReq struct {
-		DueDate string `json:"dueDate" binding:"required"`
+		DueDate int64 `json:"due_date" binding:"required"`
 	}
 
 	var dueDateReq DueDateReq
@@ -390,14 +389,6 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 		return
 	}
 
-	rawDueDate, err := time.Parse(time.RFC3339, dueDateReq.DueDate)
-	if err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid date",
-		})
-		return
-	}
-	dueDate := rawDueDate.UTC()
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -412,6 +403,7 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 		})
 	}
 
+	dueDate := time.UnixMilli(dueDateReq.DueDate)
 	task.NextDueDate = &dueDate
 	if err := h.tRepo.UpsertTask(c, task); err != nil {
 		c.JSON(500, gin.H{
@@ -435,19 +427,26 @@ func (h *Handler) completeTask(c *gin.Context) {
 	}
 
 	completeTaskID := c.Param("id")
+
+	type CompleteReq struct {
+		CompletedDate int64 `json:"completed_date"`
+	}
+
+	var completeReq CompleteReq
+	if err := c.ShouldBindJSON(&completeReq); err != nil {
+		log.Print(err)
+		c.JSON(400, gin.H{
+			"error": "Invalid request",
+		})
+		return
+	}
+
 	var completedDate time.Time
-	rawCompletedDate := c.Query("completedDate")
-	if rawCompletedDate == "" {
+	rawCompletedDate := completeReq.CompletedDate
+	if rawCompletedDate == 0 {
 		completedDate = time.Now().UTC()
 	} else {
-		var err error
-		completedDate, err = time.Parse(time.RFC3339, rawCompletedDate)
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "Invalid date",
-			})
-			return
-		}
+		completedDate = time.UnixMilli(int64(completeReq.CompletedDate))
 	}
 
 	id, err := strconv.Atoi(completeTaskID)
