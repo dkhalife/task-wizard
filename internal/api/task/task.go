@@ -25,13 +25,13 @@ type LabelReq struct {
 type TaskReq struct {
 	ID            string               `json:"id"`
 	Title         string               `json:"title" binding:"required"`
-	FrequencyType tModel.FrequencyType `json:"frequencyType"`
-	DueDate       string               `json:"dueDate"`
-	IsRolling     bool                 `json:"isRolling"`
+	FrequencyType tModel.FrequencyType `json:"frequency_type"`
+	NextDueDate   int64                `json:"next_due_date"`
+	IsRolling     bool                 `json:"is_rolling"`
 	Frequency     int                  `json:"frequency"`
-	// FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequencyMetadata"`
+	// FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequency_metadata"`
 	Notification bool `json:"notification"`
-	// NotificationMetadata *tModel.NotificationMetadata `json:"notificationMetadata"`
+	// NotificationMetadata *tModel.NotificationMetadata `json:"notification_metadata"`
 }
 
 type Handler struct {
@@ -136,16 +136,9 @@ func (h *Handler) createTask(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if TaskReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.DueDate)
-		rawDueDate = rawDueDate.UTC()
+	if TaskReq.NextDueDate != 0 {
+		rawDueDate := time.UnixMilli(TaskReq.NextDueDate)
 		dueDate = &rawDueDate
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "Invalid date",
-			})
-			return
-		}
 
 	}
 
@@ -211,17 +204,9 @@ func (h *Handler) editTask(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if TaskReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.DueDate)
-		rawDueDate = rawDueDate.UTC()
+	if TaskReq.NextDueDate != 0 {
+		rawDueDate := time.UnixMilli(TaskReq.NextDueDate)
 		dueDate = &rawDueDate
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "Invalid date",
-			})
-			return
-		}
-
 	}
 
 	taskId, err := strconv.Atoi(TaskReq.ID)
