@@ -23,17 +23,15 @@ type LabelReq struct {
 }
 
 type TaskReq struct {
+	ID            string               `json:"id"`
 	Title         string               `json:"title" binding:"required"`
-	FrequencyType tModel.FrequencyType `json:"frequencyType"`
-	ID            int                  `json:"id"`
-	DueDate       string               `json:"dueDate"`
-	IsRolling     bool                 `json:"isRolling"`
-	IsActive      bool                 `json:"isActive"`
+	FrequencyType tModel.FrequencyType `json:"frequency_type"`
+	NextDueDate   int64                `json:"next_due_date"`
+	IsRolling     bool                 `json:"is_rolling"`
 	Frequency     int                  `json:"frequency"`
-	// FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequencyMetadata"`
+	// FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequency_metadata"`
 	Notification bool `json:"notification"`
-	// NotificationMetadata *tModel.NotificationMetadata `json:"notificationMetadata"`
-	Labels *[]LabelReq `json:"labels"`
+	// NotificationMetadata *tModel.NotificationMetadata `json:"notification_metadata"`
 }
 
 type Handler struct {
@@ -138,16 +136,9 @@ func (h *Handler) createTask(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if TaskReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.DueDate)
-		rawDueDate = rawDueDate.UTC()
+	if TaskReq.NextDueDate != 0 {
+		rawDueDate := time.UnixMilli(TaskReq.NextDueDate)
 		dueDate = &rawDueDate
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "Invalid date",
-			})
-			return
-		}
 
 	}
 
@@ -174,16 +165,16 @@ func (h *Handler) createTask(c *gin.Context) {
 		return
 	}
 
-	labels := make([]int, len(*TaskReq.Labels))
-	for i, label := range *TaskReq.Labels {
-		labels[i] = int(label.LabelID)
-	}
-	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentUser.ID, labels, []int{}); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error adding labels",
-		})
-		return
-	}
+	// labels := make([]int, len(*TaskReq.Labels))
+	// for i, label := range *TaskReq.Labels {
+	// 	labels[i] = int(label.LabelID)
+	// }
+	// if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentUser.ID, labels, []int{}); err != nil {
+	// 	c.JSON(500, gin.H{
+	// 		"error": "Error adding labels",
+	// 	})
+	// 	return
+	// }
 
 	go func() {
 		h.nPlanner.GenerateNotifications(c, createdTask)
@@ -205,7 +196,6 @@ func (h *Handler) editTask(c *gin.Context) {
 
 	var TaskReq TaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
-		log.Print(err)
 		c.JSON(400, gin.H{
 			"error": "Invalid request",
 		})
@@ -214,20 +204,19 @@ func (h *Handler) editTask(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if TaskReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.DueDate)
-		rawDueDate = rawDueDate.UTC()
+	if TaskReq.NextDueDate != 0 {
+		rawDueDate := time.UnixMilli(TaskReq.NextDueDate)
 		dueDate = &rawDueDate
-		if err != nil {
-			c.JSON(400, gin.H{
-				"error": "Invalid date",
-			})
-			return
-		}
-
 	}
 
-	oldTask, err := h.tRepo.GetTask(c, TaskReq.ID)
+	taskId, err := strconv.Atoi(TaskReq.ID)
+	if err != nil {
+		c.JSON(400, gin.H{
+			"error": "Invalid task ID",
+		})
+		return
+	}
+	oldTask, err := h.tRepo.GetTask(c, taskId)
 
 	if err != nil {
 		c.JSON(500, gin.H{
@@ -235,6 +224,7 @@ func (h *Handler) editTask(c *gin.Context) {
 		})
 		return
 	}
+
 	if currentUser.ID != oldTask.CreatedBy {
 		c.JSON(403, gin.H{
 			"error": "You are not allowed to edit this task",
@@ -251,7 +241,7 @@ func (h *Handler) editTask(c *gin.Context) {
 	}*/
 
 	updatedTask := &tModel.Task{
-		ID:            TaskReq.ID,
+		ID:            taskId,
 		Title:         TaskReq.Title,
 		FrequencyType: TaskReq.FrequencyType,
 		Frequency:     TaskReq.Frequency,
@@ -259,7 +249,6 @@ func (h *Handler) editTask(c *gin.Context) {
 		NextDueDate:  dueDate,
 		CreatedBy:    currentUser.ID,
 		IsRolling:    TaskReq.IsRolling,
-		IsActive:     TaskReq.IsActive,
 		Notification: TaskReq.Notification,
 		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
 		CreatedAt: oldTask.CreatedAt,
