@@ -1,6 +1,5 @@
 name: "local"
 database:
-  type: "sqlite"
   migration: true
 jwt:
   secret: "secret"

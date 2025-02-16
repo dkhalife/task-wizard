@@ -73,6 +73,35 @@ docker run \
 
 Make sure to replace `/path/to/host` with your preferred root directory for data and config.
 
+## ⚙️ Configuration
+
+In the [config](./config/) directory are a couple of starter configuration files for a `debug` and a `prod` environment. The environment variable `TW_ENV` helps toggle between those configuration files as well as set the verbosity of the logs printed at runtime.
+
+The configuration files are yaml mappings with the following values:
+
+| Configuration Entry          | Default Value                                       | Description                                                                 |
+|------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------|
+| `name`                       | `"prod"`                                            | The name of the environment configuration.                                  |
+| `database.migration`         | `true`                                              | Indicates if database migration should be performed.                        |
+| `jwt.secret`                 | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that.**   |
+| `jwt.session_time`           | `168h`                                              | The duration for which a JWT session is valid.                              |
+| `jwt.max_refresh`            | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
+| `server.port`                | `2021`                                              | The port on which the server listens.                                       |
+| `server.read_timeout`        | `2s`                                                | The maximum duration for reading the entire request.                        |
+| `server.write_timeout`       | `1s`                                                | The maximum duration before timing out writes of the response.              |
+| `server.rate_period`         | `60s`                                               | The period for rate limiting.                                               |
+| `server.rate_limit`          | `300`                                               | The maximum number of requests allowed within the rate period.              |
+| `server.cors_allow_origins`  | `["http://localhost:5173","http://localhost:7926"]` | List of allowed origins for CORS.                                           |
+| `server.serve_frontend`      | `true`                                              | Indicates if the frontend should be served by the backend server.           |
+| `scheduler_jobs.due_job`     | `30m`                                               | The interval for running the due job scheduler.                             |
+| `scheduler_jobs.overdue_job` | `3h`                                                | The interval for running the overdue job scheduler.                         |
+| `scheduler_jobs.pre_due_job` | `3h`                                                | The interval for running the pre-due job scheduler.                         |
+| `email.host`                 | (empty)                                             | The email server host.                                                      |
+| `email.port`                 | (empty)                                             | The email server port.                                                      |
+| `email.key`                  | (empty)                                             | The key for authenticating with the email server.                           |
+| `email.email`                | (empty)                                             | The email address used for sending emails.                                  |
+| `email.appHost`              | (empty)                                             | The application host URL used in email communications.                      |
+
 ## 🛠️ Development Environment
 
 1. Clone the repo: `git clone https://github.com/dkhalife/tasks-backend.git`

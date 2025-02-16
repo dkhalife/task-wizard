@@ -1,6 +1,5 @@
-name: "selhosted"
+name: "prod"
 database:
-  type: "sqlite"
   migration: true
 jwt:
   secret: "secret"
