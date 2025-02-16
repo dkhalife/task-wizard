@@ -112,7 +112,7 @@ func ScheduleNextDueDate(task *tModel.Task, completedDate time.Time) (*time.Time
 		baseDate = completedDate.UTC()
 	}
 
-	if task.FrequencyType == "day_of_the_month" || task.FrequencyType == "days_of_the_week" || task.FrequencyType == "interval" {
+	if task.FrequencyType == "days_of_the_month" || task.FrequencyType == "days_of_the_week" || task.FrequencyType == "interval" {
 		// time in frequency metadata stored as RFC3339 format like  `2024-07-07T13:27:00-04:00`
 		// parse it to time.Time:
 		t, err := time.Parse(time.RFC3339, frequencyMetadata.Time)
@@ -171,7 +171,7 @@ func ScheduleNextDueDate(task *tModel.Task, completedDate time.Time) (*time.Time
 				}
 			}
 		}
-	} else if task.FrequencyType == "day_of_the_month" {
+	} else if task.FrequencyType == "days_of_the_month" {
 		for i := 1; i <= 12; i++ {
 			nextDueDate = baseDate.AddDate(0, i, 0)
 			// set the date to the first day of the month:

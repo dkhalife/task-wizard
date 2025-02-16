@@ -14,7 +14,7 @@ const (
 	FrequencyTypeYearly        FrequencyType = "yearly"
 	FrequencyTypeInterval      FrequencyType = "interval"
 	FrequencyTypeDayOfTheWeek  FrequencyType = "days_of_the_week"
-	FrequencyTypeDayOfTheMonth FrequencyType = "day_of_the_month"
+	FrequencyTypeDayOfTheMonth FrequencyType = "days_of_the_month"
 	FrequencyTypeNoRepeat      FrequencyType = "no_repeat"
 )
 
