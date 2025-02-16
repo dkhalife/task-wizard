@@ -3,9 +3,9 @@ package label
 import (
 	"strconv"
 
-	lModel "donetick.com/core/internal/models/label"
-	lRepo "donetick.com/core/internal/repos/label"
-	auth "donetick.com/core/internal/utils/auth"
+	lModel "dkhalife.com/tasks/core/internal/models/label"
+	lRepo "dkhalife.com/tasks/core/internal/repos/label"
+	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )

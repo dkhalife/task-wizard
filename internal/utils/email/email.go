@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"donetick.com/core/config"
+	"dkhalife.com/tasks/core/config"
 	gomail "gopkg.in/gomail.v2"
 )
 
@@ -31,9 +31,9 @@ func NewEmailSender(conf *config.Config) *EmailSender {
 
 func (es *EmailSender) SendResetPasswordEmail(c context.Context, to, code string) error {
 	msg := gomail.NewMessage()
-	msg.SetHeader("From", "no-reply@donetick.com")
+	msg.SetHeader("From", "no-reply@task-wizard.com")
 	msg.SetHeader("To", to)
-	msg.SetHeader("Subject", "Donetick! Password Reset")
+	msg.SetHeader("Subject", "Task Wizard - Password Reset")
 	htmlBody := `
 	<!--
 	********************************************************
@@ -155,7 +155,7 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to, code string
 		<![endif]-->
 		</head>
 		<body class="t0" style="min-width:100%;Marg
-		if you did not sign up with Donetick please Ignore this email. in:0px;padding:0px;background-color:#FFFFFF;"><div class="t1" style="background-color:#FFFFFF;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center"><tbody><tr><td class="t130" style="font-size:0;line-height:0;mso-line-height-rule:exactly;" valign="top" align="center">
+		if you did not sign up with Task Wizard please Ignore this email. in:0px;padding:0px;background-color:#FFFFFF;"><div class="t1" style="background-color:#FFFFFF;"><table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" align="center"><tbody><tr><td class="t130" style="font-size:0;line-height:0;mso-line-height-rule:exactly;" valign="top" align="center">
 		<!--[if mso]>
 		<v:background xmlns:v="urn:schemas-microsoft-com:vml" fill="true" stroke="false">
 		<v:fill color="#FFFFFF"/>
@@ -227,7 +227,7 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to, code string
 		<!--[if !mso]><!--><td class="t94" style="width:480px;">
 		<!--<![endif]-->
 		<!--[if mso]><td class="t94" style="width:480px;"><![endif]-->
-		<p class="t100" style="margin:0;Margin:0;font-family:BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif,'Inter Tight';line-height:18px;font-weight:400;font-style:normal;font-size:12px;text-decoration:none;text-transform:none;direction:ltr;color:#555555;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">if you did not sign up with Donetick please Ignore this email. </p></td>
+		<p class="t100" style="margin:0;Margin:0;font-family:BlinkMacSystemFont,Segoe UI,Helvetica Neue,Arial,sans-serif,'Inter Tight';line-height:18px;font-weight:400;font-style:normal;font-size:12px;text-decoration:none;text-transform:none;direction:ltr;color:#555555;text-align:center;mso-line-height-rule:exactly;mso-text-raise:2px;">if you did not sign up with Task Wizard please Ignore this email. </p></td>
 		</tr></tbody></table>
 		</td></tr><tr><td><div class="t81" style="mso-line-height-rule:exactly;mso-line-height-alt:8px;line-height:8px;font-size:1px;display:block;">&nbsp;</div></td></tr><tr><td>
 		<table class="t83" role="presentation" cellpadding="0" cellspacing="0" align="center"><tbody><tr>

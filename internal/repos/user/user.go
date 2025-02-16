@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"time"
 
-	"donetick.com/core/config"
-	nModel "donetick.com/core/internal/models/notifier"
-	uModel "donetick.com/core/internal/models/user"
-	"donetick.com/core/internal/services/logging"
+	"dkhalife.com/tasks/core/config"
+	nModel "dkhalife.com/tasks/core/internal/models/notifier"
+	uModel "dkhalife.com/tasks/core/internal/models/user"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
 )
 

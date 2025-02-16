@@ -3,7 +3,7 @@ package database
 import (
 	"os"
 
-	"donetick.com/core/config"
+	"dkhalife.com/tasks/core/config"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 )
@@ -14,7 +14,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 
 	path := os.Getenv("DT_SQLITE_PATH")
 	if path == "" {
-		path = "donetick.db"
+		path = "task-wizard.db"
 	}
 	db, err = gorm.Open(sqlite.Open(path), &gorm.Config{})
 

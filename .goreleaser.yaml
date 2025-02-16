@@ -1,5 +1,7 @@
 version: 2
 
+project_name: task_wizard
+
 builds:
 - env:
   - CGO_ENABLED=0
@@ -28,10 +30,10 @@ archives:
   - goos: windows
     format: zip
   files:
-  - src: "config/local.yaml"
-    dst: "config/local.yaml"
-  - src: "config/selfhosted.yaml"
-    dst: "config/selfhosted.yaml"
+  - src: "config/debug.yaml"
+    dst: "config/debug.yaml"
+  - src: "config/prod.yaml"
+    dst: "config/prod.yaml"
 changelog:
   sort: asc
   filters:
