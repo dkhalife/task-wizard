@@ -2,6 +2,8 @@ package task
 
 import (
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type FrequencyType string
@@ -36,11 +38,11 @@ const (
 
 type Frequency struct {
 	Type   FrequencyType `json:"type" validate:"required" gorm:"type:varchar(9)"`
-	On     RepeatOn      `json:"on" validate:"required_if=Type interval custom" gorm:"type:varchar(18)"`
-	Every  int           `json:"every" validate:"required_if=On interval" gorm:"type:int"`
-	Unit   IntervalUnit  `json:"unit" validate:"required_if=On interval" gorm:"type:varchar(9)"`
-	Days   []int         `json:"days" validate:"required_if=Type custom On days_of_the_week,dive,gte=0,lte=6" gorm:"type:varchar(16)"`
-	Months []int         `json:"months" validate:"required_if=Type custom On day_of_the_months,dive,gte=0,lte=11" gorm:"type:varchar(28)"`
+	On     RepeatOn      `json:"on" validate:"required_if=Type interval custom" gorm:"type:varchar(18);default:null"`
+	Every  int           `json:"every" validate:"required_if=On interval" gorm:"type:int;default:null"`
+	Unit   IntervalUnit  `json:"unit" validate:"required_if=On interval" gorm:"type:varchar(9);default:null"`
+	Days   pq.Int64Array `json:"days" validate:"required_if=Type custom On days_of_the_week,dive,gte=0,lte=6" gorm:"type:integer[];default:null"`
+	Months pq.Int64Array `json:"months" validate:"required_if=Type custom On day_of_the_months,dive,gte=0,lte=11" gorm:"type:integer[];default:null"`
 }
 
 type Task struct {
