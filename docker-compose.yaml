@@ -10,5 +10,5 @@ services:
     ports:
     - "8085:8000"
     environment:
-    - DT_ENV=prod
+    - TW_ENV=prod
     hostname: task-wizard

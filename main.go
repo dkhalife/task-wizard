@@ -34,7 +34,7 @@ import (
 )
 
 func main() {
-	if os.Getenv("DT_ENV") == "debug" {
+	if os.Getenv("TW_ENV") == "debug" {
 		logging.SetConfig(&logging.Config{
 			Encoding:    "console",
 			Level:       zapcore.Level(zapcore.DebugLevel),
@@ -100,7 +100,7 @@ func main() {
 }
 
 func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notifier.Scheduler) *gin.Engine {
-	if os.Getenv("DT_ENV") == "debug" {
+	if os.Getenv("TW_ENV") == "debug" {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)

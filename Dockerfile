@@ -25,7 +25,7 @@ RUN apk --no-cache add ca-certificates libc6-compat
 COPY --from=builder /usr/src/app/task-wizard /task-wizard
 COPY --from=builder /usr/src/app/config /config
 
-ENV DT_ENV="selfhosted"
+ENV TW_ENV="prod"
 ENV GIN_MODE="release"
 
 EXPOSE 2021

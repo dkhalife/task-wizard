@@ -57,7 +57,7 @@ type EmailConfig struct {
 }
 
 func LoadConfig() *Config {
-	if os.Getenv("DT_ENV") == "debug" {
+	if os.Getenv("TW_ENV") == "debug" {
 		viper.SetConfigName("debug")
 	} else {
 		viper.SetConfigName("prod")

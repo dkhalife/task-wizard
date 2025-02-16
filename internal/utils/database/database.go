@@ -12,7 +12,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 	var db *gorm.DB
 	var err error
 
-	path := os.Getenv("DT_SQLITE_PATH")
+	path := os.Getenv("TW_SQLITE_PATH")
 	if path == "" {
 		path = "task-wizard.db"
 	}
