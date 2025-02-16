@@ -7,15 +7,15 @@ import (
 type FrequencyType string
 
 const (
-	FrequancyTypeOnce          FrequencyType = "once"
-	FrequancyTypeDaily         FrequencyType = "daily"
-	FrequancyTypeWeekly        FrequencyType = "weekly"
-	FrequancyTypeMonthly       FrequencyType = "monthly"
-	FrequancyTypeYearly        FrequencyType = "yearly"
-	FrequancyTypeInterval      FrequencyType = "interval"
-	FrequancyTypeDayOfTheWeek  FrequencyType = "days_of_the_week"
-	FrequancyTypeDayOfTheMonth FrequencyType = "day_of_the_month"
-	FrequancyTypeNoRepeat      FrequencyType = "no_repeat"
+	FrequencyTypeOnce          FrequencyType = "once"
+	FrequencyTypeDaily         FrequencyType = "daily"
+	FrequencyTypeWeekly        FrequencyType = "weekly"
+	FrequencyTypeMonthly       FrequencyType = "monthly"
+	FrequencyTypeYearly        FrequencyType = "yearly"
+	FrequencyTypeInterval      FrequencyType = "interval"
+	FrequencyTypeDayOfTheWeek  FrequencyType = "days_of_the_week"
+	FrequencyTypeDayOfTheMonth FrequencyType = "day_of_the_month"
+	FrequencyTypeNoRepeat      FrequencyType = "no_repeat"
 )
 
 type Task struct {
