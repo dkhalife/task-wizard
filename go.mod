@@ -1,4 +1,4 @@
-module donetick.com/core
+module dkhalife.com/tasks/core
 
 go 1.22.0
 

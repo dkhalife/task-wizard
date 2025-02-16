@@ -6,8 +6,8 @@ import (
 	"strings"
 	"time"
 
-	config "donetick.com/core/config"
-	tModel "donetick.com/core/internal/models/task"
+	config "dkhalife.com/tasks/core/config"
+	tModel "dkhalife.com/tasks/core/internal/models/task"
 	"gorm.io/gorm"
 )
 

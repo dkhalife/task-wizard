@@ -3,7 +3,7 @@ package user
 import (
 	"time"
 
-	nModel "donetick.com/core/internal/models/notifier"
+	nModel "dkhalife.com/tasks/core/internal/models/notifier"
 )
 
 type User struct {

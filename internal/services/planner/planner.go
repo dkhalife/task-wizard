@@ -5,9 +5,9 @@ import (
 	"fmt"
 	"time"
 
-	nModel "donetick.com/core/internal/models/notifier"
-	tModel "donetick.com/core/internal/models/task"
-	nRepo "donetick.com/core/internal/repos/notifier"
+	nModel "dkhalife.com/tasks/core/internal/models/notifier"
+	tModel "dkhalife.com/tasks/core/internal/models/task"
+	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 )
 
 type NotificationPlanner struct {

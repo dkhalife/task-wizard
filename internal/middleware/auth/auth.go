@@ -6,11 +6,11 @@ import (
 	"strconv"
 	"time"
 
-	"donetick.com/core/config"
-	uModel "donetick.com/core/internal/models/user"
-	uRepo "donetick.com/core/internal/repos/user"
-	"donetick.com/core/internal/services/logging"
-	auth "donetick.com/core/internal/utils/auth"
+	"dkhalife.com/tasks/core/config"
+	uModel "dkhalife.com/tasks/core/internal/models/user"
+	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	"dkhalife.com/tasks/core/internal/services/logging"
+	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
@@ -23,7 +23,7 @@ type signIn struct {
 
 func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt.GinJWTMiddleware, error) {
 	return jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "Donetick",
+		Realm:       "Task Wizard",
 		Key:         []byte(cfg.Jwt.Secret),
 		Timeout:     cfg.Jwt.SessionTime,
 		MaxRefresh:  cfg.Jwt.MaxRefresh, // 7 days as long as their token is valid they can refresh it

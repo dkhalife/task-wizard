@@ -6,7 +6,7 @@ import (
 	"strconv"
 	"time"
 
-	"donetick.com/core/config"
+	"dkhalife.com/tasks/core/config"
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"

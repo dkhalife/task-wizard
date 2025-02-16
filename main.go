@@ -7,34 +7,34 @@ import (
 	"net/http"
 	"os"
 
-	"donetick.com/core/config"
-	"donetick.com/core/frontend"
-	auth "donetick.com/core/internal/middleware/auth"
-	"donetick.com/core/internal/migrations"
-	database "donetick.com/core/internal/utils/database"
-	"donetick.com/core/internal/utils/email"
-	utils "donetick.com/core/internal/utils/middleware"
+	"dkhalife.com/tasks/core/config"
+	"dkhalife.com/tasks/core/frontend"
+	auth "dkhalife.com/tasks/core/internal/middleware/auth"
+	"dkhalife.com/tasks/core/internal/migrations"
+	database "dkhalife.com/tasks/core/internal/utils/database"
+	"dkhalife.com/tasks/core/internal/utils/email"
+	utils "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 
-	"donetick.com/core/internal/api/label"
-	task "donetick.com/core/internal/api/task"
-	user "donetick.com/core/internal/api/user"
-	lRepo "donetick.com/core/internal/repos/label"
-	nRepo "donetick.com/core/internal/repos/notifier"
-	tRepo "donetick.com/core/internal/repos/task"
-	uRepo "donetick.com/core/internal/repos/user"
-	logging "donetick.com/core/internal/services/logging"
-	notifier "donetick.com/core/internal/services/notifications"
-	"donetick.com/core/internal/services/planner"
-	migration "donetick.com/core/internal/utils/migration"
+	"dkhalife.com/tasks/core/internal/api/label"
+	task "dkhalife.com/tasks/core/internal/api/task"
+	user "dkhalife.com/tasks/core/internal/api/user"
+	lRepo "dkhalife.com/tasks/core/internal/repos/label"
+	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
+	tRepo "dkhalife.com/tasks/core/internal/repos/task"
+	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	logging "dkhalife.com/tasks/core/internal/services/logging"
+	notifier "dkhalife.com/tasks/core/internal/services/notifications"
+	"dkhalife.com/tasks/core/internal/services/planner"
+	migration "dkhalife.com/tasks/core/internal/utils/migration"
 )
 
 func main() {
-	if os.Getenv("DT_ENV") == "debug" {
+	if os.Getenv("TW_ENV") == "debug" {
 		logging.SetConfig(&logging.Config{
 			Encoding:    "console",
 			Level:       zapcore.Level(zapcore.DebugLevel),
@@ -100,7 +100,7 @@ func main() {
 }
 
 func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notifier.Scheduler) *gin.Engine {
-	if os.Getenv("DT_ENV") == "debug" {
+	if os.Getenv("TW_ENV") == "debug" {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)

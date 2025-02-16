@@ -4,11 +4,11 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
-	"donetick.com/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
-	uModel "donetick.com/core/internal/models/user"
+	uModel "dkhalife.com/tasks/core/internal/models/user"
 )
 
 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':,.<>?/~"

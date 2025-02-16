@@ -5,12 +5,12 @@ import (
 	"log"
 	"time"
 
-	"donetick.com/core/config"
-	nModel "donetick.com/core/internal/models/notifier"
-	nRepo "donetick.com/core/internal/repos/notifier"
-	tRepo "donetick.com/core/internal/repos/task"
-	uRepo "donetick.com/core/internal/repos/user"
-	"donetick.com/core/internal/services/logging"
+	"dkhalife.com/tasks/core/config"
+	nModel "dkhalife.com/tasks/core/internal/models/notifier"
+	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
+	tRepo "dkhalife.com/tasks/core/internal/repos/task"
+	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	"dkhalife.com/tasks/core/internal/services/logging"
 )
 
 type keyType string

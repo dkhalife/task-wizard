@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	"donetick.com/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
 )
 

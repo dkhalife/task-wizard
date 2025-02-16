@@ -30,11 +30,11 @@ jobs:
       - name: Install Dependencies
         run: |
           cd frontend-code
-          npm install
+          yarn install
       - name: Build Frontend
         run: |
           cd frontend-code
-          npm run build-selfhosted
+          yarn build
 
       - name: Copy Frontend
         run: |
@@ -76,5 +76,5 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.DOCKER_USERNAME }}/donetick:latest, ${{ secrets.DOCKER_USERNAME }}/donetick:${{ github.ref_name }}
+          tags: ${{ secrets.DOCKER_USERNAME }}/task-wizard:latest, ${{ secrets.DOCKER_USERNAME }}/task-wizard:${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7

@@ -4,10 +4,10 @@ import (
 	"context"
 	"errors"
 
-	config "donetick.com/core/config"
-	lModel "donetick.com/core/internal/models/label"
-	tModel "donetick.com/core/internal/models/task"
-	"donetick.com/core/internal/services/logging"
+	config "dkhalife.com/tasks/core/config"
+	lModel "dkhalife.com/tasks/core/internal/models/label"
+	tModel "dkhalife.com/tasks/core/internal/models/task"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
 	"gorm.io/gorm/clause"
 )

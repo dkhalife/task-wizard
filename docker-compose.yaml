@@ -3,13 +3,12 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: donetick-core
+    container_name: task-wizard
     restart: unless-stopped
     volumes:
     - ./data:/usr/src/app/data
     ports:
     - "8085:8000"
     environment:
-    - DT_ENV=prod
-    hostname: donetick-core
-    command: ["/donetick-core"]
+    - TW_ENV=prod
+    hostname: task-wizard
