@@ -35,7 +35,7 @@ func (r *LabelRepository) CreateLabels(ctx context.Context, labels []*lModel.Lab
 	return nil
 }
 
-func (r *LabelRepository) isLabelsAssignableByUser(ctx context.Context, userID int, toBeAdded []int, toBeRemoved []int) bool {
+func (r *LabelRepository) AreLabelsAssignableByUser(ctx context.Context, userID int, toBeAdded []int, toBeRemoved []int) bool {
 	labelIDs := append(toBeAdded, toBeRemoved...)
 
 	log := logging.FromContext(ctx)
@@ -51,7 +51,7 @@ func (r *LabelRepository) AssignLabelsToTask(ctx context.Context, taskID int, us
 	if len(toBeAdded) < 1 && len(toBeRemoved) < 1 {
 		return nil
 	}
-	if !r.isLabelsAssignableByUser(ctx, userID, toBeAdded, toBeRemoved) {
+	if !r.AreLabelsAssignableByUser(ctx, userID, toBeAdded, toBeRemoved) {
 		return errors.New("labels are not assignable by user")
 	}
 

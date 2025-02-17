@@ -1,6 +1,7 @@
 package label
 
 import (
+	"net/http"
 	"strconv"
 
 	lModel "dkhalife.com/tasks/core/internal/models/label"
@@ -33,16 +34,16 @@ func NewHandler(lRepo *lRepo.LabelRepository) *Handler {
 func (h *Handler) getLabels(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to fetch labels",
 		})
 		return
 	}
 
 	labels, err := h.lRepo.GetUserLabels(c, currentUser.ID)
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error getting labels",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get labels",
 		})
 		return
 	}
@@ -56,7 +57,7 @@ func (h *Handler) getLabels(c *gin.Context) {
 		}
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"labels": labelResponses,
 	})
 }
@@ -64,16 +65,16 @@ func (h *Handler) getLabels(c *gin.Context) {
 func (h *Handler) createLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to create labels",
 		})
 		return
 	}
 
 	var req LabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{
-			"error": "Error binding label",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
 		})
 		return
 	}
@@ -84,13 +85,13 @@ func (h *Handler) createLabel(c *gin.Context) {
 		CreatedBy: currentUser.ID,
 	}
 	if err := h.lRepo.CreateLabels(c, []*lModel.Label{label}); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error creating label",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create label",
 		})
 		return
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusCreated, gin.H{
 		"label": gin.H{
 			"id":    label.ID,
 			"name":  label.Name,
@@ -102,16 +103,16 @@ func (h *Handler) createLabel(c *gin.Context) {
 func (h *Handler) updateLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to update label",
 		})
 		return
 	}
 
 	var req UpdateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(400, gin.H{
-			"error": "Error binding label",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
 		})
 		return
 	}
@@ -121,14 +122,21 @@ func (h *Handler) updateLabel(c *gin.Context) {
 		Color: req.Color,
 		ID:    req.ID,
 	}
+
+	if !h.lRepo.AreLabelsAssignableByUser(c, currentUser.ID, []int{label.ID}, nil) {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "You are not allowed to perform this update",
+		})
+	}
+
 	if err := h.lRepo.UpdateLabel(c, currentUser.ID, label); err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error updating label",
 		})
 		return
 	}
 
-	c.JSON(200, gin.H{
+	c.JSON(http.StatusOK, gin.H{
 		"label": gin.H{
 			"id":    label.ID,
 			"name":  label.Name,
@@ -141,15 +149,15 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 
 	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting current user",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to delete label",
 		})
 		return
 	}
 
 	labelIDRaw := c.Param("id")
 	if labelIDRaw == "" {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Label ID is required",
 		})
 		return
@@ -157,22 +165,20 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 
 	labelID, err := strconv.Atoi(labelIDRaw)
 	if err != nil {
-		c.JSON(400, gin.H{
+		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid label ID",
 		})
 		return
 	}
 
 	if err := h.lRepo.DeassignLabelFromAllTaskAndDelete(c, currentUser.ID, labelID); err != nil {
-		c.JSON(500, gin.H{
+		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error unassociating label from task",
 		})
 		return
 	}
 
-	// TODO: Actually delete the label!
-
-	c.JSON(200, gin.H{})
+	c.JSON(http.StatusNoContent, gin.H{})
 }
 
 func Routes(r *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
