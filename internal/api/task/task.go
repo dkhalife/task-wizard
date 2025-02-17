@@ -244,8 +244,9 @@ func (h *Handler) editTask(c *gin.Context) {
 		CreatedBy:    currentUser.ID,
 		IsRolling:    TaskReq.IsRolling,
 		Notification: TaskReq.Notification,
+		IsActive:     oldTask.IsActive,
+		CreatedAt:    oldTask.CreatedAt,
 		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
-		CreatedAt: oldTask.CreatedAt,
 	}
 	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
 		c.JSON(500, gin.H{

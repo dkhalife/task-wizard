@@ -9,13 +9,12 @@ import (
 type FrequencyType string
 
 const (
-	RepeatOnce     = "once"
-	RepeatDaily    = "daily"
-	RepeatWeekly   = "weekly"
-	RepeatMonthly  = "monthly"
-	RepeatYearly   = "yearly"
-	RepeatInterval = "interval"
-	RepeatCustom   = "custom"
+	RepeatOnce    = "once"
+	RepeatDaily   = "daily"
+	RepeatWeekly  = "weekly"
+	RepeatMonthly = "monthly"
+	RepeatYearly  = "yearly"
+	RepeatCustom  = "custom"
 )
 
 type IntervalUnit string
@@ -41,8 +40,8 @@ type Frequency struct {
 	On     RepeatOn      `json:"on" validate:"required_if=Type interval custom" gorm:"type:varchar(18);default:null"`
 	Every  int           `json:"every" validate:"required_if=On interval" gorm:"type:int;default:null"`
 	Unit   IntervalUnit  `json:"unit" validate:"required_if=On interval" gorm:"type:varchar(9);default:null"`
-	Days   pq.Int64Array `json:"days" validate:"required_if=Type custom On days_of_the_week,dive,gte=0,lte=6" gorm:"type:integer[];default:null"`
-	Months pq.Int64Array `json:"months" validate:"required_if=Type custom On day_of_the_months,dive,gte=0,lte=11" gorm:"type:integer[];default:null"`
+	Days   pq.Int32Array `json:"days" validate:"required_if=Type custom On days_of_the_week,dive,gte=0,lte=6" gorm:"type:integer[];default:null"`
+	Months pq.Int32Array `json:"months" validate:"required_if=Type custom On day_of_the_months,dive,gte=0,lte=11" gorm:"type:integer[];default:null"`
 }
 
 type Task struct {

@@ -2,8 +2,7 @@ package repos
 
 import (
 	"context"
-	"fmt"
-	"strings"
+	"errors"
 	"time"
 
 	config "dkhalife.com/tasks/core/config"
@@ -76,13 +75,14 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *tModel.Task, user
 		if dueDate == nil {
 			updates["is_active"] = false
 		}
-		// Perform the update operation once, using the prepared updates map.
+
 		if err := tx.Model(&tModel.Task{}).Where("id = ?", task.ID).Updates(updates).Error; err != nil {
 			return err
 		}
 
 		return nil
 	})
+
 	return err
 }
 
@@ -95,103 +95,86 @@ func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*tMode
 }
 
 func ScheduleNextDueDate(task *tModel.Task, completedDate time.Time) (*time.Time, error) {
-	// if task is rolling then the next due date calculated from the completed date, otherwise it's calculated from the due date
-	var nextDueDate time.Time
-	var baseDate time.Time
-	// TODO: Utility to deserialize from task.FrequencyMetadata
-	var frequencyMetadata *tModel.FrequencyMetadata
-
-	if task.FrequencyType == "once" {
+	var freq = task.Frequency
+	if freq.Type == "once" {
 		return nil, nil
 	}
 
-	if task.NextDueDate != nil {
-		// no due date set, use the current date
-		baseDate = task.NextDueDate.UTC()
-	} else {
-		baseDate = completedDate.UTC()
-	}
-
-	if task.FrequencyType == "days_of_the_month" || task.FrequencyType == "days_of_the_week" || task.FrequencyType == "interval" {
-		// time in frequency metadata stored as RFC3339 format like  `2024-07-07T13:27:00-04:00`
-		// parse it to time.Time:
-		t, err := time.Parse(time.RFC3339, frequencyMetadata.Time)
-		if err != nil {
-			return nil, fmt.Errorf("error parsing time in frequency metadata")
-		}
-		// set the time to the time in the frequency metadata:
-		baseDate = time.Date(baseDate.Year(), baseDate.Month(), baseDate.Day(), t.Hour(), t.Minute(), 0, 0, t.Location())
-
-	}
+	var baseDate time.Time = *task.NextDueDate
 	if task.IsRolling {
-		baseDate = completedDate.UTC()
+		baseDate = completedDate
 	}
-	if task.FrequencyType == "daily" {
+
+	if baseDate.IsZero() {
+		return nil, errors.New("unable to calculate next due date")
+	}
+
+	var nextDueDate time.Time
+	if freq.Type == "daily" {
 		nextDueDate = baseDate.AddDate(0, 0, 1)
-	} else if task.FrequencyType == "weekly" {
+	} else if freq.Type == "weekly" {
 		nextDueDate = baseDate.AddDate(0, 0, 7)
-	} else if task.FrequencyType == "monthly" {
+	} else if freq.Type == "monthly" {
 		nextDueDate = baseDate.AddDate(0, 1, 0)
-	} else if task.FrequencyType == "yearly" {
+	} else if freq.Type == "yearly" {
 		nextDueDate = baseDate.AddDate(1, 0, 0)
-	} else if task.FrequencyType == "once" {
-		// if the task is a one-time task, then the next due date is nil
-	} else if task.FrequencyType == "interval" {
-		// calculate the difference between the due date and now in days:
-		if *frequencyMetadata.Unit == "hours" {
-			nextDueDate = baseDate.UTC().Add(time.Hour * time.Duration(task.Frequency))
-		} else if *frequencyMetadata.Unit == "days" {
-			nextDueDate = baseDate.UTC().AddDate(0, 0, task.Frequency)
-		} else if *frequencyMetadata.Unit == "weeks" {
-			nextDueDate = baseDate.UTC().AddDate(0, 0, task.Frequency*7)
-		} else if *frequencyMetadata.Unit == "months" {
-			nextDueDate = baseDate.UTC().AddDate(0, task.Frequency, 0)
-		} else if *frequencyMetadata.Unit == "years" {
-			nextDueDate = baseDate.UTC().AddDate(task.Frequency, 0, 0)
-		} else {
+	} else if freq.Type == "custom" {
+		if freq.On == "interval" {
+			if freq.Unit == "hours" {
+				nextDueDate = baseDate.Add(time.Duration(freq.Every) * time.Hour)
+			} else if freq.Unit == "days" {
+				nextDueDate = baseDate.AddDate(0, 0, freq.Every)
+			} else if freq.Unit == "weeks" {
+				nextDueDate = baseDate.AddDate(0, 0, 7*freq.Every)
+			} else if freq.Unit == "months" {
+				nextDueDate = baseDate.AddDate(0, freq.Every, 0)
+			} else if freq.Unit == "years" {
+				nextDueDate = baseDate.AddDate(freq.Every, 0, 0)
+			}
+		} else if freq.On == "days_of_the_week" {
+			currentWeekDay := int32(baseDate.Weekday())
+			days := freq.Days
 
-			return nil, fmt.Errorf("invalid frequency unit, cannot calculate next due date")
-		}
-	} else if task.FrequencyType == "days_of_the_week" {
-		//we can only assign to days of the week that part of the frequency metadata.days
-		//it's array of days of the week, for example ["monday", "tuesday", "wednesday"]
+			if len(days) == 0 {
+				return nil, errors.New("days of the week cannot be empty")
+			}
 
-		// we need to find the next day of the week in the frequency metadata.days that we can schedule
-		// if this the last or there is only one. will use same otherwise find the next one:
-
-		// find the index of the task day in the frequency metadata.days
-		// loop for next 7 days from the base, if the day in the frequency metadata.days then we can schedule it:
-		for i := 1; i <= 7; i++ {
-			nextDueDate = baseDate.AddDate(0, 0, i)
-			nextDay := strings.ToLower(nextDueDate.Weekday().String())
-			for _, day := range frequencyMetadata.Days {
-				if strings.ToLower(*day) == nextDay {
-					nextDate := nextDueDate.UTC()
-					return &nextDate, nil
+			duringThisWeek := false
+			for _, day := range days {
+				if day > currentWeekDay {
+					duringThisWeek = true
+					nextDueDate = baseDate.AddDate(0, 0, int(day-currentWeekDay))
+					break
 				}
 			}
-		}
-	} else if task.FrequencyType == "days_of_the_month" {
-		for i := 1; i <= 12; i++ {
-			nextDueDate = baseDate.AddDate(0, i, 0)
-			// set the date to the first day of the month:
-			nextDueDate = time.Date(nextDueDate.Year(), nextDueDate.Month(), task.Frequency, nextDueDate.Hour(), nextDueDate.Minute(), 0, 0, nextDueDate.Location())
-			nextMonth := strings.ToLower(nextDueDate.Month().String())
-			for _, month := range frequencyMetadata.Months {
-				if *month == nextMonth {
-					nextDate := nextDueDate.UTC()
-					return &nextDate, nil
+
+			if !duringThisWeek {
+				daysUntilNextWeek := 7 - int(currentWeekDay)
+				nextDueDate = baseDate.AddDate(0, 0, daysUntilNextWeek+int(days[0]))
+			}
+		} else if freq.On == "day_of_the_months" {
+			currentMonth := int32(baseDate.Month())
+			months := freq.Months
+
+			if len(months) == 0 {
+				return nil, errors.New("months cannot be empty")
+			}
+
+			duringThisYear := false
+			for _, month := range months {
+				if month > currentMonth {
+					duringThisYear = true
+					nextDueDate = baseDate.AddDate(0, int(month-currentMonth), 0)
+					break
 				}
 			}
+
+			if !duringThisYear {
+				monthsUntilNextYear := 12 - int(currentMonth)
+				nextDueDate = baseDate.AddDate(0, monthsUntilNextYear+int(months[0]), 0)
+			}
 		}
-	} else if task.FrequencyType == "no_repeat" {
-		return nil, nil
-	} else if task.FrequencyType == "trigger" {
-		// if the task is a trigger task, then the next due date is nil
-		return nil, nil
-	} else {
-		return nil, fmt.Errorf("invalid frequency type, cannot calculate next due date")
 	}
-	return &nextDueDate, nil
 
+	return &nextDueDate, nil
 }
