@@ -42,19 +42,21 @@ func (h *Handler) signUp(c *gin.Context) {
 		Password    string `json:"password" binding:"required,min=8,max=45"`
 		DisplayName string `json:"displayName" binding:"required"`
 	}
+
 	var signupReq SignUpReq
 	if err := c.BindJSON(&signupReq); err != nil {
-		c.JSON(400, gin.H{
-			"error": "Invalid request",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
 		})
 		return
 	}
+
 	password, err := auth.EncodePassword(signupReq.Password)
 	signupReq.DisplayName = html.EscapeString(signupReq.DisplayName)
 
 	if err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error encoding password",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Encoding password failed",
 		})
 		return
 	}
@@ -66,24 +68,25 @@ func (h *Handler) signUp(c *gin.Context) {
 		CreatedAt:   time.Now(),
 		UpdatedAt:   time.Now(),
 	}); err != nil {
-		c.JSON(500, gin.H{
-			"error": "Error creating user, email already exists",
+		c.JSON(http.StatusConflict, gin.H{
+			"error": "Error creating user, an account with this email already exists",
 		})
 		return
 	}
 
-	c.JSON(201, gin.H{})
+	c.JSON(http.StatusCreated, gin.H{})
 }
 
 func (h *Handler) GetUserProfile(c *gin.Context) {
 	user, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(500, gin.H{
-			"error": "Error getting user",
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to access user profile",
 		})
 		return
 	}
-	c.JSON(200, gin.H{
+
+	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
 			"display_name":      user.DisplayName,
 			"notification_type": user.NotificationType,
@@ -96,24 +99,26 @@ func (h *Handler) resetPassword(c *gin.Context) {
 	type ResetPasswordReq struct {
 		Email string `json:"email" binding:"required,email"`
 	}
+
 	var req ResetPasswordReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
+			"error": err,
 		})
 		return
 	}
+
 	_, err := h.userRepo.FindByEmail(c, req.Email)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{})
 		log.Error("account.handler.resetPassword failed to find user")
 		return
 	}
-	// generate a random password:
+
 	token, err := auth.GenerateEmailResetToken(c)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Unable to generate token",
+			"error": "Unable to generate reset token",
 		})
 		return
 	}
@@ -121,11 +126,11 @@ func (h *Handler) resetPassword(c *gin.Context) {
 	err = h.userRepo.SetPasswordResetToken(c, req.Email, token)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Unable to generate password",
+			"error": "Unable to set reset token",
 		})
 		return
 	}
-	// send an email to the user with the new password:
+
 	err = h.email.SendResetPasswordEmail(c, req.Email, token)
 	if err != nil {
 		log.Errorw("account.handler.resetPassword failed to send email", "err", err)
@@ -135,40 +140,42 @@ func (h *Handler) resetPassword(c *gin.Context) {
 		return
 	}
 
-	// send an email to the user with the new password:
 	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *Handler) updateUserPassword(c *gin.Context) {
 	logger := logging.FromContext(c)
-	// read the code from query param:
+
 	code := c.Query("c")
+
 	email, code, err := email.DecodeEmailAndCode(code)
 	if err != nil {
 		logger.Errorw("account.handler.verify failed to decode email and code", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid code",
+			"error": "Invalid reset code",
 		})
 		return
 
 	}
-	// read password from body:
+
 	type RequestBody struct {
 		Password string `json:"password" binding:"required,min=8,max=32"`
 	}
+
 	var body RequestBody
 	if err := c.ShouldBindJSON(&body); err != nil {
 		logger.Errorw("user.handler.resetAccountPassword failed to bind", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
+			"error": "New password was not provided",
 		})
 		return
 
 	}
+
 	password, err := auth.EncodePassword(body.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Unable to process password",
+			"error": err,
 		})
 		return
 	}
@@ -181,74 +188,92 @@ func (h *Handler) updateUserPassword(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
 
+	c.JSON(http.StatusOK, gin.H{})
 }
 
 func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
-		return
-	}
-	type TokenRequest struct {
-		Name string `json:"name" binding:"required"`
-	}
-	var req TokenRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to create tokens",
+		})
 		return
 	}
 
-	// Step 1: Generate a secure random number
-	randomBytes := make([]byte, 16) // 128 bits are enough for strong randomness
+	type TokenRequest struct {
+		Name string `json:"name" binding:"required"`
+	}
+
+	var req TokenRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
+		return
+	}
+
+	randomBytes := make([]byte, 16)
 	_, err := rand.Read(randomBytes)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to generate random part of the token"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to generate random token",
+		})
 		return
 	}
 
 	timestamp := time.Now().Unix()
-	hashInput := fmt.Sprintf("%s:%d:%x", currentUser.ID, timestamp, randomBytes)
+	hashInput := fmt.Sprintf("%d:%d:%x", currentUser.ID, timestamp, randomBytes)
 	hash := sha256.Sum256([]byte(hashInput))
 
 	token := hex.EncodeToString(hash[:])
 
 	tokenModel, err := h.userRepo.StoreAPIToken(c, currentUser.ID, req.Name, token)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to store the token"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to store token",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"token": gin.H{
-		"id":        tokenModel.ID,
-		"name":      tokenModel.Name,
-		"token":     tokenModel.Token,
-		"createdAt": tokenModel.CreatedAt,
-	}})
+	c.JSON(http.StatusCreated, gin.H{
+		"token": gin.H{
+			"id":        tokenModel.ID,
+			"name":      tokenModel.Name,
+			"token":     tokenModel.Token,
+			"createdAt": tokenModel.CreatedAt,
+		},
+	})
 }
 
 func (h *Handler) GetAllUserToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to fetch tokens",
+		})
 		return
 	}
 
 	tokens, err := h.userRepo.GetAllUserTokens(c, currentUser.ID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user tokens"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user tokens",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{"tokens": tokens})
-
+	c.JSON(http.StatusOK, gin.H{
+		"tokens": tokens,
+	})
 }
 
 func (h *Handler) DeleteUserToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to delete tokens",
+		})
 		return
 	}
 
@@ -256,17 +281,21 @@ func (h *Handler) DeleteUserToken(c *gin.Context) {
 
 	err := h.userRepo.DeleteAPIToken(c, currentUser.ID, tokenID)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete the token"})
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to delete the token",
+		})
 		return
 	}
 
-	c.JSON(http.StatusOK, gin.H{})
+	c.JSON(http.StatusNoContent, gin.H{})
 }
 
 func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to update notification target",
+		})
 		return
 	}
 
@@ -276,49 +305,61 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 
 	var req Request
 	if err := c.ShouldBindJSON(&req); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid request"})
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
 		return
 	}
 
 	err := h.userRepo.UpdateNotificationTarget(c, currentUser.ID, req.Type)
 	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update notification target"})
-		return
-	}
-
-	err = h.userRepo.UpdateNotificationTargetForAllNotifications(c, currentUser.ID, req.Type)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update notification target for all notifications"})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{})
-}
-
-func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
-	logger := logging.FromContext(c)
-	type RequestBody struct {
-		Password string `json:"password" binding:"required,min=8,max=32"`
-	}
-	var body RequestBody
-	if err := c.ShouldBindJSON(&body); err != nil {
-		logger.Errorw("user.handler.resetAccountPassword failed to bind", "err", err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid request",
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update notification target",
 		})
 		return
 	}
 
+	// TODO: Remove this when notifications are joined
+	err = h.userRepo.UpdateNotificationTargetForAllNotifications(c, currentUser.ID, req.Type)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to update notification target for all notifications",
+		})
+		return
+	}
+
+	c.JSON(http.StatusNoContent, gin.H{})
+}
+
+func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
+	logger := logging.FromContext(c)
+
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
+		c.JSON(http.StatusUnauthorized, gin.H{
+			"error": "Login required to updated password",
+		})
+		return
+	}
+
+	type RequestBody struct {
+		Password string `json:"password" binding:"required,min=8,max=32"`
+	}
+
+	var body RequestBody
+
+	if err := c.ShouldBindJSON(&body); err != nil {
+		logger.Errorw("user.handler.resetAccountPassword failed to bind", "err", err)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err,
+		})
 		return
 	}
 
 	password, err := auth.EncodePassword(body.Password)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Unable to process password",
+			"error": "Unable to encode password",
 		})
 		return
 	}
@@ -331,7 +372,8 @@ func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 		})
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{})
+
+	c.JSON(http.StatusNoContent, gin.H{})
 }
 
 func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {

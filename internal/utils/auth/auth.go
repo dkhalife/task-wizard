@@ -54,11 +54,3 @@ func CurrentUser(c *gin.Context) (*uModel.User, bool) {
 	acc, ok := data.(*uModel.User)
 	return acc, ok
 }
-
-func MustCurrentUser(c *gin.Context) *uModel.User {
-	acc, ok := CurrentUser(c)
-	if ok {
-		return acc
-	}
-	panic("no account in gin.Context")
-}
