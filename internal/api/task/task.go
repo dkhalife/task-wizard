@@ -23,13 +23,12 @@ type LabelReq struct {
 }
 
 type TaskReq struct {
-	ID           string           `json:"id"`
-	Title        string           `json:"title" binding:"required"`
-	NextDueDate  int64            `json:"next_due_date"`
-	IsRolling    bool             `json:"is_rolling"`
-	Frequency    tModel.Frequency `json:"frequency"`
-	Notification bool             `json:"notification"`
-	// NotificationMetadata *tModel.NotificationMetadata `json:"notification_metadata"`
+	ID           string              `json:"id"`
+	Title        string              `json:"title" binding:"required"`
+	NextDueDate  int64               `json:"next_due_date"`
+	IsRolling    bool                `json:"is_rolling"`
+	Frequency    tModel.Frequency    `json:"frequency"`
+	Notification tModel.Notification `json:"notification"`
 }
 
 type Handler struct {
@@ -148,8 +147,7 @@ func (h *Handler) createTask(c *gin.Context) {
 		IsRolling:    TaskReq.IsRolling,
 		IsActive:     true,
 		Notification: TaskReq.Notification,
-		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
-		CreatedAt: time.Now().UTC(),
+		CreatedAt:    time.Now().UTC(),
 	}
 	id, err := h.tRepo.CreateTask(c, createdTask)
 	createdTask.ID = id
@@ -246,7 +244,6 @@ func (h *Handler) editTask(c *gin.Context) {
 		Notification: TaskReq.Notification,
 		IsActive:     oldTask.IsActive,
 		CreatedAt:    oldTask.CreatedAt,
-		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
 	}
 	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
 		c.JSON(500, gin.H{

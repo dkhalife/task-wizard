@@ -20,22 +20,27 @@ func NewNotificationPlanner(nr *nRepo.NotificationRepository) *NotificationPlann
 
 func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tModel.Task) bool {
 	n.nRepo.DeleteAllTaskNotifications(task.ID)
-	notifications := make([]*nModel.Notification, 0)
-	if !task.Notification {
+
+	ns := task.Notification
+	if !ns.Enabled {
 		return true
 	}
-	// TODO: Utility to deserialize from task.NotificationMetadata
-	var mt *tModel.NotificationMetadata
+
 	if task.NextDueDate == nil {
 		return true
 	}
-	if mt.DueDate {
+
+	notifications := make([]*nModel.Notification, 0)
+
+	if ns.DueDate {
 		notifications = append(notifications, generateDueNotifications(task)...)
 	}
-	if mt.PreDue {
+
+	if ns.PreDue {
 		notifications = append(notifications, generatePreDueNotifications(task)...)
 	}
-	if mt.Nagging {
+
+	if ns.Nagging {
 		notifications = append(notifications, generateOverdueNotifications(task)...)
 	}
 
