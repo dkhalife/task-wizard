@@ -21,7 +21,7 @@ func NewNotificationPlanner(nr *nRepo.NotificationRepository) *NotificationPlann
 func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tModel.Task) bool {
 	n.nRepo.DeleteAllTaskNotifications(task.ID)
 	notifications := make([]*nModel.Notification, 0)
-	if !task.Notification || task.FrequencyType == "trigger" {
+	if !task.Notification {
 		return true
 	}
 	// TODO: Utility to deserialize from task.NotificationMetadata

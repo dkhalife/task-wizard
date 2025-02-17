@@ -23,14 +23,12 @@ type LabelReq struct {
 }
 
 type TaskReq struct {
-	ID            string               `json:"id"`
-	Title         string               `json:"title" binding:"required"`
-	FrequencyType tModel.FrequencyType `json:"frequency_type"`
-	NextDueDate   int64                `json:"next_due_date"`
-	IsRolling     bool                 `json:"is_rolling"`
-	Frequency     int                  `json:"frequency"`
-	// FrequencyMetadata    *tModel.FrequencyMetadata    `json:"frequency_metadata"`
-	Notification bool `json:"notification"`
+	ID           string           `json:"id"`
+	Title        string           `json:"title" binding:"required"`
+	NextDueDate  int64            `json:"next_due_date"`
+	IsRolling    bool             `json:"is_rolling"`
+	Frequency    tModel.Frequency `json:"frequency"`
+	Notification bool             `json:"notification"`
 	// NotificationMetadata *tModel.NotificationMetadata `json:"notification_metadata"`
 }
 
@@ -143,10 +141,8 @@ func (h *Handler) createTask(c *gin.Context) {
 	}
 
 	createdTask := &tModel.Task{
-		Title:         TaskReq.Title,
-		FrequencyType: TaskReq.FrequencyType,
-		Frequency:     TaskReq.Frequency,
-		// TODO: Serialize utility FrequencyMetadata:    TaskReq.FrequencyMetadata,
+		Title:        TaskReq.Title,
+		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
 		CreatedBy:    currentUser.ID,
 		IsRolling:    TaskReq.IsRolling,
@@ -241,17 +237,16 @@ func (h *Handler) editTask(c *gin.Context) {
 	}*/
 
 	updatedTask := &tModel.Task{
-		ID:            taskId,
-		Title:         TaskReq.Title,
-		FrequencyType: TaskReq.FrequencyType,
-		Frequency:     TaskReq.Frequency,
-		// TODO: Serialize utility FrequencyMetadata:    TaskReq.FrequencyMetadata,
+		ID:           taskId,
+		Title:        TaskReq.Title,
+		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
 		CreatedBy:    currentUser.ID,
 		IsRolling:    TaskReq.IsRolling,
 		Notification: TaskReq.Notification,
+		IsActive:     oldTask.IsActive,
+		CreatedAt:    oldTask.CreatedAt,
 		// TODO: Serialize utility NotificationMetadata: TaskReq.NotificationMetadata,
-		CreatedAt: oldTask.CreatedAt,
 	}
 	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
 		c.JSON(500, gin.H{
