@@ -62,9 +62,9 @@ func (r *TaskRepository) IsTaskOwner(c context.Context, taskID int, userID int) 
 func (r *TaskRepository) CompleteTask(c context.Context, task *tModel.Task, userID int, dueDate *time.Time, completedDate *time.Time) error {
 	err := r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		ch := &tModel.TaskHistory{
-			TaskID:      task.ID,
-			CompletedAt: completedDate,
-			DueDate:     task.NextDueDate,
+			TaskID:        task.ID,
+			CompletedDate: completedDate,
+			DueDate:       task.NextDueDate,
 		}
 		if err := tx.Create(ch).Error; err != nil {
 			return err
@@ -88,7 +88,7 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *tModel.Task, user
 
 func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*tModel.TaskHistory, error) {
 	var histories []*tModel.TaskHistory
-	if err := r.db.WithContext(c).Where("task_id = ?", taskID).Order("completed_at desc").Find(&histories).Error; err != nil {
+	if err := r.db.WithContext(c).Where("task_id = ?", taskID).Order("completed_date desc").Find(&histories).Error; err != nil {
 		return nil, err
 	}
 	return histories, nil
