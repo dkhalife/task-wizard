@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	nModel "dkhalife.com/tasks/core/internal/models/notifier"
 	tModel "dkhalife.com/tasks/core/internal/models/task"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
@@ -23,12 +24,12 @@ type LabelReq struct {
 }
 
 type TaskReq struct {
-	ID           string              `json:"id"`
-	Title        string              `json:"title" binding:"required"`
-	NextDueDate  int64               `json:"next_due_date"`
-	IsRolling    bool                `json:"is_rolling"`
-	Frequency    tModel.Frequency    `json:"frequency"`
-	Notification tModel.Notification `json:"notification"`
+	ID           string                            `json:"id"`
+	Title        string                            `json:"title" binding:"required"`
+	NextDueDate  int64                             `json:"next_due_date"`
+	IsRolling    bool                              `json:"is_rolling"`
+	Frequency    tModel.Frequency                  `json:"frequency"`
+	Notification nModel.NotificationTriggerOptions `json:"notification"`
 }
 
 type Handler struct {

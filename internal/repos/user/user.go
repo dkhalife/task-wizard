@@ -21,7 +21,16 @@ func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
 }
 
 func (r *UserRepository) CreateUser(c context.Context, user *uModel.User) error {
-	return r.db.WithContext(c).Save(user).Error
+	if err := r.db.WithContext(c).Save(user).Error; err != nil {
+		return err
+	}
+
+	return r.db.WithContext(c).Save(&nModel.NotificationSettings{
+		UserID: user.ID,
+		Provider: nModel.NotificationProvider{
+			Provider: nModel.NotificationProviderNone,
+		},
+	}).Error
 }
 
 func (r *UserRepository) GetUser(c context.Context, id int) (*uModel.User, error) {
@@ -109,15 +118,12 @@ func (r *UserRepository) DeleteAPIToken(c context.Context, userID int, tokenID s
 	return r.db.WithContext(c).Where("id = ? AND user_id = ?", tokenID, userID).Delete(&uModel.APIToken{}).Error
 }
 
-func (r *UserRepository) UpdateNotificationTarget(c context.Context, userID int, targetType nModel.NotificationType) error {
-	return r.db.WithContext(c).Save(&uModel.User{
-		ID:               userID,
-		NotificationType: targetType,
+func (r *UserRepository) UpdateNotificationSettings(c context.Context, userID int, provider nModel.NotificationProvider, triggers nModel.NotificationTriggerOptions) error {
+	return r.db.WithContext(c).Save(&nModel.NotificationSettings{
+		UserID:   userID,
+		Provider: provider,
+		Triggers: triggers,
 	}).Error
-}
-
-func (r *UserRepository) UpdateNotificationTargetForAllNotifications(c context.Context, userID int, targetType nModel.NotificationType) error {
-	return r.db.WithContext(c).Model(&nModel.Notification{}).Where("user_id = ?", userID).Update("type", targetType).Error
 }
 
 func (r *UserRepository) UpdatePasswordByUserId(c context.Context, userID int, password string) error {

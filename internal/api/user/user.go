@@ -12,6 +12,7 @@ import (
 	"dkhalife.com/tasks/core/config"
 	nModel "dkhalife.com/tasks/core/internal/models/notifier"
 	uModel "dkhalife.com/tasks/core/internal/models/user"
+	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
@@ -24,13 +25,15 @@ import (
 
 type Handler struct {
 	userRepo *uRepo.UserRepository
+	nRepo    *nRepo.NotificationRepository
 	jwtAuth  *jwt.GinJWTMiddleware
 	email    *email.EmailSender
 }
 
-func NewHandler(ur *uRepo.UserRepository, jwtAuth *jwt.GinJWTMiddleware, email *email.EmailSender, config *config.Config) *Handler {
+func NewHandler(ur *uRepo.UserRepository, nRepo *nRepo.NotificationRepository, jwtAuth *jwt.GinJWTMiddleware, email *email.EmailSender, config *config.Config) *Handler {
 	return &Handler{
 		userRepo: ur,
+		nRepo:    nRepo,
 		jwtAuth:  jwtAuth,
 		email:    email,
 	}
@@ -86,10 +89,18 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 		return
 	}
 
+	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, user.ID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get notification settings",
+		})
+		return
+	}
+
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
-			"display_name":      user.DisplayName,
-			"notification_type": user.NotificationType,
+			"display_name":  user.DisplayName,
+			"notifications": notificationSettings,
 		},
 	})
 }
@@ -290,7 +301,7 @@ func (h *Handler) DeleteUserToken(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
+func (h *Handler) UpdateNotificationSettings(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -300,7 +311,8 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 	}
 
 	type Request struct {
-		Type nModel.NotificationType `json:"type" binding:"required"`
+		Provider nModel.NotificationProvider       `json:"provider" binding:"required"`
+		Triggers nModel.NotificationTriggerOptions `json:"triggers" binding:"required"`
 	}
 
 	var req Request
@@ -311,7 +323,7 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 		return
 	}
 
-	err := h.userRepo.UpdateNotificationTarget(c, currentUser.ID, req.Type)
+	err := h.userRepo.UpdateNotificationSettings(c, currentUser.ID, req.Provider, req.Triggers)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to update notification target",
@@ -319,14 +331,7 @@ func (h *Handler) UpdateNotificationTarget(c *gin.Context) {
 		return
 	}
 
-	// TODO: Remove this when notifications are joined
-	err = h.userRepo.UpdateNotificationTargetForAllNotifications(c, currentUser.ID, req.Type)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to update notification target for all notifications",
-		})
-		return
-	}
+	// TODO: Reschedule all notifications for this user
 
 	c.JSON(http.StatusNoContent, gin.H{})
 }
@@ -384,7 +389,7 @@ func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter 
 		userRoutes.POST("/tokens", h.CreateLongLivedToken)
 		userRoutes.GET("/tokens", h.GetAllUserToken)
 		userRoutes.DELETE("/tokens/:id", h.DeleteUserToken)
-		userRoutes.PUT("/targets", h.UpdateNotificationTarget)
+		userRoutes.PUT("/notifications", h.UpdateNotificationSettings)
 		userRoutes.PUT("change_password", h.updateUserPasswordLoggedInOnly)
 	}
 

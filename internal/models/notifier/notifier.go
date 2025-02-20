@@ -1,24 +1,45 @@
 package notifier
 
-import "time"
+import (
+	"time"
+
+	uModel "dkhalife.com/tasks/core/internal/models/user"
+)
 
 type Notification struct {
-	ID           int              `json:"id" gorm:"primaryKey"`
-	TaskID       int              `json:"task_id" gorm:"column:task_id"`
-	UserID       int              `json:"user_id" gorm:"column:user_id"`
-	Text         string           `json:"text" gorm:"column:text"`
-	IsSent       bool             `json:"is_sent" gorm:"column:is_sent;index;default:false"`
-	TypeID       NotificationType `json:"type" gorm:"column:type"`
-	ScheduledFor time.Time        `json:"scheduled_for" gorm:"column:scheduled_for;index"`
-	CreatedAt    time.Time        `json:"created_at" gorm:"column:created_at"`
+	ID           int       `json:"id" gorm:"primaryKey"`
+	TaskID       int       `json:"task_id" gorm:"column:task_id"`
+	UserID       int       `json:"user_id" gorm:"column:user_id"`
+	Text         string    `json:"text" gorm:"column:text"`
+	IsSent       bool      `json:"is_sent" gorm:"column:is_sent;index;default:false"`
+	ScheduledFor time.Time `json:"scheduled_for" gorm:"column:scheduled_for;index"`
+	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at"`
 }
 
-func (n *Notification) IsValid() bool {
-	return true
-}
-
-type NotificationType int8
+type NotificationProviderType string
 
 const (
-	NotificationTypeNone NotificationType = iota
+	NotificationProviderNone    NotificationProviderType = "none"
+	NotificationProviderWebhook NotificationProviderType = "webhook"
 )
+
+type NotificationProvider struct {
+	Provider NotificationProviderType `json:"provider" validate:"required" gorm:"type:varchar(7);column:type"`
+	URL      string                   `json:"url" validate:"required_if=Provider webhook" gorm:"column:url"`
+	Method   string                   `json:"method" validate:"required_if=Provider webhook" gorm:"type:varchar(4);column:method"`
+}
+
+type NotificationTriggerOptions struct {
+	Enabled bool `json:"enabled"`
+	DueDate bool `json:"due_date" validate:"required_if=Enabled true" gorm:"column:due_date;default:false"`
+	PreDue  bool `json:"pre_due" validate:"required_if=Enabled true" gorm:"column:pre_due;default:false"`
+	Overdue bool `json:"overdue" validate:"required_if=Enabled true" gorm:"column:overdue;default:false"`
+	Nag     bool `json:"nag" validate:"required_if=Enabled true" gorm:"column=nag;default:false"`
+}
+
+type NotificationSettings struct {
+	UserID   int                        `json:"-" gorm:"primaryKey"`
+	User     uModel.User                `json:"-" gorm:"foreignKey:UserID;references:ID"`
+	Provider NotificationProvider       `json:"provider" gorm:"embedded;embeddedPrefix:notifications_provider_"`
+	Triggers NotificationTriggerOptions `json:"triggers" gorm:"embedded;embeddedPrefix:notifications_triggers_"`
+}

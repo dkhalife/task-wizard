@@ -3,6 +3,7 @@ package task
 import (
 	"time"
 
+	nModel "dkhalife.com/tasks/core/internal/models/notifier"
 	"github.com/lib/pq"
 )
 
@@ -44,25 +45,17 @@ type Frequency struct {
 	Months pq.Int32Array `json:"months" validate:"required_if=Type custom On day_of_the_months,dive,gte=0,lte=11" gorm:"type:integer[];default:null"`
 }
 
-type Notification struct {
-	Enabled bool `json:"enabled" gorm:"column:enabled;default:false"`
-	DueDate bool `json:"due_date" validate:"required_if=Enabled true" gorm:"column:due_date;default:false"`
-	PreDue  bool `json:"pre_due" validate:"required_if=Enabled true" gorm:"column:pre_due;default:false"`
-	Overdue bool `json:"overdue" validate:"required_if=Enabled true" gorm:"column:overdue;default:false"`
-	Nagging bool `json:"nagging" validate:"required_if=Enabled true" gorm:"column=nagging;default:false"`
-}
-
 type Task struct {
-	ID           int          `json:"id" gorm:"primary_key"`
-	Title        string       `json:"title" gorm:"column:title"`
-	Frequency    Frequency    `json:"frequency" gorm:"embedded;embeddedPrefix:frequency_"`
-	NextDueDate  *time.Time   `json:"next_due_date" gorm:"column:next_due_date;index"`
-	IsRolling    bool         `json:"is_rolling" gorm:"column:is_rolling"`
-	CreatedBy    int          `json:"created_by" gorm:"column:created_by"`
-	IsActive     bool         `json:"is_active" gorm:"column:is_active"`
-	Notification Notification `json:"notification" gorm:"embedded;embeddedPrefix:notification_"`
-	CreatedAt    time.Time    `json:"created_at" gorm:"column:created_at"`
-	UpdatedAt    time.Time    `json:"updated_at" gorm:"column:updated_at"`
+	ID           int                               `json:"id" gorm:"primary_key"`
+	Title        string                            `json:"title" gorm:"column:title"`
+	Frequency    Frequency                         `json:"frequency" gorm:"embedded;embeddedPrefix:frequency_"`
+	NextDueDate  *time.Time                        `json:"next_due_date" gorm:"column:next_due_date;index"`
+	IsRolling    bool                              `json:"is_rolling" gorm:"column:is_rolling"`
+	CreatedBy    int                               `json:"created_by" gorm:"column:created_by"`
+	IsActive     bool                              `json:"is_active" gorm:"column:is_active"`
+	Notification nModel.NotificationTriggerOptions `json:"notification" gorm:"embedded;embeddedPrefix:notification_"`
+	CreatedAt    time.Time                         `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt    time.Time                         `json:"updated_at" gorm:"column:updated_at"`
 }
 
 type TaskHistory struct {
