@@ -16,6 +16,14 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 	return &NotificationRepository{db}
 }
 
+func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, userID int) (*nModel.NotificationSettings, error) {
+	var settings nModel.NotificationSettings
+	if err := r.db.Debug().WithContext(c).Model(&nModel.NotificationSettings{}).First(&settings, userID).Error; err != nil {
+		return nil, err
+	}
+	return &settings, nil
+}
+
 func (r *NotificationRepository) DeleteAllTaskNotifications(taskID int) error {
 	return r.db.Where("task_id = ?", taskID).Delete(&nModel.Notification{}).Error
 }

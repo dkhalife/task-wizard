@@ -17,6 +17,7 @@ func Migration(db *gorm.DB) error {
 		tModel.Task{},
 		tModel.TaskLabels{},
 		tModel.TaskHistory{},
+		nModel.NotificationSettings{},
 		nModel.Notification{},
 	); err != nil {
 		return err

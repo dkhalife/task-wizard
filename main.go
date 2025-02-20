@@ -58,9 +58,9 @@ func main() {
 		fx.Provide(tRepo.NewTaskRepository),
 		fx.Provide(task.NewHandler),
 		fx.Provide(uRepo.NewUserRepository),
+		fx.Provide(nRepo.NewNotificationRepository),
 		fx.Provide(user.NewHandler),
 
-		fx.Provide(nRepo.NewNotificationRepository),
 		fx.Provide(planner.NewNotificationPlanner),
 
 		// add notifier

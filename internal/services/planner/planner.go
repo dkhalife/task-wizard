@@ -40,7 +40,7 @@ func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tMo
 		notifications = append(notifications, generatePreDueNotifications(task)...)
 	}
 
-	if ns.Nagging {
+	if ns.Nag {
 		notifications = append(notifications, generateOverdueNotifications(task)...)
 	}
 
@@ -60,9 +60,8 @@ func generateDueNotifications(task *tModel.Task) []*nModel.Notification {
 		//UserID:       user.ID,
 		Text: fmt.Sprintf("📅 Reminder: *%s* is due today.", task.Title),
 	}
-	if notification.IsValid() {
-		notifications = append(notifications, notification)
-	}
+
+	notifications = append(notifications, notification)
 
 	return notifications
 }
@@ -79,9 +78,8 @@ func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
 		// UserID:       user.ID,
 		Text: fmt.Sprintf("📢 Heads up! *%s* is due soon (on %s)", task.Title, task.NextDueDate.Format("January 2nd")),
 	}
-	if notification.IsValid() {
-		notifications = append(notifications, notification)
-	}
+
+	notifications = append(notifications, notification)
 
 	return notifications
 }
@@ -99,9 +97,8 @@ func generateOverdueNotifications(task *tModel.Task) []*nModel.Notification {
 			// UserID:       user.ID,
 			Text: fmt.Sprintf("🚨 *%s* is now %d hours overdue. Please complete it as soon as possible.", task.Title, hours),
 		}
-		if notification.IsValid() {
-			notifications = append(notifications, notification)
-		}
+
+		notifications = append(notifications, notification)
 	}
 
 	return notifications

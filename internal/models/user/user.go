@@ -2,19 +2,16 @@ package user
 
 import (
 	"time"
-
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
 )
 
 type User struct {
-	ID               int                     `json:"id" gorm:"primary_key"`
-	DisplayName      string                  `json:"display_name" gorm:"column:display_name"`
-	Email            string                  `json:"email" gorm:"column:email;unique"`
-	Password         string                  `json:"-" gorm:"column:password"`
-	CreatedAt        time.Time               `json:"created_at" gorm:"column:created_at"`
-	UpdatedAt        time.Time               `json:"updated_at" gorm:"column:updated_at"`
-	Disabled         bool                    `json:"disabled" gorm:"column:disabled"`
-	NotificationType nModel.NotificationType `json:"notification_type" gorm:"column:type"`
+	ID          int       `json:"id" gorm:"primary_key"`
+	DisplayName string    `json:"display_name" gorm:"column:display_name"`
+	Email       string    `json:"email" gorm:"column:email;unique"`
+	Password    string    `json:"-" gorm:"column:password"`
+	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at"`
+	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`
+	Disabled    bool      `json:"disabled" gorm:"column:disabled"`
 }
 
 type UserPasswordReset struct {
