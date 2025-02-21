@@ -3,6 +3,7 @@ package task
 import (
 	"time"
 
+	lModel "dkhalife.com/tasks/core/internal/models/label"
 	nModel "dkhalife.com/tasks/core/internal/models/notifier"
 	"github.com/lib/pq"
 )
@@ -56,6 +57,7 @@ type Task struct {
 	Notification nModel.NotificationTriggerOptions `json:"notification" gorm:"embedded;embeddedPrefix:notification_"`
 	CreatedAt    time.Time                         `json:"created_at" gorm:"column:created_at"`
 	UpdatedAt    time.Time                         `json:"updated_at" gorm:"column:updated_at"`
+	Labels       []lModel.Label                    `json:"labels" gorm:"many2many:task_labels;"`
 }
 
 type TaskHistory struct {
@@ -66,6 +68,6 @@ type TaskHistory struct {
 }
 
 type TaskLabels struct {
-	TaskID  int `json:"task_id" gorm:"primaryKey;autoIncrement:false;not null"`
-	LabelID int `json:"label_id" gorm:"primaryKey;autoIncrement:false;not null"`
+	TaskID  int `json:"task_id"`
+	LabelID int `json:"label_id"`
 }

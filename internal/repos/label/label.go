@@ -9,7 +9,6 @@ import (
 	tModel "dkhalife.com/tasks/core/internal/models/task"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 )
 
 type LabelRepository struct {
@@ -65,14 +64,11 @@ func (r *LabelRepository) AssignLabelsToTask(ctx context.Context, taskID int, us
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := r.db.WithContext(ctx).Where("task_id = ? AND user_id = ?", taskID, userID).Delete(&tModel.TaskLabels{}).Error; err != nil {
+		if err := r.db.WithContext(ctx).Where("task_id = ?", taskID).Delete(&tModel.TaskLabels{}).Error; err != nil {
 			return err
 		}
 
-		if err := r.db.WithContext(ctx).Clauses(clause.OnConflict{
-			Columns:   []clause.Column{{Name: "task_id"}, {Name: "label_id"}, {Name: "user_id"}},
-			DoNothing: true,
-		}).Create(&taskLabels).Error; err != nil {
+		if err := r.db.WithContext(ctx).Create(&taskLabels).Error; err != nil {
 			return err
 		}
 
@@ -81,6 +77,7 @@ func (r *LabelRepository) AssignLabelsToTask(ctx context.Context, taskID int, us
 }
 
 func (r *LabelRepository) DeassignLabelFromAllTaskAndDelete(ctx context.Context, userID int, labelID int) error {
+	// TODO: this should just cascade from a single delete
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
 		log := logging.FromContext(ctx)
 		var labelCount int64
@@ -104,12 +101,6 @@ func (r *LabelRepository) DeassignLabelFromAllTaskAndDelete(ctx context.Context,
 
 		return nil
 	})
-}
-
-func (r *LabelRepository) isLabelsOwner(ctx context.Context, userID int, labelIDs []int) bool {
-	var count int64
-	r.db.WithContext(ctx).Model(&lModel.Label{}).Where("id IN (?) AND user_id = ?", labelIDs, userID).Count(&count)
-	return count == 1
 }
 
 func (r *LabelRepository) UpdateLabel(ctx context.Context, userID int, label *lModel.Label) error {
