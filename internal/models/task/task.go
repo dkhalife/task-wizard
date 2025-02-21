@@ -68,5 +68,4 @@ type TaskHistory struct {
 type TaskLabels struct {
 	TaskID  int `json:"task_id" gorm:"primaryKey;autoIncrement:false;not null"`
 	LabelID int `json:"label_id" gorm:"primaryKey;autoIncrement:false;not null"`
-	UserID  int `json:"user_id" gorm:"primaryKey;autoIncrement:false;not null"`
 }

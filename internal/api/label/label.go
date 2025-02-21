@@ -123,7 +123,7 @@ func (h *Handler) updateLabel(c *gin.Context) {
 		ID:    req.ID,
 	}
 
-	if !h.lRepo.AreLabelsAssignableByUser(c, currentUser.ID, []int{label.ID}, nil) {
+	if !h.lRepo.AreLabelsAssignableByUser(c, currentUser.ID, []int{label.ID}) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to perform this update",
 		})
