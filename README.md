@@ -45,11 +45,9 @@ services:
       ports:
       - 2021:2021
       volumes:
-      - /path/to/host/data:/data
       - /path/to/host/config:/config
       environment:
       - TW_ENV=selfhosted
-      - TW_SQLITE_PATH=/data/tasks.db
 ```
 
 2. Run the app with `docker compose up -d` 
@@ -64,14 +62,12 @@ Alternatively, you can use a `.env` file and reference it in the compose file us
 ```bash
 docker run \
    -v /path/to/host/config:/config
-   -v /path/to/host/data:/data
    -p 2021:2021 \
    -e TW_ENV=prod \
-   -e TW_SQLITE_PATH=/data/tasks.db \
    dkhalife/task-wizard
 ```
 
-Make sure to replace `/path/to/host` with your preferred root directory for data and config.
+Make sure to replace `/path/to/host` with your preferred root directory for config.
 
 ## ⚙️ Configuration
 
@@ -83,6 +79,7 @@ The configuration files are yaml mappings with the following values:
 |------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------|
 | `name`                       | `"prod"`                                            | The name of the environment configuration.                                  |
 | `database.migration`         | `true`                                              | Indicates if database migration should be performed.                        |
+| `database.path`              | `/config/task-wizard.db`                            | The path at which to store the SQLite database.                             |
 | `jwt.secret`                 | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that.**   |
 | `jwt.session_time`           | `168h`                                              | The duration for which a JWT session is valid.                              |
 | `jwt.max_refresh`            | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
@@ -91,7 +88,6 @@ The configuration files are yaml mappings with the following values:
 | `server.write_timeout`       | `1s`                                                | The maximum duration before timing out writes of the response.              |
 | `server.rate_period`         | `60s`                                               | The period for rate limiting.                                               |
 | `server.rate_limit`          | `300`                                               | The maximum number of requests allowed within the rate period.              |
-| `server.cors_allow_origins`  | `["http://localhost:5173","http://localhost:7926"]` | List of allowed origins for CORS.                                           |
 | `server.serve_frontend`      | `true`                                              | Indicates if the frontend should be served by the backend server.           |
 | `scheduler_jobs.frequency`   | `5m`                                                | The interval for processing notifications.                                  |
 | `email.host`                 | (empty)                                             | The email server host.                                                      |

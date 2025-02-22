@@ -1,6 +1,7 @@
 name: "prod"
 database:
   migration: true
+  path: /config/task-wizard.db
 jwt:
   secret: "secret"
   session_time: 168h
@@ -11,14 +12,9 @@ server:
   write_timeout: 1s
   rate_period: 60s
   rate_limit: 300
-  cors_allow_origins:
-  - "http://localhost:5173"
-  - "http://localhost:7926"
   serve_frontend: true
 scheduler_jobs:
-  due_job: 30m
-  overdue_job: 3h
-  pre_due_job: 3h
+  frequency: 5m
 email:
   host: 
   port: 
