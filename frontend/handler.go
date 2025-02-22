@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+//go:embed dist
 var embeddedFiles embed.FS
 
 type Handler struct {
