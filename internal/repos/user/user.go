@@ -20,16 +20,22 @@ func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
 }
 
 func (r *UserRepository) CreateUser(c context.Context, user *models.User) error {
-	if err := r.db.WithContext(c).Save(user).Error; err != nil {
-		return err
-	}
+	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		if err := tx.Create(&user).Error; err != nil {
+			return err
+		}
 
-	return r.db.WithContext(c).Save(&models.NotificationSettings{
-		UserID: user.ID,
-		Provider: models.NotificationProvider{
-			Provider: models.NotificationProviderNone,
-		},
-	}).Error
+		if err := tx.Create(&models.NotificationSettings{
+			UserID: user.ID,
+			Provider: models.NotificationProvider{
+				Provider: models.NotificationProviderNone,
+			},
+		}).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
 }
 
 func (r *UserRepository) GetUser(c context.Context, id int) (*models.User, error) {
@@ -117,8 +123,7 @@ func (r *UserRepository) DeleteAPIToken(c context.Context, userID int, tokenID s
 }
 
 func (r *UserRepository) UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error {
-	return r.db.WithContext(c).Save(&models.NotificationSettings{
-		UserID:   userID,
+	return r.db.WithContext(c).Where("user_id = ?", userID).Updates(&models.NotificationSettings{
 		Provider: provider,
 		Triggers: triggers,
 	}).Error
