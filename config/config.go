@@ -17,13 +17,8 @@ type Config struct {
 }
 
 type DatabaseConfig struct {
-	Host      string `mapstructure:"host" yaml:"host"`
-	Port      int    `mapstructure:"port" yaml:"port"`
-	User      string `mapstructure:"user" yaml:"user"`
-	Password  string `mapstructure:"password" yaml:"password"`
-	Name      string `mapstructure:"name" yaml:"name"`
+	FilePath  string `mapstructure:"path" yaml:"path" default:"/config/task-wizard.db"`
 	Migration bool   `mapstructure:"migration" yaml:"migration"`
-	LogLevel  int    `mapstructure:"logger" yaml:"logger"`
 }
 
 type JwtConfig struct {
@@ -33,13 +28,12 @@ type JwtConfig struct {
 }
 
 type ServerConfig struct {
-	Port             int           `mapstructure:"port" yaml:"port"`
-	RatePeriod       time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
-	RateLimit        int           `mapstructure:"rate_limit" yaml:"rate_limit"`
-	ReadTimeout      time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
-	WriteTimeout     time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
-	CorsAllowOrigins []string      `mapstructure:"cors_allow_origins" yaml:"cors_allow_origins"`
-	ServeFrontend    bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Port          int           `mapstructure:"port" yaml:"port"`
+	RatePeriod    time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
+	RateLimit     int           `mapstructure:"rate_limit" yaml:"rate_limit"`
+	ReadTimeout   time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout  time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
+	ServeFrontend bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
 }
 
 type SchedulerConfig struct {
