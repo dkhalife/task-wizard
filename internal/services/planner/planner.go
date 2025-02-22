@@ -40,7 +40,7 @@ func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tMo
 		notifications = append(notifications, generatePreDueNotifications(task)...)
 	}
 
-	if ns.Nag {
+	if ns.Overdue {
 		notifications = append(notifications, generateOverdueNotifications(task)...)
 	}
 
@@ -53,12 +53,11 @@ func generateDueNotifications(task *tModel.Task) []*nModel.Notification {
 
 	notification := &nModel.Notification{
 		TaskID:       task.ID,
+		UserID:       task.CreatedBy,
 		IsSent:       false,
 		ScheduledFor: *task.NextDueDate,
+		Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
 		CreatedAt:    time.Now().UTC(),
-		//TypeID:       user.NotificationType,
-		//UserID:       user.ID,
-		Text: fmt.Sprintf("📅 Reminder: *%s* is due today.", task.Title),
 	}
 
 	notifications = append(notifications, notification)
@@ -71,12 +70,11 @@ func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
 
 	notification := &nModel.Notification{
 		TaskID:       task.ID,
+		UserID:       task.CreatedBy,
 		IsSent:       false,
-		ScheduledFor: *task.NextDueDate,
-		CreatedAt:    time.Now().UTC().Add(-time.Hour * 3),
-		// TypeID:       user.NotificationType,
-		// UserID:       user.ID,
-		Text: fmt.Sprintf("📢 Heads up! *%s* is due soon (on %s)", task.Title, task.NextDueDate.Format("January 2nd")),
+		ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
+		Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
+		CreatedAt:    time.Now().UTC(),
 	}
 
 	notifications = append(notifications, notification)
@@ -86,16 +84,16 @@ func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
 
 func generateOverdueNotifications(task *tModel.Task) []*nModel.Notification {
 	notifications := make([]*nModel.Notification, 0)
+	// TODO: This should be done as part of the scheduler and not prescheduled for a set of days
 	for _, hours := range []int{24, 48, 72} {
 		scheduleTime := task.NextDueDate.Add(time.Hour * time.Duration(hours))
 		notification := &nModel.Notification{
 			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
 			IsSent:       false,
 			ScheduledFor: scheduleTime,
+			Text:         fmt.Sprintf("🚨 *%s* is overdue", task.Title),
 			CreatedAt:    time.Now().UTC(),
-			// TypeID:       user.NotificationType,
-			// UserID:       user.ID,
-			Text: fmt.Sprintf("🚨 *%s* is now %d hours overdue. Please complete it as soon as possible.", task.Title, hours),
 		}
 
 		notifications = append(notifications, notification)

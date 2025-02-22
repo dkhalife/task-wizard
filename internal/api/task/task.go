@@ -340,6 +340,10 @@ func (h *Handler) skipTask(c *gin.Context) {
 		return
 	}
 
+	go func() {
+		h.nPlanner.GenerateNotifications(c, updatedTask)
+	}()
+
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,
 	})
@@ -475,7 +479,9 @@ func (h *Handler) completeTask(c *gin.Context) {
 		return
 	}
 
-	h.nPlanner.GenerateNotifications(c, updatedTask)
+	go func() {
+		h.nPlanner.GenerateNotifications(c, updatedTask)
+	}()
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,
