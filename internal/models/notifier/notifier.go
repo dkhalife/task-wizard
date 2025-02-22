@@ -34,7 +34,6 @@ type NotificationTriggerOptions struct {
 	DueDate bool `json:"due_date" validate:"required_if=Enabled true" gorm:"column:due_date;default:false"`
 	PreDue  bool `json:"pre_due" validate:"required_if=Enabled true" gorm:"column:pre_due;default:false"`
 	Overdue bool `json:"overdue" validate:"required_if=Enabled true" gorm:"column:overdue;default:false"`
-	Nag     bool `json:"nag" validate:"required_if=Enabled true" gorm:"column=nag;default:false"`
 }
 
 type NotificationSettings struct {

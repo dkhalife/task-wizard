@@ -93,9 +93,7 @@ The configuration files are yaml mappings with the following values:
 | `server.rate_limit`          | `300`                                               | The maximum number of requests allowed within the rate period.              |
 | `server.cors_allow_origins`  | `["http://localhost:5173","http://localhost:7926"]` | List of allowed origins for CORS.                                           |
 | `server.serve_frontend`      | `true`                                              | Indicates if the frontend should be served by the backend server.           |
-| `scheduler_jobs.due_job`     | `30m`                                               | The interval for running the due job scheduler.                             |
-| `scheduler_jobs.overdue_job` | `3h`                                                | The interval for running the overdue job scheduler.                         |
-| `scheduler_jobs.pre_due_job` | `3h`                                                | The interval for running the pre-due job scheduler.                         |
+| `scheduler_jobs.frequency`   | `5m`                                                | The interval for processing notifications.                                  |
 | `email.host`                 | (empty)                                             | The email server host.                                                      |
 | `email.port`                 | (empty)                                             | The email server port.                                                      |
 | `email.key`                  | (empty)                                             | The key for authenticating with the email server.                           |

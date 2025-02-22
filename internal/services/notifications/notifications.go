@@ -36,7 +36,7 @@ type Scheduler struct {
 	stopChan         chan bool
 	notifier         *Notifier
 	notificationRepo *nRepo.NotificationRepository
-	SchedulerJobs    config.SchedulerConfig
+	config           config.SchedulerConfig
 }
 
 func NewScheduler(cfg *config.Config, ur *uRepo.UserRepository, cr *tRepo.TaskRepository, n *Notifier, nr *nRepo.NotificationRepository) *Scheduler {
@@ -46,20 +46,20 @@ func NewScheduler(cfg *config.Config, ur *uRepo.UserRepository, cr *tRepo.TaskRe
 		stopChan:         make(chan bool),
 		notifier:         n,
 		notificationRepo: nr,
-		SchedulerJobs:    cfg.SchedulerJobs,
+		config:           cfg.SchedulerJobs,
 	}
 }
 
 func (s *Scheduler) Start(c context.Context) {
 	log := logging.FromContext(c)
 	log.Debug("Scheduler started")
-	go s.runScheduler(c, " NOTIFICATION_SCHEDULER ", s.loadAndSendNotificationJob, 3*time.Minute)
-	go s.runScheduler(c, " NOTIFICATION_CLEANUP ", s.cleanupSentNotifications, 24*time.Hour*30)
+	go s.runScheduler(c, " NOTIFICATION_SCHEDULER ", s.loadAndSendNotificationJob, s.config.JobFrequency)
+	go s.runScheduler(c, " NOTIFICATION_CLEANUP ", s.cleanupSentNotifications, 2*s.config.JobFrequency)
 }
 
 func (s *Scheduler) cleanupSentNotifications(c context.Context) (time.Duration, error) {
 	log := logging.FromContext(c)
-	deleteBefore := time.Now().UTC().Add(-time.Hour * 24 * 30)
+	deleteBefore := time.Now().UTC().Add(-2 * s.config.JobFrequency)
 	err := s.notificationRepo.DeleteSentNotifications(c, deleteBefore)
 	if err != nil {
 		log.Error("Error deleting sent notifications", err)
@@ -71,15 +71,15 @@ func (s *Scheduler) cleanupSentNotifications(c context.Context) (time.Duration, 
 func (s *Scheduler) loadAndSendNotificationJob(c context.Context) (time.Duration, error) {
 	log := logging.FromContext(c)
 	startTime := time.Now()
-	getAllPendingNotifications, err := s.notificationRepo.GetPendingNotificaiton(c, time.Minute*900)
-	log.Debug("Getting pending notifications", " count ", len(getAllPendingNotifications))
+	pendingNotifications, err := s.notificationRepo.GetPendingNotification(c, s.config.JobFrequency)
+	log.Debug("Getting pending notifications", " count ", len(pendingNotifications))
 
 	if err != nil {
 		log.Error("Error getting pending notifications")
 		return time.Since(startTime), err
 	}
 
-	for _, notification := range getAllPendingNotifications {
+	for _, notification := range pendingNotifications {
 		err := s.notifier.SendNotification(c, notification)
 		if err != nil {
 			log.Error("Error sending notification", err)
@@ -88,7 +88,7 @@ func (s *Scheduler) loadAndSendNotificationJob(c context.Context) (time.Duration
 		notification.IsSent = true
 	}
 
-	s.notificationRepo.MarkNotificationsAsSent(getAllPendingNotifications)
+	s.notificationRepo.MarkNotificationsAsSent(pendingNotifications)
 	return time.Since(startTime), nil
 }
 

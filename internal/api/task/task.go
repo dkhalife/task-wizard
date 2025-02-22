@@ -30,6 +30,7 @@ type TaskReq struct {
 	IsRolling    bool                              `json:"is_rolling"`
 	Frequency    tModel.Frequency                  `json:"frequency"`
 	Notification nModel.NotificationTriggerOptions `json:"notification"`
+	Labels       []int                             `json:"labels"`
 }
 
 type Handler struct {
@@ -156,16 +157,12 @@ func (h *Handler) createTask(c *gin.Context) {
 		return
 	}
 
-	// labels := make([]int, len(*TaskReq.Labels))
-	// for i, label := range *TaskReq.Labels {
-	// 	labels[i] = int(label.LabelID)
-	// }
-	// if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentUser.ID, labels, []int{}); err != nil {
-	// 	c.JSON(http.StatusInternalServerError or forbidden?, gin.H{
-	// 		"error": "Error adding labels",
-	// 	})
-	// 	return
-	// }
+	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentUser.ID, TaskReq.Labels); err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error adding labels",
+		})
+		return
+	}
 
 	go func() {
 		h.nPlanner.GenerateNotifications(c, createdTask)
@@ -223,13 +220,12 @@ func (h *Handler) editTask(c *gin.Context) {
 		return
 	}
 
-	// TODO: implement
-	/*if err := h.lRepo.AssignLabelsToTask(c, TaskReq.ID, currentUser.ID, labelsToAdd, labelsToBeRemoved); err != nil {
+	if err := h.lRepo.AssignLabelsToTask(c, taskId, currentUser.ID, TaskReq.Labels); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		})
 		return
-	}*/
+	}
 
 	updatedTask := &tModel.Task{
 		ID:           taskId,
@@ -343,6 +339,10 @@ func (h *Handler) skipTask(c *gin.Context) {
 		})
 		return
 	}
+
+	go func() {
+		h.nPlanner.GenerateNotifications(c, updatedTask)
+	}()
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,
@@ -479,7 +479,9 @@ func (h *Handler) completeTask(c *gin.Context) {
 		return
 	}
 
-	h.nPlanner.GenerateNotifications(c, updatedTask)
+	go func() {
+		h.nPlanner.GenerateNotifications(c, updatedTask)
+	}()
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,

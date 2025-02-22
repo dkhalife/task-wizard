@@ -31,7 +31,10 @@ func (r *TaskRepository) CreateTask(c context.Context, task *tModel.Task) (int, 
 
 func (r *TaskRepository) GetTask(c context.Context, taskID int) (*tModel.Task, error) {
 	var task tModel.Task
-	if err := r.db.WithContext(c).Model(&tModel.Task{}).First(&task, taskID).Error; err != nil {
+	if err := r.db.WithContext(c).
+		Model(&tModel.Task{}).
+		Preload("Labels").
+		First(&task, taskID).Error; err != nil {
 		return nil, err
 	}
 	return &task, nil
@@ -39,9 +42,12 @@ func (r *TaskRepository) GetTask(c context.Context, taskID int) (*tModel.Task, e
 
 func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*tModel.Task, error) {
 	var tasks []*tModel.Task
-	query := r.db.WithContext(c).Where("tasks.created_by = ? AND is_active = 1", userID).Group("tasks.id").Order("next_due_date asc")
 
-	if err := query.Find(&tasks).Error; err != nil {
+	if err := r.db.WithContext(c).
+		Where("created_by = ? AND is_active = 1", userID).
+		Order("next_due_date ASC").
+		Preload("Labels").
+		Find(&tasks).Error; err != nil {
 		return nil, err
 	}
 
