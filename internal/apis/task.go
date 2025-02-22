@@ -1,4 +1,4 @@
-package task
+package apis
 
 import (
 	"fmt"
@@ -7,8 +7,7 @@ import (
 	"strconv"
 	"time"
 
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
-	tModel "dkhalife.com/tasks/core/internal/models/task"
+	"dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
@@ -28,12 +27,12 @@ type TaskReq struct {
 	Title        string                            `json:"title" binding:"required"`
 	NextDueDate  int64                             `json:"next_due_date"`
 	IsRolling    bool                              `json:"is_rolling"`
-	Frequency    tModel.Frequency                  `json:"frequency"`
-	Notification nModel.NotificationTriggerOptions `json:"notification"`
+	Frequency    models.Frequency                  `json:"frequency"`
+	Notification models.NotificationTriggerOptions `json:"notification"`
 	Labels       []int                             `json:"labels"`
 }
 
-type Handler struct {
+type TasksAPIHandler struct {
 	tRepo    *tRepo.TaskRepository
 	notifier *notifications.Notifier
 	nPlanner *planner.NotificationPlanner
@@ -41,9 +40,9 @@ type Handler struct {
 	lRepo    *lRepo.LabelRepository
 }
 
-func NewHandler(cr *tRepo.TaskRepository, nt *notifications.Notifier,
-	np *planner.NotificationPlanner, nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *Handler {
-	return &Handler{
+func TasksAPI(cr *tRepo.TaskRepository, nt *notifications.Notifier,
+	np *planner.NotificationPlanner, nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *TasksAPIHandler {
+	return &TasksAPIHandler{
 		tRepo:    cr,
 		notifier: nt,
 		nPlanner: np,
@@ -52,7 +51,7 @@ func NewHandler(cr *tRepo.TaskRepository, nt *notifications.Notifier,
 	}
 }
 
-func (h *Handler) getTasks(c *gin.Context) {
+func (h *TasksAPIHandler) getTasks(c *gin.Context) {
 	u, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -74,7 +73,7 @@ func (h *Handler) getTasks(c *gin.Context) {
 	})
 }
 
-func (h *Handler) getTask(c *gin.Context) {
+func (h *TasksAPIHandler) getTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -112,7 +111,7 @@ func (h *Handler) getTask(c *gin.Context) {
 	})
 }
 
-func (h *Handler) createTask(c *gin.Context) {
+func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 
 	if !ok {
@@ -137,7 +136,7 @@ func (h *Handler) createTask(c *gin.Context) {
 		dueDate = &rawDueDate
 	}
 
-	createdTask := &tModel.Task{
+	createdTask := &models.Task{
 		Title:        TaskReq.Title,
 		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
@@ -173,7 +172,7 @@ func (h *Handler) createTask(c *gin.Context) {
 	})
 }
 
-func (h *Handler) editTask(c *gin.Context) {
+func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -227,7 +226,7 @@ func (h *Handler) editTask(c *gin.Context) {
 		return
 	}
 
-	updatedTask := &tModel.Task{
+	updatedTask := &models.Task{
 		ID:           taskId,
 		Title:        TaskReq.Title,
 		Frequency:    TaskReq.Frequency,
@@ -253,7 +252,7 @@ func (h *Handler) editTask(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func (h *Handler) deleteTask(c *gin.Context) {
+func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -284,13 +283,11 @@ func (h *Handler) deleteTask(c *gin.Context) {
 		})
 		return
 	}
-	// TODO: this should cascade instead
-	h.nRepo.DeleteAllTaskNotifications(id)
 
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func (h *Handler) skipTask(c *gin.Context) {
+func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -349,7 +346,7 @@ func (h *Handler) skipTask(c *gin.Context) {
 	})
 }
 
-func (h *Handler) updateDueDate(c *gin.Context) {
+func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -408,7 +405,7 @@ func (h *Handler) updateDueDate(c *gin.Context) {
 	})
 }
 
-func (h *Handler) completeTask(c *gin.Context) {
+func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -488,7 +485,7 @@ func (h *Handler) completeTask(c *gin.Context) {
 	})
 }
 
-func (h *Handler) GetTaskHistory(c *gin.Context) {
+func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -526,7 +523,7 @@ func (h *Handler) GetTaskHistory(c *gin.Context) {
 	})
 }
 
-func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
+func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *jwt.GinJWTMiddleware) {
 	tasksRoutes := router.Group("api/v1/tasks")
 	tasksRoutes.Use(auth.MiddlewareFunc())
 	{

@@ -1,4 +1,4 @@
-package user
+package models
 
 import (
 	"time"
@@ -9,9 +9,15 @@ type User struct {
 	DisplayName string    `json:"display_name" gorm:"column:display_name"`
 	Email       string    `json:"email" gorm:"column:email;unique"`
 	Password    string    `json:"-" gorm:"column:password"`
-	CreatedAt   time.Time `json:"created_at" gorm:"column:created_at"`
-	UpdatedAt   time.Time `json:"updated_at" gorm:"column:updated_at"`
-	Disabled    bool      `json:"disabled" gorm:"column:disabled"`
+	CreatedAt   time.Time `json:"-" gorm:"column:created_at"`
+	UpdatedAt   time.Time `json:"-" gorm:"column:updated_at"`
+	Disabled    bool      `json:"-" gorm:"column:disabled"`
+
+	APITokens            []APIToken           `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
+	ResetTokens          []UserPasswordReset  `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
+	NotificationSettings NotificationSettings `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
+	Labels               []Label              `json:"-" gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE;"`
+	Tasks                []Task               `json:"-" gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE;"`
 }
 
 type UserPasswordReset struct {
@@ -24,8 +30,8 @@ type UserPasswordReset struct {
 
 type APIToken struct {
 	ID        int       `json:"id" gorm:"primary_key"`
+	UserID    int       `json:"user_id" gorm:"column:user_id"`
 	Name      string    `json:"name" gorm:"column:name;unique"`
-	UserID    int       `json:"user_id" gorm:"column:user_id;index"`
 	Token     string    `json:"token" gorm:"column:token;index"`
 	CreatedAt time.Time `json:"created_at" gorm:"column:created_at"`
 }

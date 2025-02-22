@@ -4,11 +4,10 @@ import (
 	"crypto/rand"
 	"encoding/base64"
 
+	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
-
-	uModel "dkhalife.com/tasks/core/internal/models/user"
 )
 
 const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':,.<>?/~"
@@ -46,11 +45,11 @@ func GenerateEmailResetToken(c *gin.Context) (string, error) {
 	return token, nil
 }
 
-func CurrentUser(c *gin.Context) (*uModel.User, bool) {
+func CurrentUser(c *gin.Context) (*models.User, bool) {
 	data, ok := c.Get(IdentityKey)
 	if !ok {
 		return nil, false
 	}
-	acc, ok := data.(*uModel.User)
+	acc, ok := data.(*models.User)
 	return acc, ok
 }

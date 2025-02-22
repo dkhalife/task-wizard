@@ -1,23 +1,20 @@
 package migration
 
 import (
-	lModel "dkhalife.com/tasks/core/internal/models/label"
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
-	tModel "dkhalife.com/tasks/core/internal/models/task"
-	uModel "dkhalife.com/tasks/core/internal/models/user"
+	"dkhalife.com/tasks/core/internal/models"
 	"gorm.io/gorm"
 )
 
 func Migration(db *gorm.DB) error {
 	if err := db.AutoMigrate(
-		uModel.User{},
-		uModel.UserPasswordReset{},
-		uModel.APIToken{},
-		lModel.Label{},
-		tModel.Task{},
-		tModel.TaskHistory{},
-		nModel.NotificationSettings{},
-		nModel.Notification{},
+		models.User{},
+		models.UserPasswordReset{},
+		models.APIToken{},
+		models.Label{},
+		models.Task{},
+		models.TaskHistory{},
+		models.NotificationSettings{},
+		models.Notification{},
 	); err != nil {
 		return err
 	}

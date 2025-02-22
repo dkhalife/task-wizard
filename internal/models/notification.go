@@ -1,9 +1,7 @@
-package notifier
+package models
 
 import (
 	"time"
-
-	uModel "dkhalife.com/tasks/core/internal/models/user"
 )
 
 type Notification struct {
@@ -14,6 +12,9 @@ type Notification struct {
 	IsSent       bool      `json:"is_sent" gorm:"column:is_sent;index;default:false"`
 	ScheduledFor time.Time `json:"scheduled_for" gorm:"column:scheduled_for;index"`
 	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at"`
+
+	Task Task `json:"-" gorm:"foreignKey:TaskID;"`
+	User User `json:"-" gorm:"foreignKey:UserID;"`
 }
 
 type NotificationProviderType string
@@ -37,8 +38,7 @@ type NotificationTriggerOptions struct {
 }
 
 type NotificationSettings struct {
-	UserID   int                        `json:"-" gorm:"primaryKey"`
-	User     uModel.User                `json:"-" gorm:"foreignKey:UserID;references:ID"`
+	UserID   int                        `json:"-" gorm:"column:userid"`
 	Provider NotificationProvider       `json:"provider" gorm:"embedded;embeddedPrefix:notifications_provider_"`
 	Triggers NotificationTriggerOptions `json:"triggers" gorm:"embedded;embeddedPrefix:notifications_triggers_"`
 }

@@ -20,9 +20,7 @@ import (
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 
-	"dkhalife.com/tasks/core/internal/api/label"
-	task "dkhalife.com/tasks/core/internal/api/task"
-	user "dkhalife.com/tasks/core/internal/api/user"
+	apis "dkhalife.com/tasks/core/internal/apis"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
@@ -56,10 +54,10 @@ func main() {
 
 		fx.Provide(database.NewDatabase),
 		fx.Provide(tRepo.NewTaskRepository),
-		fx.Provide(task.NewHandler),
+		fx.Provide(apis.TasksAPI),
 		fx.Provide(uRepo.NewUserRepository),
 		fx.Provide(nRepo.NewNotificationRepository),
-		fx.Provide(user.NewHandler),
+		fx.Provide(apis.UsersAPI),
 
 		fx.Provide(planner.NewNotificationPlanner),
 
@@ -77,14 +75,14 @@ func main() {
 
 		// Labels:
 		fx.Provide(lRepo.NewLabelRepository),
-		fx.Provide(label.NewHandler),
+		fx.Provide(apis.LabelsAPI),
 
 		fx.Provide(frontend.NewHandler),
 
 		fx.Invoke(
-			task.Routes,
-			user.Routes,
-			label.Routes,
+			apis.TaskRoutes,
+			apis.UserRoutes,
+			apis.LabelRoutes,
 			frontend.Routes,
 
 			func(r *gin.Engine) {},

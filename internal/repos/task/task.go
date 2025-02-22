@@ -6,7 +6,7 @@ import (
 	"time"
 
 	config "dkhalife.com/tasks/core/config"
-	tModel "dkhalife.com/tasks/core/internal/models/task"
+	"dkhalife.com/tasks/core/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -18,21 +18,21 @@ func NewTaskRepository(db *gorm.DB, cfg *config.Config) *TaskRepository {
 	return &TaskRepository{db: db}
 }
 
-func (r *TaskRepository) UpsertTask(c context.Context, task *tModel.Task) error {
+func (r *TaskRepository) UpsertTask(c context.Context, task *models.Task) error {
 	return r.db.WithContext(c).Model(&task).Save(task).Error
 }
 
-func (r *TaskRepository) CreateTask(c context.Context, task *tModel.Task) (int, error) {
+func (r *TaskRepository) CreateTask(c context.Context, task *models.Task) (int, error) {
 	if err := r.db.WithContext(c).Create(task).Error; err != nil {
 		return 0, err
 	}
 	return task.ID, nil
 }
 
-func (r *TaskRepository) GetTask(c context.Context, taskID int) (*tModel.Task, error) {
-	var task tModel.Task
+func (r *TaskRepository) GetTask(c context.Context, taskID int) (*models.Task, error) {
+	var task models.Task
 	if err := r.db.WithContext(c).
-		Model(&tModel.Task{}).
+		Model(&models.Task{}).
 		Preload("Labels").
 		First(&task, taskID).Error; err != nil {
 		return nil, err
@@ -40,8 +40,8 @@ func (r *TaskRepository) GetTask(c context.Context, taskID int) (*tModel.Task, e
 	return &task, nil
 }
 
-func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*tModel.Task, error) {
-	var tasks []*tModel.Task
+func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*models.Task, error) {
+	var tasks []*models.Task
 
 	if err := r.db.WithContext(c).
 		Where("created_by = ? AND is_active = 1", userID).
@@ -56,18 +56,18 @@ func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*tModel.Task
 
 func (r *TaskRepository) DeleteTask(c context.Context, id int) error {
 	r.db.WithContext(c).Where("task_id = ?", id)
-	return r.db.WithContext(c).Delete(&tModel.Task{}, id).Error
+	return r.db.WithContext(c).Delete(&models.Task{}, id).Error
 }
 
 func (r *TaskRepository) IsTaskOwner(c context.Context, taskID int, userID int) error {
-	var task tModel.Task
-	err := r.db.WithContext(c).Model(&tModel.Task{}).Where("id = ? AND created_by = ?", taskID, userID).First(&task).Error
+	var task models.Task
+	err := r.db.WithContext(c).Model(&models.Task{}).Where("id = ? AND created_by = ?", taskID, userID).First(&task).Error
 	return err
 }
 
-func (r *TaskRepository) CompleteTask(c context.Context, task *tModel.Task, userID int, dueDate *time.Time, completedDate *time.Time) error {
+func (r *TaskRepository) CompleteTask(c context.Context, task *models.Task, userID int, dueDate *time.Time, completedDate *time.Time) error {
 	err := r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
-		ch := &tModel.TaskHistory{
+		ch := &models.TaskHistory{
 			TaskID:        task.ID,
 			CompletedDate: completedDate,
 			DueDate:       task.NextDueDate,
@@ -82,7 +82,7 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *tModel.Task, user
 			updates["is_active"] = false
 		}
 
-		if err := tx.Model(&tModel.Task{}).Where("id = ?", task.ID).Updates(updates).Error; err != nil {
+		if err := tx.Model(&models.Task{}).Where("id = ?", task.ID).Updates(updates).Error; err != nil {
 			return err
 		}
 
@@ -92,15 +92,15 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *tModel.Task, user
 	return err
 }
 
-func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*tModel.TaskHistory, error) {
-	var histories []*tModel.TaskHistory
+func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*models.TaskHistory, error) {
+	var histories []*models.TaskHistory
 	if err := r.db.WithContext(c).Where("task_id = ?", taskID).Order("completed_date desc").Find(&histories).Error; err != nil {
 		return nil, err
 	}
 	return histories, nil
 }
 
-func ScheduleNextDueDate(task *tModel.Task, completedDate time.Time) (*time.Time, error) {
+func ScheduleNextDueDate(task *models.Task, completedDate time.Time) (*time.Time, error) {
 	var freq = task.Frequency
 	if freq.Type == "once" {
 		return nil, nil
