@@ -1,4 +1,4 @@
-package user
+package apis
 
 import (
 	"crypto/rand"
@@ -10,8 +10,7 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/config"
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
-	uModel "dkhalife.com/tasks/core/internal/models/user"
+	"dkhalife.com/tasks/core/internal/models"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
@@ -23,15 +22,15 @@ import (
 	limiter "github.com/ulule/limiter/v3"
 )
 
-type Handler struct {
+type UsersAPIHandler struct {
 	userRepo *uRepo.UserRepository
 	nRepo    *nRepo.NotificationRepository
 	jwtAuth  *jwt.GinJWTMiddleware
 	email    *email.EmailSender
 }
 
-func NewHandler(ur *uRepo.UserRepository, nRepo *nRepo.NotificationRepository, jwtAuth *jwt.GinJWTMiddleware, email *email.EmailSender, config *config.Config) *Handler {
-	return &Handler{
+func UsersAPI(ur *uRepo.UserRepository, nRepo *nRepo.NotificationRepository, jwtAuth *jwt.GinJWTMiddleware, email *email.EmailSender, config *config.Config) *UsersAPIHandler {
+	return &UsersAPIHandler{
 		userRepo: ur,
 		nRepo:    nRepo,
 		jwtAuth:  jwtAuth,
@@ -39,7 +38,7 @@ func NewHandler(ur *uRepo.UserRepository, nRepo *nRepo.NotificationRepository, j
 	}
 }
 
-func (h *Handler) signUp(c *gin.Context) {
+func (h *UsersAPIHandler) signUp(c *gin.Context) {
 	type SignUpReq struct {
 		Email       string `json:"email" binding:"required,email"`
 		Password    string `json:"password" binding:"required,min=8,max=45"`
@@ -64,12 +63,10 @@ func (h *Handler) signUp(c *gin.Context) {
 		return
 	}
 
-	if err = h.userRepo.CreateUser(c, &uModel.User{
+	if err = h.userRepo.CreateUser(c, &models.User{
 		Password:    password,
 		DisplayName: signupReq.DisplayName,
 		Email:       signupReq.Email,
-		CreatedAt:   time.Now(),
-		UpdatedAt:   time.Now(),
 	}); err != nil {
 		c.JSON(http.StatusConflict, gin.H{
 			"error": "Error creating user, an account with this email already exists",
@@ -80,7 +77,7 @@ func (h *Handler) signUp(c *gin.Context) {
 	c.JSON(http.StatusCreated, gin.H{})
 }
 
-func (h *Handler) GetUserProfile(c *gin.Context) {
+func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 	user, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -105,7 +102,7 @@ func (h *Handler) GetUserProfile(c *gin.Context) {
 	})
 }
 
-func (h *Handler) resetPassword(c *gin.Context) {
+func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 	log := logging.FromContext(c)
 	type ResetPasswordReq struct {
 		Email string `json:"email" binding:"required,email"`
@@ -154,7 +151,7 @@ func (h *Handler) resetPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (h *Handler) updateUserPassword(c *gin.Context) {
+func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 	logger := logging.FromContext(c)
 
 	code := c.Query("c")
@@ -203,7 +200,7 @@ func (h *Handler) updateUserPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (h *Handler) CreateLongLivedToken(c *gin.Context) {
+func (h *UsersAPIHandler) CreateLongLivedToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -236,10 +233,9 @@ func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 	timestamp := time.Now().Unix()
 	hashInput := fmt.Sprintf("%d:%d:%x", currentUser.ID, timestamp, randomBytes)
 	hash := sha256.Sum256([]byte(hashInput))
+	encodedToken := hex.EncodeToString(hash[:])
 
-	token := hex.EncodeToString(hash[:])
-
-	tokenModel, err := h.userRepo.StoreAPIToken(c, currentUser.ID, req.Name, token)
+	token, err := h.userRepo.StoreAPIToken(c, currentUser.ID, req.Name, encodedToken)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to store token",
@@ -248,16 +244,11 @@ func (h *Handler) CreateLongLivedToken(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"token": gin.H{
-			"id":        tokenModel.ID,
-			"name":      tokenModel.Name,
-			"token":     tokenModel.Token,
-			"createdAt": tokenModel.CreatedAt,
-		},
+		"token": token,
 	})
 }
 
-func (h *Handler) GetAllUserToken(c *gin.Context) {
+func (h *UsersAPIHandler) GetAllUserToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -279,7 +270,7 @@ func (h *Handler) GetAllUserToken(c *gin.Context) {
 	})
 }
 
-func (h *Handler) DeleteUserToken(c *gin.Context) {
+func (h *UsersAPIHandler) DeleteUserToken(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -301,7 +292,7 @@ func (h *Handler) DeleteUserToken(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func (h *Handler) UpdateNotificationSettings(c *gin.Context) {
+func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -311,8 +302,8 @@ func (h *Handler) UpdateNotificationSettings(c *gin.Context) {
 	}
 
 	type Request struct {
-		Provider nModel.NotificationProvider       `json:"provider" binding:"required"`
-		Triggers nModel.NotificationTriggerOptions `json:"triggers" binding:"required"`
+		Provider models.NotificationProvider       `json:"provider" binding:"required"`
+		Triggers models.NotificationTriggerOptions `json:"triggers" binding:"required"`
 	}
 
 	var req Request
@@ -336,7 +327,7 @@ func (h *Handler) UpdateNotificationSettings(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
+func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 	logger := logging.FromContext(c)
 
 	currentUser, ok := auth.CurrentUser(c)
@@ -381,7 +372,7 @@ func (h *Handler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func Routes(router *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {
+func UserRoutes(router *gin.Engine, h *UsersAPIHandler, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {
 	userRoutes := router.Group("api/v1/users")
 	userRoutes.Use(auth.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter))
 	{

@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
+	"dkhalife.com/tasks/core/internal/models"
 	"gorm.io/gorm"
 )
 
@@ -16,31 +16,31 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 	return &NotificationRepository{db}
 }
 
-func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, userID int) (*nModel.NotificationSettings, error) {
-	var settings nModel.NotificationSettings
-	if err := r.db.Debug().WithContext(c).Model(&nModel.NotificationSettings{}).First(&settings, userID).Error; err != nil {
+func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, userID int) (*models.NotificationSettings, error) {
+	var settings models.NotificationSettings
+	if err := r.db.Debug().WithContext(c).Model(&models.NotificationSettings{}).First(&settings, userID).Error; err != nil {
 		return nil, err
 	}
 	return &settings, nil
 }
 
 func (r *NotificationRepository) DeleteAllTaskNotifications(taskID int) error {
-	return r.db.Where("task_id = ?", taskID).Delete(&nModel.Notification{}).Error
+	return r.db.Where("task_id = ?", taskID).Delete(&models.Notification{}).Error
 }
 
-func (r *NotificationRepository) BatchInsertNotifications(notifications []*nModel.Notification) error {
+func (r *NotificationRepository) BatchInsertNotifications(notifications []*models.Notification) error {
 	return r.db.Create(&notifications).Error
 }
-func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*nModel.Notification) error {
+func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models.Notification) error {
 	var ids []int
 	for _, notification := range notifications {
 		ids = append(ids, notification.ID)
 	}
 
-	return r.db.Model(&nModel.Notification{}).Where("id IN (?)", ids).Update("is_sent", true).Error
+	return r.db.Model(&models.Notification{}).Where("id IN (?)", ids).Update("is_sent", true).Error
 }
-func (r *NotificationRepository) GetPendingNotification(c context.Context, lookback time.Duration) ([]*nModel.Notification, error) {
-	var notifications []*nModel.Notification
+func (r *NotificationRepository) GetPendingNotification(c context.Context, lookback time.Duration) ([]*models.Notification, error) {
+	var notifications []*models.Notification
 	start := time.Now().UTC().Add(-lookback)
 	end := time.Now().UTC()
 	if err := r.db.Where("is_sent = ? AND scheduled_for < ? AND scheduled_for > ?", false, end, start).Find(&notifications).Error; err != nil {
@@ -50,5 +50,5 @@ func (r *NotificationRepository) GetPendingNotification(c context.Context, lookb
 }
 
 func (r *NotificationRepository) DeleteSentNotifications(c context.Context, since time.Time) error {
-	return r.db.WithContext(c).Where("is_sent = ? AND scheduled_for < ?", true, since).Delete(&nModel.Notification{}).Error
+	return r.db.WithContext(c).Where("is_sent = ? AND scheduled_for < ?", true, since).Delete(&models.Notification{}).Error
 }

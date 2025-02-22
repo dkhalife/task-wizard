@@ -7,7 +7,7 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/config"
-	uModel "dkhalife.com/tasks/core/internal/models/user"
+	"dkhalife.com/tasks/core/internal/models"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
@@ -29,7 +29,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 		MaxRefresh:  cfg.Jwt.MaxRefresh, // 7 days as long as their token is valid they can refresh it
 		IdentityKey: auth.IdentityKey,
 		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if u, ok := data.(*uModel.User); ok {
+			if u, ok := data.(*models.User); ok {
 				return jwt.MapClaims{
 					auth.IdentityKey: fmt.Sprintf("%d", u.ID),
 				}
@@ -71,17 +71,15 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 				}
 				return nil, jwt.ErrFailedAuthentication
 			}
-			return &uModel.User{
-				ID:        user.ID,
-				Email:     user.Email,
-				Password:  "",
-				CreatedAt: user.CreatedAt,
-				UpdatedAt: user.UpdatedAt,
-				Disabled:  user.Disabled,
+			return &models.User{
+				ID:       user.ID,
+				Email:    user.Email,
+				Password: "",
+				Disabled: user.Disabled,
 			}, nil
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if _, ok := data.(*uModel.User); ok {
+			if _, ok := data.(*models.User); ok {
 				return true
 			}
 			return false

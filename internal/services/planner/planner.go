@@ -5,8 +5,7 @@ import (
 	"fmt"
 	"time"
 
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
-	tModel "dkhalife.com/tasks/core/internal/models/task"
+	"dkhalife.com/tasks/core/internal/models"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 )
 
@@ -18,7 +17,7 @@ func NewNotificationPlanner(nr *nRepo.NotificationRepository) *NotificationPlann
 	return &NotificationPlanner{nRepo: nr}
 }
 
-func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tModel.Task) bool {
+func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *models.Task) bool {
 	n.nRepo.DeleteAllTaskNotifications(task.ID)
 
 	ns := task.Notification
@@ -30,7 +29,7 @@ func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tMo
 		return true
 	}
 
-	notifications := make([]*nModel.Notification, 0)
+	notifications := make([]*models.Notification, 0)
 
 	if ns.DueDate {
 		notifications = append(notifications, generateDueNotifications(task)...)
@@ -48,16 +47,15 @@ func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *tMo
 	return true
 }
 
-func generateDueNotifications(task *tModel.Task) []*nModel.Notification {
-	notifications := make([]*nModel.Notification, 0)
+func generateDueNotifications(task *models.Task) []*models.Notification {
+	notifications := make([]*models.Notification, 0)
 
-	notification := &nModel.Notification{
+	notification := &models.Notification{
 		TaskID:       task.ID,
 		UserID:       task.CreatedBy,
 		IsSent:       false,
 		ScheduledFor: *task.NextDueDate,
 		Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
-		CreatedAt:    time.Now().UTC(),
 	}
 
 	notifications = append(notifications, notification)
@@ -65,16 +63,15 @@ func generateDueNotifications(task *tModel.Task) []*nModel.Notification {
 	return notifications
 }
 
-func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
-	notifications := make([]*nModel.Notification, 0)
+func generatePreDueNotifications(task *models.Task) []*models.Notification {
+	notifications := make([]*models.Notification, 0)
 
-	notification := &nModel.Notification{
+	notification := &models.Notification{
 		TaskID:       task.ID,
 		UserID:       task.CreatedBy,
 		IsSent:       false,
 		ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
 		Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
-		CreatedAt:    time.Now().UTC(),
 	}
 
 	notifications = append(notifications, notification)
@@ -82,18 +79,17 @@ func generatePreDueNotifications(task *tModel.Task) []*nModel.Notification {
 	return notifications
 }
 
-func generateOverdueNotifications(task *tModel.Task) []*nModel.Notification {
-	notifications := make([]*nModel.Notification, 0)
+func generateOverdueNotifications(task *models.Task) []*models.Notification {
+	notifications := make([]*models.Notification, 0)
 	// TODO: This should be done as part of the scheduler and not prescheduled for a set of days
 	for _, hours := range []int{24, 48, 72} {
 		scheduleTime := task.NextDueDate.Add(time.Hour * time.Duration(hours))
-		notification := &nModel.Notification{
+		notification := &models.Notification{
 			TaskID:       task.ID,
 			UserID:       task.CreatedBy,
 			IsSent:       false,
 			ScheduledFor: scheduleTime,
 			Text:         fmt.Sprintf("🚨 *%s* is overdue", task.Title),
-			CreatedAt:    time.Now().UTC(),
 		}
 
 		notifications = append(notifications, notification)

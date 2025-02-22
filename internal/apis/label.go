@@ -1,37 +1,37 @@
-package label
+package apis
 
 import (
 	"net/http"
 	"strconv"
 
-	lModel "dkhalife.com/tasks/core/internal/models/label"
+	models "dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
-type LabelReq struct {
+type CreateLabelReq struct {
 	Name  string `json:"name" binding:"required"`
 	Color string `json:"color"`
 }
 
 type UpdateLabelReq struct {
 	ID int `json:"id" binding:"required"`
-	LabelReq
+	CreateLabelReq
 }
 
-type Handler struct {
+type LabelsAPIHandler struct {
 	lRepo *lRepo.LabelRepository
 }
 
-func NewHandler(lRepo *lRepo.LabelRepository) *Handler {
-	return &Handler{
+func LabelsAPI(lRepo *lRepo.LabelRepository) *LabelsAPIHandler {
+	return &LabelsAPIHandler{
 		lRepo: lRepo,
 	}
 }
 
-func (h *Handler) getLabels(c *gin.Context) {
+func (h *LabelsAPIHandler) getLabels(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -62,7 +62,7 @@ func (h *Handler) getLabels(c *gin.Context) {
 	})
 }
 
-func (h *Handler) createLabel(c *gin.Context) {
+func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -71,7 +71,7 @@ func (h *Handler) createLabel(c *gin.Context) {
 		return
 	}
 
-	var req LabelReq
+	var req CreateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -79,12 +79,12 @@ func (h *Handler) createLabel(c *gin.Context) {
 		return
 	}
 
-	label := &lModel.Label{
+	label := &models.Label{
 		Name:      req.Name,
 		Color:     req.Color,
 		CreatedBy: currentUser.ID,
 	}
-	if err := h.lRepo.CreateLabels(c, []*lModel.Label{label}); err != nil {
+	if err := h.lRepo.CreateLabels(c, []*models.Label{label}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create label",
 		})
@@ -100,7 +100,7 @@ func (h *Handler) createLabel(c *gin.Context) {
 	})
 }
 
-func (h *Handler) updateLabel(c *gin.Context) {
+func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 	if !ok {
 		c.JSON(http.StatusUnauthorized, gin.H{
@@ -117,7 +117,7 @@ func (h *Handler) updateLabel(c *gin.Context) {
 		return
 	}
 
-	label := &lModel.Label{
+	label := &models.Label{
 		Name:  req.Name,
 		Color: req.Color,
 		ID:    req.ID,
@@ -146,7 +146,7 @@ func (h *Handler) updateLabel(c *gin.Context) {
 	})
 }
 
-func (h *Handler) deleteLabel(c *gin.Context) {
+func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 	currentUser, ok := auth.CurrentUser(c)
 
 	if !ok {
@@ -172,7 +172,7 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 		return
 	}
 
-	if err := h.lRepo.DeassignLabelFromAllTaskAndDelete(c, currentUser.ID, labelID); err != nil {
+	if err := h.lRepo.DeleteLabel(c, currentUser.ID, labelID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error unassociating label from task",
 		})
@@ -182,7 +182,7 @@ func (h *Handler) deleteLabel(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func Routes(r *gin.Engine, h *Handler, auth *jwt.GinJWTMiddleware) {
+func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, auth *jwt.GinJWTMiddleware) {
 
 	labelRoutes := r.Group("api/v1/labels")
 	labelRoutes.Use(auth.MiddlewareFunc())

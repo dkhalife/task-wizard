@@ -6,7 +6,7 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/config"
-	nModel "dkhalife.com/tasks/core/internal/models/notifier"
+	"dkhalife.com/tasks/core/internal/models"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
@@ -26,7 +26,7 @@ func NewNotifier() *Notifier {
 	return &Notifier{}
 }
 
-func (n *Notifier) SendNotification(c context.Context, notification *nModel.Notification) error {
+func (n *Notifier) SendNotification(c context.Context, notification *models.Notification) error {
 	return nil
 }
 
