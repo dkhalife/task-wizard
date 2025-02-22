@@ -1,6 +1,6 @@
 version: 2
 
-project_name: task_wizard
+project_name: task-wizard
 
 builds:
 - env:
