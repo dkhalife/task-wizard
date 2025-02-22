@@ -18,7 +18,7 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 
 func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, userID int) (*models.NotificationSettings, error) {
 	var settings models.NotificationSettings
-	if err := r.db.Debug().WithContext(c).Model(&models.NotificationSettings{}).First(&settings, userID).Error; err != nil {
+	if err := r.db.WithContext(c).Model(&models.NotificationSettings{}).First(&settings, userID).Error; err != nil {
 		return nil, err
 	}
 	return &settings, nil
@@ -42,7 +42,7 @@ func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models
 func (r *NotificationRepository) GetPendingNotification(c context.Context, lookback time.Duration) ([]*models.Notification, error) {
 	var notifications []*models.Notification
 	cutoff := time.Now()
-	if err := r.db.Debug().Where("is_sent = 0 AND scheduled_for < ?", cutoff).Preload("NotificationSettings").Find(&notifications).Error; err != nil {
+	if err := r.db.Where("is_sent = 0 AND scheduled_for < ?", cutoff).Preload("NotificationSettings").Find(&notifications).Error; err != nil {
 		return nil, err
 	}
 	return notifications, nil
