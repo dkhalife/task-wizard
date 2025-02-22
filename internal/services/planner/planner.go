@@ -56,7 +56,6 @@ func generateDueNotifications(task *models.Task) []*models.Notification {
 		IsSent:       false,
 		ScheduledFor: *task.NextDueDate,
 		Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
-		CreatedAt:    time.Now().UTC(),
 	}
 
 	notifications = append(notifications, notification)
@@ -73,7 +72,6 @@ func generatePreDueNotifications(task *models.Task) []*models.Notification {
 		IsSent:       false,
 		ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
 		Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
-		CreatedAt:    time.Now().UTC(),
 	}
 
 	notifications = append(notifications, notification)
@@ -92,7 +90,6 @@ func generateOverdueNotifications(task *models.Task) []*models.Notification {
 			IsSent:       false,
 			ScheduledFor: scheduleTime,
 			Text:         fmt.Sprintf("🚨 *%s* is overdue", task.Title),
-			CreatedAt:    time.Now().UTC(),
 		}
 
 		notifications = append(notifications, notification)

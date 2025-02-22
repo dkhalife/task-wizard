@@ -92,10 +92,9 @@ func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string
 
 func (r *UserRepository) StoreAPIToken(c context.Context, userID int, name string, tokenCode string) (*models.APIToken, error) {
 	token := &models.APIToken{
-		UserID:    userID,
-		Name:      name,
-		Token:     tokenCode,
-		CreatedAt: time.Now().UTC(),
+		UserID: userID,
+		Name:   name,
+		Token:  tokenCode,
 	}
 	if err := r.db.WithContext(c).Model(&models.APIToken{}).Save(
 		token).Error; err != nil {

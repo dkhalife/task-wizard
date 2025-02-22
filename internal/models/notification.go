@@ -6,12 +6,12 @@ import (
 
 type Notification struct {
 	ID           int       `json:"id" gorm:"primaryKey"`
-	TaskID       int       `json:"task_id" gorm:"column:task_id"`
-	UserID       int       `json:"user_id" gorm:"column:user_id"`
-	Text         string    `json:"text" gorm:"column:text"`
+	TaskID       int       `json:"task_id" gorm:"column:task_id;not null"`
+	UserID       int       `json:"user_id" gorm:"column:user_id;not null"`
+	Text         string    `json:"text" gorm:"column:text;not null"`
 	IsSent       bool      `json:"is_sent" gorm:"column:is_sent;index;default:false"`
-	ScheduledFor time.Time `json:"scheduled_for" gorm:"column:scheduled_for;index"`
-	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at"`
+	ScheduledFor time.Time `json:"scheduled_for" gorm:"column:scheduled_for;not null;index"`
+	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 
 	Task Task `json:"-" gorm:"foreignKey:TaskID;"`
 	User User `json:"-" gorm:"foreignKey:UserID;"`

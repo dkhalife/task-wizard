@@ -72,12 +72,10 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 				return nil, jwt.ErrFailedAuthentication
 			}
 			return &models.User{
-				ID:        user.ID,
-				Email:     user.Email,
-				Password:  "",
-				CreatedAt: user.CreatedAt,
-				UpdatedAt: user.UpdatedAt,
-				Disabled:  user.Disabled,
+				ID:       user.ID,
+				Email:    user.Email,
+				Password: "",
+				Disabled: user.Disabled,
 			}, nil
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {

@@ -144,7 +144,6 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 		IsRolling:    TaskReq.IsRolling,
 		IsActive:     true,
 		Notification: TaskReq.Notification,
-		CreatedAt:    time.Now().UTC(),
 	}
 	id, err := h.tRepo.CreateTask(c, createdTask)
 	createdTask.ID = id
@@ -235,7 +234,6 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 		IsRolling:    TaskReq.IsRolling,
 		Notification: TaskReq.Notification,
 		IsActive:     oldTask.IsActive,
-		CreatedAt:    oldTask.CreatedAt,
 	}
 
 	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
