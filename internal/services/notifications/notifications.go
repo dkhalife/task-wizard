@@ -27,6 +27,13 @@ func NewNotifier() *Notifier {
 }
 
 func (n *Notifier) SendNotification(c context.Context, notification *models.Notification) error {
+	switch notification.NotificationSettings.Provider.Provider {
+	case models.NotificationProviderNone:
+		return nil
+
+	case models.NotificationProviderWebhook:
+		return SendNotificationViaWebhook(c, notification.NotificationSettings.Provider, notification.Text)
+	}
 	return nil
 }
 

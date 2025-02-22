@@ -63,7 +63,7 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 		return
 	}
 
-	if err = h.userRepo.CreateUser(c, &models.User{
+	if err = h.userRepo.CreateUser(c, models.User{
 		Password:    password,
 		DisplayName: signupReq.DisplayName,
 		Email:       signupReq.Email,
