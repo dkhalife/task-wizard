@@ -34,6 +34,7 @@ type ServerConfig struct {
 	ReadTimeout   time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout  time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
 	ServeFrontend bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Debug         bool          `mapstructure:"debug" yaml:"debug"`
 }
 
 type SchedulerConfig struct {
@@ -49,12 +50,7 @@ type EmailConfig struct {
 }
 
 func LoadConfig() *Config {
-	if os.Getenv("TW_ENV") == "debug" {
-		viper.SetConfigName("debug")
-	} else {
-		viper.SetConfigName("prod")
-	}
-
+	viper.SetConfigName(os.Getenv("TW_ENV"))
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
 	err := viper.ReadInConfig()

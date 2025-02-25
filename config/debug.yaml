@@ -13,6 +13,7 @@ server:
   rate_period: 60s
   rate_limit: 300
   serve_frontend: false
+  debug: true
 scheduler_jobs:
   frequency: 5s
 email:
