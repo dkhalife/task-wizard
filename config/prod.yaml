@@ -15,7 +15,8 @@ server:
   serve_frontend: true
   debug: false
 scheduler_jobs:
-  frequency: 5m
+  due_frequency: 5m
+  overdue_frequency: 1d
 email:
   host: 
   port: 

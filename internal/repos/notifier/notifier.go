@@ -28,9 +28,10 @@ func (r *NotificationRepository) DeleteAllTaskNotifications(taskID int) error {
 	return r.db.Where("task_id = ?", taskID).Delete(&models.Notification{}).Error
 }
 
-func (r *NotificationRepository) BatchInsertNotifications(notifications []*models.Notification) error {
-	return r.db.Create(&notifications).Error
+func (r *NotificationRepository) BatchInsertNotifications(notifications []models.Notification) error {
+	return r.db.Create(notifications).Error
 }
+
 func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models.Notification) error {
 	var ids []int
 	for _, notification := range notifications {
@@ -39,6 +40,7 @@ func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models
 
 	return r.db.Model(&models.Notification{}).Where("id IN (?)", ids).Update("is_sent", true).Error
 }
+
 func (r *NotificationRepository) GetPendingNotification(c context.Context, lookback time.Duration) ([]*models.Notification, error) {
 	var notifications []*models.Notification
 	cutoff := time.Now()

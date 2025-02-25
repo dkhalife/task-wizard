@@ -2,6 +2,7 @@ package notifications
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"time"
 
@@ -60,25 +61,27 @@ func NewScheduler(cfg *config.Config, ur *uRepo.UserRepository, cr *tRepo.TaskRe
 func (s *Scheduler) Start(c context.Context) {
 	log := logging.FromContext(c)
 	log.Debug("Scheduler started")
-	go s.runScheduler(c, " NOTIFICATION_SCHEDULER ", s.loadAndSendNotificationJob, s.config.JobFrequency)
-	go s.runScheduler(c, " NOTIFICATION_CLEANUP ", s.cleanupSentNotifications, 2*s.config.JobFrequency)
+	go s.runScheduler(c, " NOTIFICATION_SCHEDULER ", s.generateOverdueNotifications, s.config.OverdueFrequency)
+	go s.runScheduler(c, " NOTIFICATION_SENDER ", s.loadAndSendNotificationJob, s.config.DueFrequency)
+	go s.runScheduler(c, " NOTIFICATION_CLEANUP ", s.cleanupSentNotifications, 2*s.config.DueFrequency)
 }
 
 func (s *Scheduler) cleanupSentNotifications(c context.Context) (time.Duration, error) {
 	log := logging.FromContext(c)
-	deleteBefore := time.Now().UTC().Add(-2 * s.config.JobFrequency)
+	startTime := time.Now()
+	deleteBefore := time.Now().UTC().Add(-2 * s.config.DueFrequency)
 	err := s.notificationRepo.DeleteSentNotifications(c, deleteBefore)
 	if err != nil {
 		log.Error("Error deleting sent notifications", err)
-		return time.Duration(0), err
+		return time.Since(startTime), err
 	}
-	return time.Duration(0), nil
+	return time.Since(startTime), nil
 }
 
 func (s *Scheduler) loadAndSendNotificationJob(c context.Context) (time.Duration, error) {
 	log := logging.FromContext(c)
 	startTime := time.Now()
-	pendingNotifications, err := s.notificationRepo.GetPendingNotification(c, s.config.JobFrequency)
+	pendingNotifications, err := s.notificationRepo.GetPendingNotification(c, s.config.DueFrequency)
 	log.Debug("Getting pending notifications", " count ", len(pendingNotifications))
 
 	if err != nil {
@@ -99,8 +102,38 @@ func (s *Scheduler) loadAndSendNotificationJob(c context.Context) (time.Duration
 	return time.Since(startTime), nil
 }
 
-func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) (time.Duration, error), interval time.Duration) {
+func (s *Scheduler) generateOverdueNotifications(c context.Context) (time.Duration, error) {
+	startTime := time.Now()
 
+	tasks, err := s.taskRepo.GetOverdueTasksWithNotifications(c, startTime)
+
+	if err != nil {
+		logging.FromContext(c).Error("Error getting overdue tasks", err)
+		return time.Since(startTime), err
+	}
+
+	if len(tasks) == 0 {
+		return time.Since(startTime), nil
+	}
+
+	notifications := make([]models.Notification, len(tasks))
+	for _, task := range tasks {
+		overdueNotification := models.Notification{
+			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
+			IsSent:       false,
+			ScheduledFor: startTime,
+			Text:         fmt.Sprintf("🚨 *%s* is overdue", task.Title),
+		}
+
+		notifications = append(notifications, overdueNotification)
+	}
+
+	err = s.notificationRepo.BatchInsertNotifications(notifications)
+	return time.Since(startTime), err
+}
+
+func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) (time.Duration, error), interval time.Duration) {
 	for {
 		logging.FromContext(c).Debug("Scheduler running ", jobName, " time", time.Now().String())
 

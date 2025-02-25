@@ -17,83 +17,39 @@ func NewNotificationPlanner(nr *nRepo.NotificationRepository) *NotificationPlann
 	return &NotificationPlanner{nRepo: nr}
 }
 
-func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *models.Task) bool {
+func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *models.Task) {
 	n.nRepo.DeleteAllTaskNotifications(task.ID)
 
 	ns := task.Notification
 	if !ns.Enabled {
-		return true
+		return
 	}
 
 	if task.NextDueDate == nil {
-		return true
+		return
 	}
 
-	notifications := make([]*models.Notification, 0)
+	notifications := make([]models.Notification, 2)
 
 	if ns.DueDate {
-		notifications = append(notifications, generateDueNotifications(task)...)
-	}
-
-	if ns.PreDue {
-		notifications = append(notifications, generatePreDueNotifications(task)...)
-	}
-
-	if ns.Overdue {
-		notifications = append(notifications, generateOverdueNotifications(task)...)
-	}
-
-	n.nRepo.BatchInsertNotifications(notifications)
-	return true
-}
-
-func generateDueNotifications(task *models.Task) []*models.Notification {
-	notifications := make([]*models.Notification, 0)
-
-	notification := &models.Notification{
-		TaskID:       task.ID,
-		UserID:       task.CreatedBy,
-		IsSent:       false,
-		ScheduledFor: *task.NextDueDate,
-		Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
-	}
-
-	notifications = append(notifications, notification)
-
-	return notifications
-}
-
-func generatePreDueNotifications(task *models.Task) []*models.Notification {
-	notifications := make([]*models.Notification, 0)
-
-	notification := &models.Notification{
-		TaskID:       task.ID,
-		UserID:       task.CreatedBy,
-		IsSent:       false,
-		ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
-		Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
-	}
-
-	notifications = append(notifications, notification)
-
-	return notifications
-}
-
-func generateOverdueNotifications(task *models.Task) []*models.Notification {
-	notifications := make([]*models.Notification, 0)
-	// TODO: This should be done as part of the scheduler and not prescheduled for a set of days
-	for _, hours := range []int{24, 48, 72} {
-		scheduleTime := task.NextDueDate.Add(time.Hour * time.Duration(hours))
-		notification := &models.Notification{
+		notifications = append(notifications, models.Notification{
 			TaskID:       task.ID,
 			UserID:       task.CreatedBy,
 			IsSent:       false,
-			ScheduledFor: scheduleTime,
-			Text:         fmt.Sprintf("🚨 *%s* is overdue", task.Title),
-		}
-
-		notifications = append(notifications, notification)
+			ScheduledFor: *task.NextDueDate,
+			Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
+		})
 	}
 
-	return notifications
+	if ns.PreDue {
+		notifications = append(notifications, models.Notification{
+			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
+			IsSent:       false,
+			ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
+			Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
+		})
+	}
+
+	n.nRepo.BatchInsertNotifications(notifications)
 }
