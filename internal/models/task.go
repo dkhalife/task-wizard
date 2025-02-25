@@ -10,8 +10,8 @@ type Task struct {
 	Frequency    Frequency                  `json:"frequency" gorm:"embedded;embeddedPrefix:frequency_"`
 	NextDueDate  *time.Time                 `json:"next_due_date" gorm:"column:next_due_date;index"`
 	IsRolling    bool                       `json:"is_rolling" gorm:"column:is_rolling;default:false"`
-	CreatedBy    int                        `json:"created_by" gorm:"column:created_by;not null"`
-	IsActive     bool                       `json:"is_active" gorm:"column:is_active;default:true"`
+	CreatedBy    int                        `json:"-" gorm:"column:created_by;not null"`
+	IsActive     bool                       `json:"-" gorm:"column:is_active;default:true"`
 	Notification NotificationTriggerOptions `json:"notification" gorm:"embedded;embeddedPrefix:notification_"`
 	CreatedAt    time.Time                  `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 	UpdatedAt    *time.Time                 `json:"-" gorm:"column:updated_at;default:NULL;autoUpdateTime"`
