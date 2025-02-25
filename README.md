@@ -91,7 +91,7 @@ The configuration files are yaml mappings with the following values:
 | `server.serve_frontend`            | `true`                                              | Indicates if the frontend should be served by the backend server.           |
 | `server.debug`                     | `false`                                             | Indicates if the server should run in debug mode (only use for development) |
 | `scheduler_jobs.due_frequency`     | `5m`                                                | The interval for sending regular notifications.                             |
-| `scheduler_jobs.overdue_frequency` | `1d`                                                | The interval for sending overdue notifications.                             |
+| `scheduler_jobs.overdue_frequency` | `24h`                                               | The interval for sending overdue notifications.                             |
 | `email.host`                       | (empty)                                             | The email server host.                                                      |
 | `email.port`                       | (empty)                                             | The email server port.                                                      |
 | `email.key`                        | (empty)                                             | The key for authenticating with the email server.                           |
