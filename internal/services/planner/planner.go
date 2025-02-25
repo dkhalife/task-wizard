@@ -29,8 +29,7 @@ func (n *NotificationPlanner) GenerateNotifications(c context.Context, task *mod
 		return
 	}
 
-	notifications := make([]models.Notification, 2)
-
+	notifications := make([]models.Notification, 0)
 	if ns.DueDate {
 		notifications = append(notifications, models.Notification{
 			TaskID:       task.ID,
