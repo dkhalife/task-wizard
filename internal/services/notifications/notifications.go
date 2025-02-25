@@ -116,7 +116,7 @@ func (s *Scheduler) generateOverdueNotifications(c context.Context) (time.Durati
 		return time.Since(startTime), nil
 	}
 
-	notifications := make([]models.Notification, len(tasks))
+	notifications := make([]models.Notification, 0)
 	for _, task := range tasks {
 		overdueNotification := models.Notification{
 			TaskID:       task.ID,
