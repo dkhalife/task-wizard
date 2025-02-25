@@ -100,6 +100,15 @@ func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*model
 	return histories, nil
 }
 
+func (r *TaskRepository) GetOverdueTasksWithNotifications(c context.Context, now time.Time) ([]*models.Task, error) {
+	var tasks []*models.Task
+	if err := r.db.WithContext(c).Where("is_active = 1 AND next_due_date <= ? AND notification_overdue = 1", now).Select("id, created_by, title").Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func ScheduleNextDueDate(task *models.Task, completedDate time.Time) (*time.Time, error) {
 	var freq = task.Frequency
 	if freq.Type == "once" {

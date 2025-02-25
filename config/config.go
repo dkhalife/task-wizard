@@ -38,7 +38,8 @@ type ServerConfig struct {
 }
 
 type SchedulerConfig struct {
-	JobFrequency time.Duration `mapstructure:"frequency" yaml:"frequency" default:"5m"`
+	DueFrequency     time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
+	OverdueFrequency time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
 }
 
 type EmailConfig struct {
