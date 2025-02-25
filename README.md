@@ -47,7 +47,7 @@ services:
       volumes:
       - /path/to/host/config:/config
       environment:
-      - TW_ENV=selfhosted
+      - TW_ENV=prod
 ```
 
 2. Run the app with `docker compose up -d` 
@@ -89,6 +89,7 @@ The configuration files are yaml mappings with the following values:
 | `server.rate_period`         | `60s`                                               | The period for rate limiting.                                               |
 | `server.rate_limit`          | `300`                                               | The maximum number of requests allowed within the rate period.              |
 | `server.serve_frontend`      | `true`                                              | Indicates if the frontend should be served by the backend server.           |
+| `server.debug`               | `false`                                             | Indicates if the server should run in debug mode (only use for development) |
 | `scheduler_jobs.frequency`   | `5m`                                                | The interval for processing notifications.                                  |
 | `email.host`                 | (empty)                                             | The email server host.                                                      |
 | `email.port`                 | (empty)                                             | The email server port.                                                      |

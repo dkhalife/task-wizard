@@ -98,7 +98,7 @@ func main() {
 }
 
 func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notifier.Scheduler) *gin.Engine {
-	if os.Getenv("TW_ENV") == "debug" {
+	if cfg.Server.Debug {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)
