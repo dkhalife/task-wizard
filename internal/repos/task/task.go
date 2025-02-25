@@ -94,7 +94,7 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *models.Task, user
 
 func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*models.TaskHistory, error) {
 	var histories []*models.TaskHistory
-	if err := r.db.WithContext(c).Where("task_id = ?", taskID).Order("completed_date desc").Find(&histories).Error; err != nil {
+	if err := r.db.WithContext(c).Where("task_id = ?", taskID).Order("due_date desc").Find(&histories).Error; err != nil {
 		return nil, err
 	}
 	return histories, nil
