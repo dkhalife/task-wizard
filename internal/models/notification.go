@@ -23,12 +23,14 @@ type NotificationProviderType string
 const (
 	NotificationProviderNone    NotificationProviderType = "none"
 	NotificationProviderWebhook NotificationProviderType = "webhook"
+	NotificationProviderGotify  NotificationProviderType = "gotify"
 )
 
 type NotificationProvider struct {
 	Provider NotificationProviderType `json:"provider" validate:"required" gorm:"type:varchar(7);column:type"`
-	URL      string                   `json:"url" validate:"required_if=Provider webhook" gorm:"column:url"`
+	URL      string                   `json:"url" validate:"required_if=Provider webhook gotify" gorm:"column:url"`
 	Method   string                   `json:"method" validate:"required_if=Provider webhook" gorm:"type:varchar(4);column:method"`
+	Token    string                   `json:"token" validate:"required_if=Provider gotify" gorm:"column:token"`
 }
 
 type NotificationTriggerOptions struct {
