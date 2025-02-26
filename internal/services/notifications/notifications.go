@@ -40,27 +40,28 @@ func NewNotifier(cfg *config.Config, nr *nRepo.NotificationRepository) *Notifier
 	}
 }
 
-func (n *Notifier) CleanupSentNotifications(c context.Context) (time.Duration, error) {
+func (n *Notifier) CleanupSentNotifications(c context.Context) error {
 	log := logging.FromContext(c)
-	startTime := time.Now()
 	deleteBefore := time.Now().UTC().Add(-2 * n.DueFrequency)
+
 	err := n.nRepo.DeleteSentNotifications(c, deleteBefore)
 	if err != nil {
 		log.Error("Error deleting sent notifications", err)
-		return time.Since(startTime), err
+		return err
 	}
-	return time.Since(startTime), nil
+
+	return nil
 }
 
-func (n *Notifier) LoadAndSendNotificationJob(c context.Context) (time.Duration, error) {
+func (n *Notifier) LoadAndSendNotificationJob(c context.Context) error {
 	log := logging.FromContext(c)
-	startTime := time.Now()
+
 	pendingNotifications, err := n.nRepo.GetPendingNotification(c, n.DueFrequency)
 	log.Debug("Getting pending notifications", " count ", len(pendingNotifications))
 
 	if err != nil {
 		log.Error("Error getting pending notifications")
-		return time.Since(startTime), err
+		return err
 	}
 
 	for _, notification := range pendingNotifications {
@@ -73,21 +74,20 @@ func (n *Notifier) LoadAndSendNotificationJob(c context.Context) (time.Duration,
 	}
 
 	n.nRepo.MarkNotificationsAsSent(pendingNotifications)
-	return time.Since(startTime), nil
+	return nil
 }
 
-func (n *Notifier) GenerateOverdueNotifications(c context.Context) (time.Duration, error) {
+func (n *Notifier) GenerateOverdueNotifications(c context.Context) error {
 	startTime := time.Now()
-
 	tasks, err := n.nRepo.GetOverdueTasksWithNotifications(c, startTime)
 
 	if err != nil {
 		logging.FromContext(c).Error("Error getting overdue tasks", err)
-		return time.Since(startTime), err
+		return err
 	}
 
 	if len(tasks) == 0 {
-		return time.Since(startTime), nil
+		return nil
 	}
 
 	notifications := make([]models.Notification, 0)
@@ -104,5 +104,5 @@ func (n *Notifier) GenerateOverdueNotifications(c context.Context) (time.Duratio
 	}
 
 	err = n.nRepo.BatchInsertNotifications(notifications)
-	return time.Since(startTime), err
+	return err
 }

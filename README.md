@@ -75,28 +75,29 @@ In the [config](./config/) directory are a couple of starter configuration files
 
 The configuration files are yaml mappings with the following values:
 
-| Configuration Entry                | Default Value                                       | Description                                                                 |
-|------------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------|
-| `name`                             | `"prod"`                                            | The name of the environment configuration.                                  |
-| `database.migration`               | `true`                                              | Indicates if database migration should be performed.                        |
-| `database.path`                    | `/config/task-wizard.db`                            | The path at which to store the SQLite database.                             |
-| `jwt.secret`                       | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that.**   |
-| `jwt.session_time`                 | `168h`                                              | The duration for which a JWT session is valid.                              |
-| `jwt.max_refresh`                  | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
-| `server.port`                      | `2021`                                              | The port on which the server listens.                                       |
-| `server.read_timeout`              | `2s`                                                | The maximum duration for reading the entire request.                        |
-| `server.write_timeout`             | `1s`                                                | The maximum duration before timing out writes of the response.              |
-| `server.rate_period`               | `60s`                                               | The period for rate limiting.                                               |
-| `server.rate_limit`                | `300`                                               | The maximum number of requests allowed within the rate period.              |
-| `server.serve_frontend`            | `true`                                              | Indicates if the frontend should be served by the backend server.           |
-| `server.debug`                     | `false`                                             | Indicates if the server should run in debug mode (only use for development) |
-| `scheduler_jobs.due_frequency`     | `5m`                                                | The interval for sending regular notifications.                             |
-| `scheduler_jobs.overdue_frequency` | `24h`                                               | The interval for sending overdue notifications.                             |
-| `email.host`                       | (empty)                                             | The email server host.                                                      |
-| `email.port`                       | (empty)                                             | The email server port.                                                      |
-| `email.key`                        | (empty)                                             | The key for authenticating with the email server.                           |
-| `email.email`                      | (empty)                                             | The email address used for sending emails.                                  |
-| `email.appHost`                    | (empty)                                             | The application host URL used in email communications.                      |
+| Configuration Entry                      | Default Value                                       | Description                                                                 |
+|------------------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------|
+| `name`                                   | `"prod"`                                            | The name of the environment configuration.                                  |
+| `database.migration`                     | `true`                                              | Indicates if database migration should be performed.                        |
+| `database.path`                          | `/config/task-wizard.db`                            | The path at which to store the SQLite database.                             |
+| `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that.**   |
+| `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
+| `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
+| `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
+| `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |
+| `server.write_timeout`                   | `1s`                                                | The maximum duration before timing out writes of the response.              |
+| `server.rate_period`                     | `60s`                                               | The period for rate limiting.                                               |
+| `server.rate_limit`                      | `300`                                               | The maximum number of requests allowed within the rate period.              |
+| `server.serve_frontend`                  | `true`                                              | Indicates if the frontend should be served by the backend server.           |
+| `server.debug`                           | `false`                                             | Indicates if the server should run in debug mode (only use for development) |
+| `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
+| `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
+| `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
+| `email.host`                             | (empty)                                             | The email server host.                                                      |
+| `email.port`                             | (empty)                                             | The email server port.                                                      |
+| `email.key`                              | (empty)                                             | The key for authenticating with the email server.                           |
+| `email.email`                            | (empty)                                             | The email address used for sending emails.                                  |
+| `email.appHost`                          | (empty)                                             | The application host URL used in email communications.                      |
 
 ## 🛠️ Development Environment
 

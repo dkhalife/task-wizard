@@ -38,8 +38,9 @@ type ServerConfig struct {
 }
 
 type SchedulerConfig struct {
-	DueFrequency     time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
-	OverdueFrequency time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
+	DueFrequency          time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
+	OverdueFrequency      time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
+	PasswordResetValidity time.Duration `mapstructure:"password_reset_validity" yaml:"password_reset_validity" default:"24h"`
 }
 
 type EmailConfig struct {

@@ -17,6 +17,7 @@ server:
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h
+  password_reset_validity: 24h
 email:
   host: 
   port: 

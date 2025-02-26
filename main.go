@@ -25,6 +25,7 @@ import (
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	"dkhalife.com/tasks/core/internal/services/housekeeper"
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
 	"dkhalife.com/tasks/core/internal/services/scheduler"
@@ -59,8 +60,9 @@ func main() {
 		fx.Provide(nRepo.NewNotificationRepository),
 		fx.Provide(apis.UsersAPI),
 
-		// add notifier
+		// add services
 		fx.Provide(notifier.NewNotifier),
+		fx.Provide(housekeeper.NewPasswordResetCleaner),
 
 		// Rate limiter
 		fx.Provide(utils.NewRateLimiter),
