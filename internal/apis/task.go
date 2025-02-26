@@ -12,7 +12,6 @@ import (
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	notifications "dkhalife.com/tasks/core/internal/services/notifications"
-	planner "dkhalife.com/tasks/core/internal/services/planner"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -35,17 +34,15 @@ type TaskReq struct {
 type TasksAPIHandler struct {
 	tRepo    *tRepo.TaskRepository
 	notifier *notifications.Notifier
-	nPlanner *planner.NotificationPlanner
 	nRepo    *nRepo.NotificationRepository
 	lRepo    *lRepo.LabelRepository
 }
 
 func TasksAPI(cr *tRepo.TaskRepository, nt *notifications.Notifier,
-	np *planner.NotificationPlanner, nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *TasksAPIHandler {
+	nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *TasksAPIHandler {
 	return &TasksAPIHandler{
 		tRepo:    cr,
 		notifier: nt,
-		nPlanner: np,
 		nRepo:    nRepo,
 		lRepo:    lRepo,
 	}
@@ -163,7 +160,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	}
 
 	go func() {
-		h.nPlanner.GenerateNotifications(c, createdTask)
+		h.nRepo.GenerateNotifications(c, createdTask)
 	}()
 
 	c.JSON(http.StatusCreated, gin.H{
@@ -244,7 +241,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	}
 
 	go func() {
-		h.nPlanner.GenerateNotifications(c, updatedTask)
+		h.nRepo.GenerateNotifications(c, updatedTask)
 	}()
 
 	c.JSON(http.StatusNoContent, gin.H{})
@@ -336,7 +333,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	}
 
 	go func() {
-		h.nPlanner.GenerateNotifications(c, updatedTask)
+		h.nRepo.GenerateNotifications(c, updatedTask)
 	}()
 
 	c.JSON(http.StatusOK, gin.H{
@@ -475,7 +472,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	}
 
 	go func() {
-		h.nPlanner.GenerateNotifications(c, updatedTask)
+		h.nRepo.GenerateNotifications(c, updatedTask)
 	}()
 
 	c.JSON(http.StatusOK, gin.H{

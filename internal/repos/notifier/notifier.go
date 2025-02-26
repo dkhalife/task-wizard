@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
@@ -30,6 +31,42 @@ func (r *NotificationRepository) DeleteAllTaskNotifications(taskID int) error {
 
 func (r *NotificationRepository) BatchInsertNotifications(notifications []models.Notification) error {
 	return r.db.Create(notifications).Error
+}
+
+func (r *NotificationRepository) GenerateNotifications(c context.Context, task *models.Task) {
+	r.DeleteAllTaskNotifications(task.ID)
+
+	ns := task.Notification
+	if !ns.Enabled {
+		return
+	}
+
+	if task.NextDueDate == nil {
+		return
+	}
+
+	notifications := make([]models.Notification, 0)
+	if ns.DueDate {
+		notifications = append(notifications, models.Notification{
+			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
+			IsSent:       false,
+			ScheduledFor: *task.NextDueDate,
+			Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
+		})
+	}
+
+	if ns.PreDue {
+		notifications = append(notifications, models.Notification{
+			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
+			IsSent:       false,
+			ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
+			Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
+		})
+	}
+
+	r.BatchInsertNotifications(notifications)
 }
 
 func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models.Notification) error {

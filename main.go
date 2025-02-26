@@ -27,7 +27,6 @@ import (
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
-	"dkhalife.com/tasks/core/internal/services/planner"
 	migration "dkhalife.com/tasks/core/internal/utils/migration"
 )
 
@@ -58,8 +57,6 @@ func main() {
 		fx.Provide(uRepo.NewUserRepository),
 		fx.Provide(nRepo.NewNotificationRepository),
 		fx.Provide(apis.UsersAPI),
-
-		fx.Provide(planner.NewNotificationPlanner),
 
 		// add notifier
 		fx.Provide(notifier.NewNotifier),
