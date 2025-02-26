@@ -322,7 +322,15 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 		return
 	}
 
-	// TODO: Reschedule all notifications for this user
+	if req.Provider.Provider == models.NotificationProviderNone {
+		err = h.userRepo.DeleteNotificationsForUser(c, currentUser.ID)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Failed to delete existing notification",
+			})
+			return
+		}
+	}
 
 	c.JSON(http.StatusNoContent, gin.H{})
 }
