@@ -129,6 +129,10 @@ func (r *UserRepository) UpdateNotificationSettings(c context.Context, userID in
 	}).Error
 }
 
+func (r *UserRepository) DeleteNotificationsForUser(c context.Context, userID int) error {
+	return r.db.WithContext(c).Where("user_id = ?", userID).Delete(&models.NotificationSettings{}).Error
+}
+
 func (r *UserRepository) UpdatePasswordByUserId(c context.Context, userID int, password string) error {
 	return r.db.WithContext(c).Model(&models.User{}).Where("id = ?", userID).Update("password", password).Error
 }
