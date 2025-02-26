@@ -34,7 +34,12 @@ func (n *Notifier) SendNotification(c context.Context, notification *models.Noti
 
 	case models.NotificationProviderWebhook:
 		return SendNotificationViaWebhook(c, notification.NotificationSettings.Provider, notification.Text)
+
+	case models.NotificationProviderGotify:
+		return SendNotificationViaGotify(c, notification.NotificationSettings.Provider, notification.Text)
+
 	}
+
 	return nil
 }
 
