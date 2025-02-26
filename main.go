@@ -27,7 +27,7 @@ import (
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
-	"dkhalife.com/tasks/core/internal/services/planner"
+	"dkhalife.com/tasks/core/internal/services/scheduler"
 	migration "dkhalife.com/tasks/core/internal/utils/migration"
 )
 
@@ -59,8 +59,6 @@ func main() {
 		fx.Provide(nRepo.NewNotificationRepository),
 		fx.Provide(apis.UsersAPI),
 
-		fx.Provide(planner.NewNotificationPlanner),
-
 		// add notifier
 		fx.Provide(notifier.NewNotifier),
 
@@ -71,7 +69,7 @@ func main() {
 		fx.Provide(email.NewEmailSender),
 		// add handlers also
 		fx.Provide(newServer),
-		fx.Provide(notifier.NewScheduler),
+		fx.Provide(scheduler.NewScheduler),
 
 		// Labels:
 		fx.Provide(lRepo.NewLabelRepository),
@@ -97,7 +95,7 @@ func main() {
 
 }
 
-func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notifier.Scheduler) *gin.Engine {
+func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *scheduler.Scheduler) *gin.Engine {
 	if cfg.Server.Debug {
 		gin.SetMode(gin.DebugMode)
 	} else {
@@ -123,12 +121,15 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, notifier *notif
 				migration.Migration(db)
 				migrations.Run(context.Background(), db)
 			}
-			notifier.Start(context.Background())
+
+			bgScheduler.Start(context.Background())
+
 			go func() {
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 					log.Fatalf("listen: %s\n", err)
 				}
 			}()
+
 			return nil
 		},
 		OnStop: func(context.Context) error {

@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"context"
+	"fmt"
 	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
@@ -32,6 +33,44 @@ func (r *NotificationRepository) BatchInsertNotifications(notifications []models
 	return r.db.Create(notifications).Error
 }
 
+func (r *NotificationRepository) GenerateNotifications(c context.Context, task *models.Task) {
+	r.DeleteAllTaskNotifications(task.ID)
+
+	ns := task.Notification
+	if !ns.Enabled {
+		return
+	}
+
+	if task.NextDueDate == nil {
+		return
+	}
+
+	notifications := make([]models.Notification, 0)
+	if ns.DueDate {
+		notifications = append(notifications, models.Notification{
+			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
+			IsSent:       false,
+			ScheduledFor: *task.NextDueDate,
+			Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
+		})
+	}
+
+	if ns.PreDue {
+		notifications = append(notifications, models.Notification{
+			TaskID:       task.ID,
+			UserID:       task.CreatedBy,
+			IsSent:       false,
+			ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
+			Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
+		})
+	}
+
+	if len(notifications) > 0 {
+		r.BatchInsertNotifications(notifications)
+	}
+}
+
 func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models.Notification) error {
 	var ids []int
 	for _, notification := range notifications {
@@ -48,6 +87,15 @@ func (r *NotificationRepository) GetPendingNotification(c context.Context, lookb
 		return nil, err
 	}
 	return notifications, nil
+}
+
+func (r *NotificationRepository) GetOverdueTasksWithNotifications(c context.Context, now time.Time) ([]*models.Task, error) {
+	var tasks []*models.Task
+	if err := r.db.WithContext(c).Where("is_active = 1 AND next_due_date <= ? AND notification_overdue = 1", now).Select("id, created_by, title").Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
 }
 
 func (r *NotificationRepository) DeleteSentNotifications(c context.Context, since time.Time) error {
