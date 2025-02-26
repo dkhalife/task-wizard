@@ -54,7 +54,12 @@ func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c c
 			}
 			logging.FromContext(c).Debug("Scheduler job completed", jobName, " time: ", elapsedTime.String())
 		}
-		time.Sleep(interval)
+		select {
+		case <-s.stopChan:
+			log.Println("Scheduler stopped")
+			return
+		case <-time.After(interval):
+		}
 	}
 }
 
