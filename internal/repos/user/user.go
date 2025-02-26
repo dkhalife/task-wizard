@@ -12,11 +12,12 @@ import (
 )
 
 type UserRepository struct {
-	db *gorm.DB
+	cfg *config.Config
+	db  *gorm.DB
 }
 
 func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
-	return &UserRepository{db}
+	return &UserRepository{cfg, db}
 }
 
 func (r *UserRepository) CreateUser(c context.Context, user *models.User) error {
@@ -60,11 +61,15 @@ func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token s
 		return err
 	}
 
-	if err := r.db.WithContext(c).Model(&models.UserPasswordReset{}).Save(&models.UserPasswordReset{
+	if err := r.db.WithContext(c).Where("user_id = ?", user.ID).Delete(&models.UserPasswordReset{}).Error; err != nil {
+		return err
+	}
+
+	if err := r.db.WithContext(c).Model(&models.UserPasswordReset{}).Create(&models.UserPasswordReset{
 		UserID:         user.ID,
 		Token:          token,
 		Email:          email,
-		ExpirationDate: time.Now().UTC().Add(time.Hour * 24),
+		ExpirationDate: time.Now().UTC().Add(r.cfg.SchedulerJobs.PasswordResetValidity),
 	}).Error; err != nil {
 		return err
 	}
@@ -135,4 +140,9 @@ func (r *UserRepository) DeleteNotificationsForUser(c context.Context, userID in
 
 func (r *UserRepository) UpdatePasswordByUserId(c context.Context, userID int, password string) error {
 	return r.db.WithContext(c).Model(&models.User{}).Where("id = ?", userID).Update("password", password).Error
+}
+
+func (r *UserRepository) DeleteStalePasswordResets(c context.Context) error {
+	now := time.Now()
+	return r.db.WithContext(c).Where("expiration_date <= ?", now).Delete(&models.UserPasswordReset{}).Error
 }
