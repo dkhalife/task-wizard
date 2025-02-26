@@ -66,7 +66,9 @@ func (r *NotificationRepository) GenerateNotifications(c context.Context, task *
 		})
 	}
 
-	r.BatchInsertNotifications(notifications)
+	if len(notifications) > 0 {
+		r.BatchInsertNotifications(notifications)
+	}
 }
 
 func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models.Notification) error {
