@@ -2,7 +2,6 @@ package scheduler
 
 import (
 	"context"
-	"log"
 	"time"
 
 	"dkhalife.com/tasks/core/config"
@@ -39,26 +38,23 @@ func (s *Scheduler) Start(c context.Context) {
 	go s.runScheduler(c, " NOTIFICATION_CLEANUP ", s.notifier.CleanupSentNotifications, 2*s.config.DueFrequency)
 }
 
-func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) (time.Duration, error), interval time.Duration) {
-	for {
-		logging.FromContext(c).Debug("Scheduler running ", jobName, " time", time.Now().String())
+func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {
+	log := logging.FromContext(c)
+	log.Debugf("%s: [%s] Starting job", time.Now().String(), jobName)
 
+	for {
 		select {
 		case <-s.stopChan:
-			log.Println("Scheduler stopped")
+			log.Infof("%s: [%s] Stopping job", time.Now().String(), jobName)
 			return
+
 		default:
-			elapsedTime, err := job(c)
+			err := job(c)
 			if err != nil {
-				logging.FromContext(c).Error("Error running scheduler job", err)
+				log.Errorf("%s: [%s] %s", time.Now().String(), jobName, err)
 			}
-			logging.FromContext(c).Debug("Scheduler job completed", jobName, " time: ", elapsedTime.String())
-		}
-		select {
-		case <-s.stopChan:
-			log.Println("Scheduler stopped")
-			return
-		case <-time.After(interval):
+
+			time.Sleep(interval)
 		}
 	}
 }
