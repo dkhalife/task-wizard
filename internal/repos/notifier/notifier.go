@@ -87,6 +87,15 @@ func (r *NotificationRepository) GetPendingNotification(c context.Context, lookb
 	return notifications, nil
 }
 
+func (r *NotificationRepository) GetOverdueTasksWithNotifications(c context.Context, now time.Time) ([]*models.Task, error) {
+	var tasks []*models.Task
+	if err := r.db.WithContext(c).Where("is_active = 1 AND next_due_date <= ? AND notification_overdue = 1", now).Select("id, created_by, title").Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func (r *NotificationRepository) DeleteSentNotifications(c context.Context, since time.Time) error {
 	return r.db.WithContext(c).Where("is_sent = 1 AND scheduled_for < ?", since).Delete(&models.Notification{}).Error
 }
