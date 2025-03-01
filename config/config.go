@@ -28,6 +28,7 @@ type JwtConfig struct {
 }
 
 type ServerConfig struct {
+	HostName      string        `mapstructure:"host_name" yaml:"host_name"`
 	Port          int           `mapstructure:"port" yaml:"port"`
 	RatePeriod    time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
 	RateLimit     int           `mapstructure:"rate_limit" yaml:"rate_limit"`
@@ -44,11 +45,10 @@ type SchedulerConfig struct {
 }
 
 type EmailConfig struct {
-	Email   string `mapstructure:"email"`
-	Key     string `mapstructure:"key"`
-	Host    string `mapstructure:"host"`
-	Port    int    `mapstructure:"port"`
-	AppHost string `mapstructure:"appHost"`
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Email    string `mapstructure:"email"`
+	Password string `mapstructure:"password"`
 }
 
 func LoadConfig() *Config {

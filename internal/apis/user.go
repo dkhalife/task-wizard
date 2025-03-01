@@ -139,7 +139,8 @@ func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 		return
 	}
 
-	err = h.email.SendResetPasswordEmail(c, req.Email, token)
+	code := auth.EncodeEmailAndCode(req.Email, token)
+	err = h.email.SendResetPasswordEmail(c, req.Email, code)
 	if err != nil {
 		log.Errorw("account.handler.resetPassword failed to send email", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -156,14 +157,13 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 
 	code := c.Query("c")
 
-	email, code, err := email.DecodeEmailAndCode(code)
+	email, code, err := auth.DecodeEmailAndCode(code)
 	if err != nil {
-		logger.Errorw("account.handler.verify failed to decode email and code", "err", err)
+		logger.Errorw("failed to decode email and code", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid reset code",
 		})
 		return
-
 	}
 
 	type RequestBody struct {

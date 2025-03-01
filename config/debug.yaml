@@ -7,6 +7,7 @@ jwt:
   session_time: 168h
   max_refresh: 168h
 server:
+  host_name: localhost
   port: 2021
   read_timeout: 2s
   write_timeout: 1s
@@ -21,6 +22,5 @@ scheduler_jobs:
 email:
   host: 
   port: 
-  key: 
   email:  
-  appHost:  
+  password:

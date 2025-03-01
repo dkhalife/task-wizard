@@ -83,6 +83,7 @@ The configuration files are yaml mappings with the following values:
 | `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that.**   |
 | `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
 | `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
+| `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
 | `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
 | `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |
 | `server.write_timeout`                   | `1s`                                                | The maximum duration before timing out writes of the response.              |
@@ -95,9 +96,8 @@ The configuration files are yaml mappings with the following values:
 | `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
 | `email.host`                             | (empty)                                             | The email server host.                                                      |
 | `email.port`                             | (empty)                                             | The email server port.                                                      |
-| `email.key`                              | (empty)                                             | The key for authenticating with the email server.                           |
 | `email.email`                            | (empty)                                             | The email address used for sending emails.                                  |
-| `email.appHost`                          | (empty)                                             | The application host URL used in email communications.                      |
+| `email.password`                         | (empty)                                             | The password for authenticating with the email server.                      |
 
 ## 🛠️ Development Environment
 
