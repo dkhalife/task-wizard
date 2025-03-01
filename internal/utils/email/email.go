@@ -3,10 +3,10 @@ package email
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"dkhalife.com/tasks/core/config"
-	"gopkg.in/gomail.v2"
+	"dkhalife.com/tasks/core/internal/services/logging"
+	"github.com/wneessen/go-mail"
 )
 
 type EmailSender struct {
@@ -61,7 +61,7 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code
 	htmlBody := `
 		<html>
 		<body>
-			<p>Dear User,</p>
+			<p>Dear user,</p>
 			<p>Please use the link below to reset your password:</p>
 			<p><a href="` + resetURL + `">Reset Password</a></p>
 			<p>If you did not request a password reset, please ignore this email.</p>
@@ -71,18 +71,30 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code
 		</html>
 	`
 
-	msg := gomail.NewMessage()
-	msg.SetHeader("From", es.Email)
-	msg.SetHeader("To", to)
-	msg.SetHeader("Subject", "Task Wizard - Password Reset")
-	msg.SetBody("text/html", htmlBody)
-
-	fmt.Printf("Sending password reset email to %s\n", to)
-
-	dialer := gomail.NewDialer(es.Host, es.Port, es.Email, es.Password)
-	if err := dialer.DialAndSend(); err != nil {
-		fmt.Println("Failed to send email:", err)
-		return err
+	log := logging.FromContext(c)
+	message := mail.NewMsg()
+	if err := message.From(es.Email); err != nil {
+		log.Fatalf("failed to set From address: %s", err)
 	}
-	return nil
+	if err := message.To(to); err != nil {
+		log.Fatalf("failed to set To address: %s", err)
+	}
+
+	message.Subject("Task Wizard - Password Reset")
+	message.SetBodyString(mail.TypeTextHTML, htmlBody)
+
+	client, err := mail.NewClient(es.Host,
+		mail.WithPort(es.Port),
+		mail.WithSMTPAuth(mail.SMTPAuthPlain),
+		mail.WithUsername(es.Email), mail.WithPassword(es.Password))
+
+	if err != nil {
+		log.Fatalf("failed to create mail client: %s", err)
+	}
+
+	if err := client.DialAndSend(message); err != nil {
+		log.Fatalf("failed to send mail: %s", err)
+	}
+
+	return err
 }

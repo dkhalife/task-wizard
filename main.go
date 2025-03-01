@@ -118,7 +118,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	r.Use(cors.New(config))
 
 	lc.Append(fx.Hook{
-		OnStart: func(context.Context) error {
+		OnStart: func(ctx context.Context) error {
 			if cfg.Database.Migration {
 				migration.Migration(db)
 				migrations.Run(context.Background(), db)
