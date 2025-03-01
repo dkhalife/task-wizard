@@ -24,7 +24,7 @@ type LabelReq struct {
 type TaskReq struct {
 	ID           string                            `json:"id"`
 	Title        string                            `json:"title" binding:"required"`
-	NextDueDate  int64                             `json:"next_due_date"`
+	NextDueDate  string                            `json:"next_due_date"`
 	IsRolling    bool                              `json:"is_rolling"`
 	Frequency    models.Frequency                  `json:"frequency"`
 	Notification models.NotificationTriggerOptions `json:"notification"`
@@ -128,8 +128,16 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if TaskReq.NextDueDate != 0 {
-		rawDueDate := time.UnixMilli(TaskReq.NextDueDate)
+	if TaskReq.NextDueDate != "" {
+		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Due date must be in UTC format",
+			})
+			return
+		}
+
+		rawDueDate = rawDueDate.UTC()
 		dueDate = &rawDueDate
 	}
 
@@ -187,8 +195,16 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 
 	var dueDate *time.Time
 
-	if TaskReq.NextDueDate != 0 {
-		rawDueDate := time.UnixMilli(TaskReq.NextDueDate)
+	if TaskReq.NextDueDate != "" {
+		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Due date must be in UTC format",
+			})
+			return
+		}
+
+		rawDueDate = rawDueDate.UTC()
 		dueDate = &rawDueDate
 	}
 
@@ -351,7 +367,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	}
 
 	type DueDateReq struct {
-		DueDate int64 `json:"due_date" binding:"required"`
+		DueDate string `json:"due_date" binding:"required"`
 	}
 
 	var dueDateReq DueDateReq
@@ -386,8 +402,19 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 		})
 	}
 
-	dueDate := time.UnixMilli(dueDateReq.DueDate)
-	task.NextDueDate = &dueDate
+	if dueDateReq.DueDate != "" {
+		rawDueDate, err := time.Parse(time.RFC3339, dueDateReq.DueDate)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Due date must be in UTC format",
+			})
+			return
+		}
+
+		rawDueDate = rawDueDate.UTC()
+		task.NextDueDate = &rawDueDate
+	}
+
 	if err := h.tRepo.UpsertTask(c, task); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error updating due date",
@@ -418,27 +445,6 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
-	type CompleteReq struct {
-		CompletedDate int64 `json:"completed_date"`
-	}
-
-	var completeReq CompleteReq
-	if err := c.ShouldBindJSON(&completeReq); err != nil {
-		log.Print(err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err,
-		})
-		return
-	}
-
-	var completedDate time.Time
-	rawCompletedDate := completeReq.CompletedDate
-	if rawCompletedDate == 0 {
-		completedDate = time.Now().UTC()
-	} else {
-		completedDate = time.UnixMilli(int64(completeReq.CompletedDate))
-	}
-
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -447,6 +453,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
+	var completedDate time.Time = time.Now().UTC()
 	var nextDueDate *time.Time
 	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
 	if err != nil {
