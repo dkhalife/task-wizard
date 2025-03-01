@@ -55,7 +55,7 @@ func (r *UserRepository) FindByEmail(c context.Context, email string) (*models.U
 	return user, nil
 }
 
-func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token string) error {
+func (r *UserRepository) SetPasswordResetToken(c context.Context, email string, token string) error {
 	user, err := r.FindByEmail(c, email)
 	if err != nil {
 		return err

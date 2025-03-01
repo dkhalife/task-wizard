@@ -51,6 +51,36 @@ func (es *EmailSender) validateConfig() error {
 	return nil
 }
 
+func (es *EmailSender) sendEmail(c context.Context, to string, subject string, body string) error {
+	log := logging.FromContext(c)
+
+	message := mail.NewMsg()
+	if err := message.From(es.Email); err != nil {
+		log.Fatalf("failed to set From address: %s", err)
+	}
+	if err := message.To(to); err != nil {
+		log.Fatalf("failed to set To address: %s", err)
+	}
+
+	message.Subject(subject)
+	message.SetBodyString(mail.TypeTextHTML, body)
+
+	client, err := mail.NewClient(es.Host,
+		mail.WithPort(es.Port),
+		mail.WithSMTPAuth(mail.SMTPAuthPlain),
+		mail.WithUsername(es.Email), mail.WithPassword(es.Password))
+
+	if err != nil {
+		log.Fatalf("failed to create mail client: %s", err)
+	}
+
+	if err := client.DialAndSend(message); err != nil {
+		log.Fatalf("failed to send mail: %s", err)
+	}
+
+	return err
+}
+
 func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code string) error {
 	err := es.validateConfig()
 	if err != nil {
@@ -71,30 +101,38 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code
 		</html>
 	`
 
-	log := logging.FromContext(c)
-	message := mail.NewMsg()
-	if err := message.From(es.Email); err != nil {
-		log.Fatalf("failed to set From address: %s", err)
-	}
-	if err := message.To(to); err != nil {
-		log.Fatalf("failed to set To address: %s", err)
-	}
-
-	message.Subject("Task Wizard - Password Reset")
-	message.SetBodyString(mail.TypeTextHTML, htmlBody)
-
-	client, err := mail.NewClient(es.Host,
-		mail.WithPort(es.Port),
-		mail.WithSMTPAuth(mail.SMTPAuthPlain),
-		mail.WithUsername(es.Email), mail.WithPassword(es.Password))
-
+	err = es.sendEmail(c, to, "Task Wizard - Password Reset", htmlBody)
 	if err != nil {
-		log.Fatalf("failed to create mail client: %s", err)
+		return err
 	}
 
-	if err := client.DialAndSend(message); err != nil {
-		log.Fatalf("failed to send mail: %s", err)
+	return nil
+}
+
+func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to string, activationCode string) error {
+	err := es.validateConfig()
+	if err != nil {
+		return err
 	}
 
-	return err
+	activationURL := es.AppHost + "/activate?code=" + activationCode
+	htmlBody := `
+		<html>
+		<body>
+			<p>Dear ` + name + `,</p>
+			<p>Welcome to Task Wizard! Please use the link below to activate your account:</p>
+			<p><a href="` + activationURL + `">Activate Account</a></p>
+			<p>If you did not sign up for this account, please ignore this email.</p>
+			<p>Thank you,</p>
+			<p><strong>Task Wizard</strong></p>
+		</body>
+		</html>
+	`
+
+	err = es.sendEmail(c, to, "Task Wizard - Welcome!", htmlBody)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
