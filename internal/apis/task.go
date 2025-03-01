@@ -418,27 +418,6 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
-	type CompleteReq struct {
-		CompletedDate int64 `json:"completed_date"`
-	}
-
-	var completeReq CompleteReq
-	if err := c.ShouldBindJSON(&completeReq); err != nil {
-		log.Print(err)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err,
-		})
-		return
-	}
-
-	var completedDate time.Time
-	rawCompletedDate := completeReq.CompletedDate
-	if rawCompletedDate == 0 {
-		completedDate = time.Now().UTC()
-	} else {
-		completedDate = time.UnixMilli(int64(completeReq.CompletedDate))
-	}
-
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -447,6 +426,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
+	var completedDate time.Time = time.Now().UTC()
 	var nextDueDate *time.Time
 	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
 	if err != nil {
