@@ -34,10 +34,6 @@ archives:
     dst: "config/debug.yaml"
   - src: "config/prod.yaml"
     dst: "config/prod.yaml"
-
-release:
-  prerelease: true
-
 changelog:
   sort: asc
   filters:
