@@ -3,6 +3,7 @@ package email
 import (
 	"context"
 	"errors"
+	"net/url"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
@@ -87,7 +88,7 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code
 		return err
 	}
 
-	resetURL := es.AppHost + "/password/update?c=" + code
+	resetURL := es.AppHost + "/password/update?c=" + url.QueryEscape(code)
 	htmlBody := `
 		<html>
 		<body>
@@ -115,7 +116,7 @@ func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to strin
 		return err
 	}
 
-	activationURL := es.AppHost + "/activate?code=" + activationCode
+	activationURL := es.AppHost + "/activate?code=" + url.QueryEscape(activationCode)
 	htmlBody := `
 		<html>
 		<body>
