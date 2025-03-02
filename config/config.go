@@ -35,6 +35,7 @@ type ServerConfig struct {
 	ReadTimeout   time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
 	WriteTimeout  time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
 	ServeFrontend bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Registration  bool          `mapstructure:"registration" yaml:"registration"`
 	Debug         bool          `mapstructure:"debug" yaml:"debug"`
 }
 

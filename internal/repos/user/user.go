@@ -21,6 +21,10 @@ func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
 }
 
 func (r *UserRepository) CreateUser(c context.Context, user *models.User) error {
+	if !r.cfg.Server.Registration {
+		return fmt.Errorf("new account registration is disabled")
+	}
+
 	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&user).Error; err != nil {
 			return err

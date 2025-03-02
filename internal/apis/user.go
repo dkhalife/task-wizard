@@ -69,8 +69,8 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 		Email:       signupReq.Email,
 		Disabled:    true,
 	}); err != nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"error": "Error creating user, an account with this email already exists",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}
