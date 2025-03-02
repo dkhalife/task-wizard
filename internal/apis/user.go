@@ -92,13 +92,7 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 	}
 
 	code := auth.EncodeEmailAndCode(signupReq.Email, token)
-	err = h.email.SendWelcomeEmail(c, signupReq.DisplayName, signupReq.Email, code)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Unable to send activation email",
-		})
-		return
-	}
+	go h.email.SendWelcomeEmail(c, signupReq.DisplayName, signupReq.Email, code)
 
 	c.JSON(http.StatusCreated, gin.H{})
 }
