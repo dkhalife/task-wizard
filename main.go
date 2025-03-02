@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"dkhalife.com/tasks/core/backend"
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/frontend"
 	auth "dkhalife.com/tasks/core/internal/middleware/auth"
@@ -78,12 +79,14 @@ func main() {
 		fx.Provide(apis.LabelsAPI),
 
 		fx.Provide(frontend.NewHandler),
+		fx.Provide(backend.NewHandler),
 
 		fx.Invoke(
 			apis.TaskRoutes,
 			apis.UserRoutes,
 			apis.LabelRoutes,
 			frontend.Routes,
+			backend.Routes,
 
 			func(r *gin.Engine) {},
 		),
@@ -118,7 +121,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	r.Use(cors.New(config))
 
 	lc.Append(fx.Hook{
-		OnStart: func(context.Context) error {
+		OnStart: func(ctx context.Context) error {
 			if cfg.Database.Migration {
 				migration.Migration(db)
 				migrations.Run(context.Background(), db)

@@ -183,7 +183,6 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 }
 
 func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, auth *jwt.GinJWTMiddleware) {
-
 	labelRoutes := r.Group("api/v1/labels")
 	labelRoutes.Use(auth.MiddlewareFunc())
 	{

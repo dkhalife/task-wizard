@@ -21,6 +21,10 @@ func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
 }
 
 func (r *UserRepository) CreateUser(c context.Context, user *models.User) error {
+	if !r.cfg.Server.Registration {
+		return fmt.Errorf("new account registration is disabled")
+	}
+
 	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		if err := tx.Create(&user).Error; err != nil {
 			return err
@@ -55,7 +59,7 @@ func (r *UserRepository) FindByEmail(c context.Context, email string) (*models.U
 	return user, nil
 }
 
-func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token string) error {
+func (r *UserRepository) SetPasswordResetToken(c context.Context, email string, token string) error {
 	user, err := r.FindByEmail(c, email)
 	if err != nil {
 		return err
@@ -75,6 +79,29 @@ func (r *UserRepository) SetPasswordResetToken(c context.Context, email, token s
 	}
 
 	return nil
+}
+
+func (r *UserRepository) ActivateAccount(c context.Context, email string, code string) (bool, error) {
+	user, err := r.FindByEmail(c, email)
+	if err != nil {
+		return false, err
+	}
+
+	if !user.Disabled {
+		return false, nil
+	}
+
+	result := r.db.WithContext(c).Where("email = ?", email).Where("token = ?", code).Delete(&models.UserPasswordReset{})
+	if result.RowsAffected <= 0 {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	err = r.db.WithContext(c).Model(&models.User{}).Where("email = ? AND disabled = 1", email).Update("disabled", false).Error
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
 }
 
 func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string, token string, password string) error {

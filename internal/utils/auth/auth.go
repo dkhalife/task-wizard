@@ -3,6 +3,8 @@ package auth
 import (
 	"crypto/rand"
 	"encoding/base64"
+	"fmt"
+	"strings"
 
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/services/logging"
@@ -24,6 +26,24 @@ func EncodePassword(password string) (string, error) {
 
 func Matches(hashedPassword, password string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(password))
+}
+
+func EncodeEmailAndCode(email, code string) string {
+	data := email + ":" + code
+	return base64.StdEncoding.EncodeToString([]byte(data))
+}
+
+func DecodeEmailAndCode(encoded string) (string, string, error) {
+	data, err := base64.StdEncoding.DecodeString(encoded)
+	if err != nil {
+		return "", "", err
+	}
+	parts := string(data)
+	split := strings.Split(parts, ":")
+	if len(split) != 2 {
+		return "", "", fmt.Errorf("invalid format")
+	}
+	return split[0], split[1], nil
 }
 
 func GenerateEmailResetToken(c *gin.Context) (string, error) {

@@ -67,12 +67,32 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 		Password:    password,
 		DisplayName: signupReq.DisplayName,
 		Email:       signupReq.Email,
+		Disabled:    true,
 	}); err != nil {
-		c.JSON(http.StatusConflict, gin.H{
-			"error": "Error creating user, an account with this email already exists",
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": err.Error(),
 		})
 		return
 	}
+
+	token, err := auth.GenerateEmailResetToken(c)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Unable to generate activation token",
+		})
+		return
+	}
+
+	err = h.userRepo.SetPasswordResetToken(c, signupReq.Email, token)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Unable to set reset token",
+		})
+		return
+	}
+
+	code := auth.EncodeEmailAndCode(signupReq.Email, token)
+	go h.email.SendWelcomeEmail(c, signupReq.DisplayName, signupReq.Email, code)
 
 	c.JSON(http.StatusCreated, gin.H{})
 }
@@ -139,9 +159,10 @@ func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 		return
 	}
 
-	err = h.email.SendResetPasswordEmail(c, req.Email, token)
+	code := auth.EncodeEmailAndCode(req.Email, token)
+	err = h.email.SendResetPasswordEmail(c, req.Email, code)
 	if err != nil {
-		log.Errorw("account.handler.resetPassword failed to send email", "err", err)
+		log.Errorw("failed to send reset email", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to send email",
 		})
@@ -156,14 +177,13 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 
 	code := c.Query("c")
 
-	email, code, err := email.DecodeEmailAndCode(code)
+	email, code, err := auth.DecodeEmailAndCode(code)
 	if err != nil {
-		logger.Errorw("account.handler.verify failed to decode email and code", "err", err)
+		logger.Errorw("failed to decode email and code", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid reset code",
 		})
 		return
-
 	}
 
 	type RequestBody struct {

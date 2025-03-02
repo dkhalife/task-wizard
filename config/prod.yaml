@@ -7,12 +7,14 @@ jwt:
   session_time: 168h
   max_refresh: 168h
 server:
+  host_name: example.com
   port: 2021
   read_timeout: 2s
   write_timeout: 1s
   rate_period: 60s
   rate_limit: 300
   serve_frontend: true
+  registration: true
   debug: false
 scheduler_jobs:
   due_frequency: 5m
@@ -21,6 +23,5 @@ scheduler_jobs:
 email:
   host: 
   port: 
-  key: 
   email:  
-  appHost:  
+  password:
