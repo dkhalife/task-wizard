@@ -20,7 +20,7 @@ RUN latest_release=$(curl --silent "https://api.github.com/repos/dkhalife/tasks-
 # Stage 2: Create a smaller runtime image
 FROM alpine:latest
 
-RUN apk --no-cache add ca-certificates libc6-compat
+RUN apk --no-cache add curl ca-certificates libc6-compat
 
 COPY --from=builder /usr/src/app/task-wizard /task-wizard
 COPY --from=builder /usr/src/app/config /config
@@ -29,5 +29,7 @@ ENV TW_ENV="prod"
 ENV GIN_MODE="release"
 
 EXPOSE 2021
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl -s --fail http://localhost:2021/ping &> /dev/null || exit 1
 
 CMD ["/task-wizard"]

@@ -6,7 +6,9 @@ import (
 	"dkhalife.com/tasks/core/config"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/utils/auth"
+	"dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
+	"github.com/ulule/limiter/v3"
 )
 
 type Handler struct {
@@ -47,6 +49,15 @@ func (h *Handler) activateUser(c *gin.Context) {
 	c.Redirect(http.StatusFound, "/login")
 }
 
-func Routes(router *gin.Engine, h *Handler) {
-	router.GET("/activate", h.activateUser)
+func (h *Handler) ping(c *gin.Context) {
+	c.Data(http.StatusOK, "text/plain", []byte("pong"))
+}
+
+func Routes(router *gin.Engine, h *Handler, limiter *limiter.Limiter) {
+	backendRoutes := router.Group("/")
+	backendRoutes.Use(middleware.RateLimitMiddleware(limiter))
+	{
+		backendRoutes.GET("/activate", h.activateUser)
+		backendRoutes.GET("/ping", h.ping)
+	}
 }
