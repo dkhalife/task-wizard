@@ -81,6 +81,29 @@ func (r *UserRepository) SetPasswordResetToken(c context.Context, email string, 
 	return nil
 }
 
+func (r *UserRepository) ActivateAccount(c context.Context, email string, code string) (bool, error) {
+	user, err := r.FindByEmail(c, email)
+	if err != nil {
+		return false, err
+	}
+
+	if !user.Disabled {
+		return false, nil
+	}
+
+	result := r.db.WithContext(c).Where("email = ?", email).Where("token = ?", code).Delete(&models.UserPasswordReset{})
+	if result.RowsAffected <= 0 {
+		return false, fmt.Errorf("invalid token")
+	}
+
+	err = r.db.WithContext(c).Model(&models.User{}).Where("email = ? AND disabled = 1", email).Update("disabled", false).Error
+	if err != nil {
+		return false, err
+	}
+
+	return true, nil
+}
+
 func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string, token string, password string) error {
 	logger := logging.FromContext(ctx)
 

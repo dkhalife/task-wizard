@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 
+	"dkhalife.com/tasks/core/backend"
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/frontend"
 	auth "dkhalife.com/tasks/core/internal/middleware/auth"
@@ -78,12 +79,14 @@ func main() {
 		fx.Provide(apis.LabelsAPI),
 
 		fx.Provide(frontend.NewHandler),
+		fx.Provide(backend.NewHandler),
 
 		fx.Invoke(
 			apis.TaskRoutes,
 			apis.UserRoutes,
 			apis.LabelRoutes,
 			frontend.Routes,
+			backend.Routes,
 
 			func(r *gin.Engine) {},
 		),
