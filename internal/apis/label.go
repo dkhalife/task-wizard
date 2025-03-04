@@ -4,6 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	models "dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
@@ -32,15 +33,8 @@ func LabelsAPI(lRepo *lRepo.LabelRepository) *LabelsAPIHandler {
 }
 
 func (h *LabelsAPIHandler) getLabels(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to fetch labels",
-		})
-		return
-	}
-
-	labels, err := h.lRepo.GetUserLabels(c, currentUser.ID)
+	currentIdentity := auth.CurrentIdentity(c)
+	labels, err := h.lRepo.GetUserLabels(c, currentIdentity.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get labels",
@@ -63,13 +57,7 @@ func (h *LabelsAPIHandler) getLabels(c *gin.Context) {
 }
 
 func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to create labels",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	var req CreateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -82,8 +70,9 @@ func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 	label := &models.Label{
 		Name:      req.Name,
 		Color:     req.Color,
-		CreatedBy: currentUser.ID,
+		CreatedBy: currentIdentity.UserID,
 	}
+
 	if err := h.lRepo.CreateLabels(c, []*models.Label{label}); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create label",
@@ -101,13 +90,7 @@ func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 }
 
 func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to update label",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	var req UpdateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -123,14 +106,14 @@ func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 		ID:    req.ID,
 	}
 
-	if !h.lRepo.AreLabelsAssignableByUser(c, currentUser.ID, []int{label.ID}) {
+	if !h.lRepo.AreLabelsAssignableByUser(c, currentIdentity.UserID, []int{label.ID}) {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to perform this update",
 		})
 		return
 	}
 
-	if err := h.lRepo.UpdateLabel(c, currentUser.ID, label); err != nil {
+	if err := h.lRepo.UpdateLabel(c, currentIdentity.UserID, label); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error updating label",
 		})
@@ -147,14 +130,7 @@ func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 }
 
 func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to delete label",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	labelIDRaw := c.Param("id")
 	if labelIDRaw == "" {
@@ -172,7 +148,7 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 		return
 	}
 
-	if err := h.lRepo.DeleteLabel(c, currentUser.ID, labelID); err != nil {
+	if err := h.lRepo.DeleteLabel(c, currentIdentity.UserID, labelID); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error unassociating label from task",
 		})
@@ -182,13 +158,13 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 	c.JSON(http.StatusNoContent, gin.H{})
 }
 
-func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, auth *jwt.GinJWTMiddleware) {
+func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, authGate *jwt.GinJWTMiddleware) {
 	labelRoutes := r.Group("api/v1/labels")
-	labelRoutes.Use(auth.MiddlewareFunc())
+	labelRoutes.Use(authGate.MiddlewareFunc())
 	{
-		labelRoutes.GET("", h.getLabels)
-		labelRoutes.POST("", h.createLabel)
-		labelRoutes.PUT("", h.updateLabel)
-		labelRoutes.DELETE("/:id", h.deleteLabel)
+		labelRoutes.GET("", authMW.ScopeMiddleware(models.ApiTokenScopeLabelRead), h.getLabels)
+		labelRoutes.POST("", authMW.ScopeMiddleware(models.ApiTokenScopeLabelWrite), h.createLabel)
+		labelRoutes.PUT("", authMW.ScopeMiddleware(models.ApiTokenScopeLabelWrite), h.updateLabel)
+		labelRoutes.DELETE("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeLabelWrite), h.deleteLabel)
 	}
 }
