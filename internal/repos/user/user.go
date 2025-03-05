@@ -10,6 +10,7 @@ import (
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/golang-jwt/jwt/v4"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -130,6 +131,15 @@ func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string
 	return nil
 }
 
+func convertScopesToStringArray(scopes []models.ApiTokenScope) []string {
+	strScopes := make([]string, len(scopes))
+	for i, scope := range scopes {
+		strScopes[i] = string(scope)
+	}
+
+	return pq.StringArray(strScopes)
+}
+
 func (r *UserRepository) CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope) (*models.AppToken, error) {
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		auth.IdentityKey: fmt.Sprintf("%d", userID),
@@ -144,11 +154,21 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 		return nil, err
 	}
 
+	for _, scope := range scopes {
+		if scope == models.ApiTokenScopeUserRead || scope == models.ApiTokenScopeUserWrite {
+			return nil, fmt.Errorf("user scopes are not allowed")
+		}
+
+		if scope == models.ApiTokenScopeTokenWrite {
+			return nil, fmt.Errorf("token scopes are not allowed")
+		}
+	}
+
 	token := &models.AppToken{
 		UserID: userID,
 		Name:   name,
 		Token:  signedToken,
-		Scopes: scopes,
+		Scopes: convertScopesToStringArray(scopes),
 	}
 
 	if err := r.db.WithContext(c).Create(token).Error; err != nil {

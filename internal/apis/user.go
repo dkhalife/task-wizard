@@ -234,6 +234,13 @@ func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 		return
 	}
 
+	if len(req.Scopes) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Tokens must have at least one scope",
+		})
+		return
+	}
+
 	token, err := h.userRepo.CreateAppToken(c, currentIdentity.UserID, req.Name, req.Scopes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{

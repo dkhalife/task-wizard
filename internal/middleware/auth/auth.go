@@ -68,7 +68,6 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 				logging.FromContext(c).Errorw("IdentityHandler failed to extract ID from claims", "claims", claims)
 				return nil
 			}
-			logging.FromContext(c).Infow("IdentityHandler extracted ID", "id", id)
 			userID, err := strconv.Atoi(id)
 			if err != nil {
 				return nil

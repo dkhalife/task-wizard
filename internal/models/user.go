@@ -2,6 +2,8 @@ package models
 
 import (
 	"time"
+
+	"github.com/lib/pq"
 )
 
 type User struct {
@@ -53,10 +55,10 @@ const (
 )
 
 type AppToken struct {
-	ID        int             `json:"id" gorm:"primary_key;not null"`
-	UserID    int             `json:"user_id" gorm:"column:user_id;not null"`
-	Name      string          `json:"name" gorm:"column:name;unique;not null"`
-	Token     string          `json:"token" gorm:"column:token;index;not null"`
-	Scopes    []ApiTokenScope `json:"scopes" gorm:"column:scopes;type:text[]"`
-	CreatedAt time.Time       `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	ID        int            `json:"id" gorm:"primary_key;not null"`
+	UserID    int            `json:"user_id" gorm:"column:user_id;not null"`
+	Name      string         `json:"name" gorm:"column:name;unique;not null"`
+	Token     string         `json:"token" gorm:"column:token;index;not null"`
+	Scopes    pq.StringArray `json:"scopes" gorm:"column:scopes;type:text[]"`
+	CreatedAt time.Time      `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 }
