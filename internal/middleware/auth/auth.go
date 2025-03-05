@@ -55,7 +55,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 				return jwt.MapClaims{
 					auth.IdentityKey: fmt.Sprintf("%d", u.ID),
 					"type":           "user",
-					"scopes":         []string{"task:read", "task:write", "label:read", "label:write", "user:write", "tokens:write", "user:read", "user:write", "token:write"},
+					"scopes":         []string{"task:read", "task:write", "label:read", "label:write", "user:read", "user:write", "token:write"},
 				}
 			}
 			return jwt.MapClaims{}
