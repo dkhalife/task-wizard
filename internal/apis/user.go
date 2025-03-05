@@ -1,15 +1,11 @@
 package apis
 
 import (
-	"crypto/rand"
-	"crypto/sha256"
-	"encoding/hex"
-	"fmt"
 	"html"
 	"net/http"
-	"time"
 
 	"dkhalife.com/tasks/core/config"
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/models"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
@@ -98,15 +94,17 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
-	user, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to access user profile",
+	currentIdentity := auth.CurrentIdentity(c)
+
+	user, err := h.userRepo.GetUser(c, currentIdentity.UserID)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user",
 		})
 		return
 	}
 
-	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, user.ID)
+	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, currentIdentity.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get notification settings",
@@ -220,45 +218,33 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 	c.JSON(http.StatusOK, gin.H{})
 }
 
-func (h *UsersAPIHandler) CreateLongLivedToken(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to create tokens",
-		})
-		return
-	}
+func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
 
 	type TokenRequest struct {
-		Name string `json:"name" binding:"required"`
+		Name   string                 `json:"name" binding:"required"`
+		Scopes []models.ApiTokenScope `json:"scopes" binding:"required"`
 	}
 
 	var req TokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err,
+			"error": err.Error(),
 		})
 		return
 	}
 
-	randomBytes := make([]byte, 16)
-	_, err := rand.Read(randomBytes)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to generate random token",
+	if len(req.Scopes) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Tokens must have at least one scope",
 		})
 		return
 	}
 
-	timestamp := time.Now().Unix()
-	hashInput := fmt.Sprintf("%d:%d:%x", currentUser.ID, timestamp, randomBytes)
-	hash := sha256.Sum256([]byte(hashInput))
-	encodedToken := hex.EncodeToString(hash[:])
-
-	token, err := h.userRepo.StoreAPIToken(c, currentUser.ID, req.Name, encodedToken)
+	token, err := h.userRepo.CreateAppToken(c, currentIdentity.UserID, req.Name, req.Scopes)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to store token",
+			"error": "Failed to create token",
 		})
 		return
 	}
@@ -269,15 +255,9 @@ func (h *UsersAPIHandler) CreateLongLivedToken(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) GetAllUserToken(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to fetch tokens",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
-	tokens, err := h.userRepo.GetAllUserTokens(c, currentUser.ID)
+	tokens, err := h.userRepo.GetAllUserTokens(c, currentIdentity.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get user tokens",
@@ -291,17 +271,11 @@ func (h *UsersAPIHandler) GetAllUserToken(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) DeleteUserToken(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to delete tokens",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	tokenID := c.Param("id")
 
-	err := h.userRepo.DeleteAPIToken(c, currentUser.ID, tokenID)
+	err := h.userRepo.DeleteAppToken(c, currentIdentity.UserID, tokenID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to delete the token",
@@ -313,13 +287,7 @@ func (h *UsersAPIHandler) DeleteUserToken(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to update notification target",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	type Request struct {
 		Provider models.NotificationProvider       `json:"provider" binding:"required"`
@@ -334,7 +302,7 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 		return
 	}
 
-	err := h.userRepo.UpdateNotificationSettings(c, currentUser.ID, req.Provider, req.Triggers)
+	err := h.userRepo.UpdateNotificationSettings(c, currentIdentity.UserID, req.Provider, req.Triggers)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to update notification target",
@@ -343,7 +311,7 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 	}
 
 	if req.Provider.Provider == models.NotificationProviderNone {
-		err = h.userRepo.DeleteNotificationsForUser(c, currentUser.ID)
+		err = h.userRepo.DeleteNotificationsForUser(c, currentIdentity.UserID)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to delete existing notification",
@@ -358,13 +326,7 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 	logger := logging.FromContext(c)
 
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to updated password",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	type RequestBody struct {
 		Password string `json:"password" binding:"required,min=8,max=32"`
@@ -388,7 +350,7 @@ func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 		return
 	}
 
-	err = h.userRepo.UpdatePasswordByUserId(c.Request.Context(), currentUser.ID, password)
+	err = h.userRepo.UpdatePasswordByUserId(c.Request.Context(), currentIdentity.UserID, password)
 	if err != nil {
 		logger.Errorw("account.handler.resetAccountPassword failed to reset password", "err", err)
 		c.JSON(http.StatusInternalServerError, gin.H{
@@ -404,12 +366,12 @@ func UserRoutes(router *gin.Engine, h *UsersAPIHandler, auth *jwt.GinJWTMiddlewa
 	userRoutes := router.Group("api/v1/users")
 	userRoutes.Use(auth.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter))
 	{
-		userRoutes.GET("/profile", h.GetUserProfile)
-		userRoutes.POST("/tokens", h.CreateLongLivedToken)
-		userRoutes.GET("/tokens", h.GetAllUserToken)
-		userRoutes.DELETE("/tokens/:id", h.DeleteUserToken)
-		userRoutes.PUT("/notifications", h.UpdateNotificationSettings)
-		userRoutes.PUT("change_password", h.updateUserPasswordLoggedInOnly)
+		userRoutes.GET("/profile", authMW.ScopeMiddleware(models.ApiTokenScopeUserRead), h.GetUserProfile)
+		userRoutes.POST("/tokens", authMW.ScopeMiddleware(models.ApiTokenScopeTokenWrite), h.CreateAppToken)
+		userRoutes.GET("/tokens", authMW.ScopeMiddleware(models.ApiTokenScopeTokenWrite), h.GetAllUserToken)
+		userRoutes.DELETE("/tokens/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTokenWrite), h.DeleteUserToken)
+		userRoutes.PUT("/notifications", authMW.ScopeMiddleware(models.ApiTokenScopeUserWrite), h.UpdateNotificationSettings)
+		userRoutes.PUT("change_password", authMW.ScopeMiddleware(models.ApiTokenScopeUserWrite), h.updateUserPasswordLoggedInOnly)
 	}
 
 	authRoutes := router.Group("api/v1/auth")

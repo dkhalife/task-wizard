@@ -7,6 +7,7 @@ import (
 	"strconv"
 	"time"
 
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
@@ -49,15 +50,9 @@ func TasksAPI(cr *tRepo.TaskRepository, nt *notifications.Notifier,
 }
 
 func (h *TasksAPIHandler) getTasks(c *gin.Context) {
-	u, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to fetch tasks",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
-	tasks, err := h.tRepo.GetTasks(c, u.ID)
+	tasks, err := h.tRepo.GetTasks(c, currentIdentity.UserID)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting tasks",
@@ -71,13 +66,7 @@ func (h *TasksAPIHandler) getTasks(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) getTask(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to fetch task",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -96,7 +85,7 @@ func (h *TasksAPIHandler) getTask(c *gin.Context) {
 		return
 	}
 
-	if currentUser.ID != task.CreatedBy {
+	if currentIdentity.UserID != task.CreatedBy {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to view this task",
 		})
@@ -109,14 +98,7 @@ func (h *TasksAPIHandler) getTask(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) createTask(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to create tasks",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	var TaskReq TaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
@@ -145,7 +127,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 		Title:        TaskReq.Title,
 		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
-		CreatedBy:    currentUser.ID,
+		CreatedBy:    currentIdentity.UserID,
 		IsRolling:    TaskReq.IsRolling,
 		IsActive:     true,
 		Notification: TaskReq.Notification,
@@ -160,7 +142,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentUser.ID, TaskReq.Labels); err != nil {
+	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentIdentity.UserID, TaskReq.Labels); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		})
@@ -177,13 +159,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) editTask(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to edit task",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	var TaskReq TaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
@@ -224,14 +200,14 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 		return
 	}
 
-	if currentUser.ID != oldTask.CreatedBy {
+	if currentIdentity.UserID != oldTask.CreatedBy {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to edit this task",
 		})
 		return
 	}
 
-	if err := h.lRepo.AssignLabelsToTask(c, taskId, currentUser.ID, TaskReq.Labels); err != nil {
+	if err := h.lRepo.AssignLabelsToTask(c, taskId, currentIdentity.UserID, TaskReq.Labels); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		})
@@ -243,7 +219,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 		Title:        TaskReq.Title,
 		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
-		CreatedBy:    currentUser.ID,
+		CreatedBy:    currentIdentity.UserID,
 		IsRolling:    TaskReq.IsRolling,
 		Notification: TaskReq.Notification,
 		IsActive:     oldTask.IsActive,
@@ -264,13 +240,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to delete tasks",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -281,7 +251,7 @@ func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.tRepo.IsTaskOwner(c, id, currentUser.ID); err != nil {
+	if err := h.tRepo.IsTaskOwner(c, id, currentIdentity.UserID); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to delete this task",
 		})
@@ -299,13 +269,7 @@ func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) skipTask(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to skip tasks",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -333,7 +297,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.tRepo.CompleteTask(c, task, currentUser.ID, nextDueDate, nil); err != nil {
+	if err := h.tRepo.CompleteTask(c, task, currentIdentity.UserID, nextDueDate, nil); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error completing task",
 		})
@@ -358,13 +322,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to update task due date",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	type DueDateReq struct {
 		DueDate string `json:"due_date" binding:"required"`
@@ -396,7 +354,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 		return
 	}
 
-	if currentUser.ID != task.CreatedBy {
+	if currentIdentity.UserID != task.CreatedBy {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to update this task",
 		})
@@ -428,13 +386,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) completeTask(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to complete tasks",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	completeTaskID := c.Param("id")
 	id, err := strconv.Atoi(completeTaskID)
@@ -463,7 +415,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.tRepo.CompleteTask(c, task, currentUser.ID, nextDueDate, &completedDate); err != nil {
+	if err := h.tRepo.CompleteTask(c, task, currentIdentity.UserID, nextDueDate, &completedDate); err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error completing task",
 		})
@@ -488,13 +440,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 }
 
 func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
-	currentUser, ok := auth.CurrentUser(c)
-	if !ok {
-		c.JSON(http.StatusUnauthorized, gin.H{
-			"error": "Login required to fetch task history",
-		})
-		return
-	}
+	currentIdentity := auth.CurrentIdentity(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -505,7 +451,7 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.tRepo.IsTaskOwner(c, id, currentUser.ID); err != nil {
+	if err := h.tRepo.IsTaskOwner(c, id, currentIdentity.UserID); err != nil {
 		c.JSON(http.StatusForbidden, gin.H{
 			"error": "You are not allowed to view this task's history",
 		})
@@ -529,14 +475,14 @@ func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *jwt.GinJWTMiddlewa
 	tasksRoutes := router.Group("api/v1/tasks")
 	tasksRoutes.Use(auth.MiddlewareFunc())
 	{
-		tasksRoutes.GET("/", h.getTasks)
-		tasksRoutes.PUT("/", h.editTask)
-		tasksRoutes.POST("/", h.createTask)
-		tasksRoutes.GET("/:id", h.getTask)
-		tasksRoutes.GET("/:id/history", h.GetTaskHistory)
-		tasksRoutes.POST("/:id/do", h.completeTask)
-		tasksRoutes.POST("/:id/skip", h.skipTask)
-		tasksRoutes.PUT("/:id/dueDate", h.updateDueDate)
-		tasksRoutes.DELETE("/:id", h.deleteTask)
+		tasksRoutes.GET("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasks)
+		tasksRoutes.PUT("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.editTask)
+		tasksRoutes.POST("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.createTask)
+		tasksRoutes.GET("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTask)
+		tasksRoutes.GET("/:id/history", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.GetTaskHistory)
+		tasksRoutes.POST("/:id/do", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.completeTask)
+		tasksRoutes.POST("/:id/skip", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.skipTask)
+		tasksRoutes.PUT("/:id/dueDate", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.updateDueDate)
+		tasksRoutes.DELETE("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.deleteTask)
 	}
 }

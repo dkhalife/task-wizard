@@ -30,6 +30,8 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 📧 Notifications for important deadlines you don't want to miss
 
+🗝️ Fine-grained access tokens for endless integration possibilities
+
 ## 🚀 Installation
 
 ### Using Docker Compose (recommended)

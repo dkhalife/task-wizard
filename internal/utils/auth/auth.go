@@ -65,11 +65,16 @@ func GenerateEmailResetToken(c *gin.Context) (string, error) {
 	return token, nil
 }
 
-func CurrentUser(c *gin.Context) (*models.User, bool) {
+func CurrentIdentity(c *gin.Context) *models.SignedInIdentity {
 	data, ok := c.Get(IdentityKey)
 	if !ok {
-		return nil, false
+		return nil
 	}
-	acc, ok := data.(*models.User)
-	return acc, ok
+
+	acc, ok := data.(*models.SignedInIdentity)
+	if !ok {
+		return nil
+	}
+
+	return acc
 }

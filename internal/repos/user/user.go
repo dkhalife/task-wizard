@@ -8,6 +8,9 @@ import (
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/utils/auth"
+	"github.com/golang-jwt/jwt/v4"
+	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -128,30 +131,64 @@ func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string
 	return nil
 }
 
-func (r *UserRepository) StoreAPIToken(c context.Context, userID int, name string, tokenCode string) (*models.APIToken, error) {
-	token := &models.APIToken{
+func convertScopesToStringArray(scopes []models.ApiTokenScope) []string {
+	strScopes := make([]string, len(scopes))
+	for i, scope := range scopes {
+		strScopes[i] = string(scope)
+	}
+
+	return pq.StringArray(strScopes)
+}
+
+func (r *UserRepository) CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope) (*models.AppToken, error) {
+	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		auth.IdentityKey: fmt.Sprintf("%d", userID),
+		"exp":            time.Now().UTC().Add(time.Minute * 60).Unix(),
+		"type":           "app",
+		"scopes":         scopes,
+	})
+
+	signedToken, err := jwtToken.SignedString([]byte(r.cfg.Jwt.Secret))
+	if err != nil {
+		logging.FromContext(c).Errorw("failed to sign token", "err", err)
+		return nil, err
+	}
+
+	for _, scope := range scopes {
+		if scope == models.ApiTokenScopeUserRead || scope == models.ApiTokenScopeUserWrite {
+			return nil, fmt.Errorf("user scopes are not allowed")
+		}
+
+		if scope == models.ApiTokenScopeTokenWrite {
+			return nil, fmt.Errorf("token scopes are not allowed")
+		}
+	}
+
+	token := &models.AppToken{
 		UserID: userID,
 		Name:   name,
-		Token:  tokenCode,
+		Token:  signedToken,
+		Scopes: convertScopesToStringArray(scopes),
 	}
-	if err := r.db.WithContext(c).Model(&models.APIToken{}).Save(
-		token).Error; err != nil {
-		return nil, err
 
+	if err := r.db.WithContext(c).Create(token).Error; err != nil {
+		logging.FromContext(c).Errorw("failed to save", "err", err)
+		return nil, err
 	}
+
 	return token, nil
 }
 
-func (r *UserRepository) GetAllUserTokens(c context.Context, userID int) ([]*models.APIToken, error) {
-	var tokens []*models.APIToken
+func (r *UserRepository) GetAllUserTokens(c context.Context, userID int) ([]*models.AppToken, error) {
+	var tokens []*models.AppToken
 	if err := r.db.WithContext(c).Where("user_id = ?", userID).Find(&tokens).Error; err != nil {
 		return nil, err
 	}
 	return tokens, nil
 }
 
-func (r *UserRepository) DeleteAPIToken(c context.Context, userID int, tokenID string) error {
-	return r.db.WithContext(c).Where("id = ? AND user_id = ?", tokenID, userID).Delete(&models.APIToken{}).Error
+func (r *UserRepository) DeleteAppToken(c context.Context, userID int, tokenID string) error {
+	return r.db.WithContext(c).Where("id = ? AND user_id = ?", tokenID, userID).Delete(&models.AppToken{}).Error
 }
 
 func (r *UserRepository) UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error {
