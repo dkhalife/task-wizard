@@ -222,8 +222,9 @@ func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
 	type TokenRequest struct {
-		Name   string                 `json:"name" binding:"required"`
-		Scopes []models.ApiTokenScope `json:"scopes" binding:"required"`
+		Name       string                 `json:"name" binding:"required"`
+		Scopes     []models.ApiTokenScope `json:"scopes" binding:"required"`
+		Expiration int                    `json:"expiration" binding:"required"`
 	}
 
 	var req TokenRequest
@@ -241,7 +242,15 @@ func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 		return
 	}
 
-	token, err := h.userRepo.CreateAppToken(c, currentIdentity.UserID, req.Name, req.Scopes)
+	days := req.Expiration
+	if days < 1 || days > 90 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Expiration can at most be 90 days into the future",
+		})
+		return
+	}
+
+	token, err := h.userRepo.CreateAppToken(c, currentIdentity.UserID, req.Name, req.Scopes, req.Expiration)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create token",
