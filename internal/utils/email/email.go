@@ -137,3 +137,29 @@ func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to strin
 
 	return nil
 }
+
+func (es *EmailSender) SendTokenExpirationReminder(c context.Context, tokenName string, to string) error {
+	err := es.validateConfig()
+	if err != nil {
+		return err
+	}
+
+	htmlBody := `
+		<html>
+		<body>
+			<p>Dear user,</p>
+			<p>Your Task Wizard access token '` + tokenName + `' is about to expire. Please log in to the application to generate a new token.</p>
+			<p>If you did not request a new token, please ignore this email.</p>
+			<p>Thank you,</p>
+			<p><strong>Task Wizard</strong></p>
+		</body>
+		</html>
+	`
+
+	err = es.sendEmail(c, to, "Task Wizard - Token Expiration Reminder", htmlBody)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}

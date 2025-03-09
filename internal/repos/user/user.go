@@ -214,6 +214,25 @@ func (r *UserRepository) UpdatePasswordByUserId(c context.Context, userID int, p
 }
 
 func (r *UserRepository) DeleteStalePasswordResets(c context.Context) error {
-	now := time.Now()
+	now := time.Now().UTC()
 	return r.db.WithContext(c).Where("expiration_date <= ?", now).Delete(&models.UserPasswordReset{}).Error
+}
+
+func (r *UserRepository) GetAppTokensNearingExpiration(c context.Context, before time.Duration) ([]*models.AppToken, error) {
+	lowerBound := time.Now().UTC().Add(-before)
+	var tokens []*models.AppToken
+	if err := r.db.WithContext(c).
+		Where("expires_at > ?", lowerBound).
+		Where("expires_at <= ?", lowerBound.Add(before)).
+		Preload("User").
+		Find(&tokens).Error; err != nil {
+		return nil, err
+	}
+
+	return tokens, nil
+}
+
+func (r *UserRepository) DeleteStaleAppTokens(c context.Context) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(c).Where("expires_at <= ?", now).Delete(&models.AppToken{}).Error
 }

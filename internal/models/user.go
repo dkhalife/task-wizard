@@ -55,11 +55,12 @@ const (
 )
 
 type AppToken struct {
-	ID        int            `json:"id" gorm:"primary_key;not null"`
+	ID        int            `json:"id" gorm:"primary_key"`
 	UserID    int            `json:"user_id" gorm:"column:user_id;not null"`
 	Name      string         `json:"name" gorm:"column:name;not null"`
 	Token     string         `json:"token" gorm:"column:token;index;not null"`
 	Scopes    pq.StringArray `json:"scopes" gorm:"column:scopes;type:text[]"`
 	CreatedAt time.Time      `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 	ExpiresAt time.Time      `json:"expires_at" gorm:"column:expires_at;default:CURRENT_TIMESTAMP"`
+	User      User           `json:"-" gorm:"foreignKey:UserID"`
 }

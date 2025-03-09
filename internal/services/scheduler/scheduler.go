@@ -20,14 +20,16 @@ type Scheduler struct {
 	stopChan             chan bool
 	notifier             *notifications.Notifier
 	passwordResetCleaner *housekeeper.PasswordResetCleaner
+	appTokenCleaner      *housekeeper.AppTokenCleaner
 	config               config.SchedulerConfig
 }
 
-func NewScheduler(cfg *config.Config, n *notifications.Notifier, prc *housekeeper.PasswordResetCleaner) *Scheduler {
+func NewScheduler(cfg *config.Config, n *notifications.Notifier, prc *housekeeper.PasswordResetCleaner, atk *housekeeper.AppTokenCleaner) *Scheduler {
 	return &Scheduler{
 		stopChan:             make(chan bool),
 		notifier:             n,
 		passwordResetCleaner: prc,
+		appTokenCleaner:      atk,
 		config:               cfg.SchedulerJobs,
 	}
 }
@@ -40,6 +42,8 @@ func (s *Scheduler) Start(c context.Context) {
 	go s.runScheduler(c, "NOTIFICATION_SENDER", s.notifier.LoadAndSendNotificationJob, s.config.DueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_CLEANUP", s.notifier.CleanupSentNotifications, 2*s.config.DueFrequency)
 	go s.runScheduler(c, "PASSWORD_RESET_CLEANUP", s.passwordResetCleaner.CleanupStalePasswordResets, s.config.PasswordResetValidity)
+	go s.runScheduler(c, "TOKEN_EXPIRATION_REMINDER", s.appTokenCleaner.SendTokenExpirationReminder, s.config.TokenExpirationReminder)
+	go s.runScheduler(c, "TOKEN_EXPIRATION_CLEANUP", s.appTokenCleaner.CleanupExpiredTokens, time.Duration(24)*time.Hour)
 }
 
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {

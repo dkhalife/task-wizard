@@ -64,6 +64,7 @@ func main() {
 		// add services
 		fx.Provide(notifier.NewNotifier),
 		fx.Provide(housekeeper.NewPasswordResetCleaner),
+		fx.Provide(housekeeper.NewAppTokenCleaner),
 
 		// Rate limiter
 		fx.Provide(utils.NewRateLimiter),
