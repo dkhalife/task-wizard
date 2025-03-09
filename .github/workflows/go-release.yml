@@ -15,6 +15,9 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
       - name: Checkout Frontend
         uses: actions/checkout@v4
         with:
@@ -22,6 +25,8 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           ref: ${{ vars.FRONTEND_REF }}
           path: 'frontend-code'
+          fetch-depth: 0
+          fetch-tags: true
       # build frontend 
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
@@ -58,7 +63,36 @@ jobs:
           args: release --clean --skip=validate
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # I added QEMU Emulation support for non-native architectures and also Buildx to enables multi-architecture. not sure if there is better/faster way to do this
+
+      - name: Update changelog
+        env:
+          GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
+        run: |
+          changelog=$(echo -e "## Changelog\n")
+  
+          pushd frontend-code
+          latestTag=$(git tag --sort=-creatordate | sed -n '1p')
+          previousTag=$(git tag --sort=-creatordate | sed -n '2p')
+          echo "Evaluating frontend repo:"
+          echo "Latest tag: $latestTag"
+          echo "Previous tag: $previousTag"
+  
+          url="https://github.com/${{ vars.FRONTEND_REPO }}/compare/$previousTag...$latestTag"
+          changelog+=$(echo -e "\n### Changes in [frontend]($url)\n\n$(git log --no-merges --pretty=format:"* %s" $previousTag...$latestTag)")
+          popd
+  
+          latestTag=$(git tag --sort=-creatordate | sed -n '1p')
+          previousTag=$(git tag --sort=-creatordate | sed -n '2p')
+          echo "Evaluating backend repo:"
+          echo "Latest tag: $latestTag"
+          echo "Previous tag: $previousTag"
+  
+          url="https://github.com/${{ github.repository }}/compare/$previousTag...$latestTag"
+          changelog+=$(echo -e "\n### Changes in [backend]($url)\n\n$(git log --no-merges --pretty=format:"* %s" $previousTag...$latestTag)")
+  
+          echo "Updating changelog"
+          gh release edit "$latestTag" --notes "$changelog"
+
       - name: Set up QEMU 
         uses: docker/setup-qemu-action@4574d27a4764455b42196d70a065bc6853246a25 #v3.4.0
 
