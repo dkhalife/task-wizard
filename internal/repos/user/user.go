@@ -140,10 +140,12 @@ func convertScopesToStringArray(scopes []models.ApiTokenScope) []string {
 	return pq.StringArray(strScopes)
 }
 
-func (r *UserRepository) CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope) (*models.AppToken, error) {
+func (r *UserRepository) CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope, days int) (*models.AppToken, error) {
+	duration := time.Duration(days) * 24 * time.Hour
+	expiresAt := time.Now().UTC().Add(duration)
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		auth.IdentityKey: fmt.Sprintf("%d", userID),
-		"exp":            time.Now().UTC().Add(time.Minute * 60).Unix(),
+		"exp":            expiresAt,
 		"type":           "app",
 		"scopes":         scopes,
 	})
@@ -165,10 +167,11 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 	}
 
 	token := &models.AppToken{
-		UserID: userID,
-		Name:   name,
-		Token:  signedToken,
-		Scopes: convertScopesToStringArray(scopes),
+		UserID:    userID,
+		Name:      name,
+		Token:     signedToken,
+		ExpiresAt: expiresAt,
+		Scopes:    convertScopesToStringArray(scopes),
 	}
 
 	if err := r.db.WithContext(c).Create(token).Error; err != nil {
@@ -181,7 +184,11 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 
 func (r *UserRepository) GetAllUserTokens(c context.Context, userID int) ([]*models.AppToken, error) {
 	var tokens []*models.AppToken
-	if err := r.db.WithContext(c).Where("user_id = ?", userID).Find(&tokens).Error; err != nil {
+	if err := r.db.WithContext(c).
+		Where("user_id = ?", userID).
+		Order("expires_at ASC").
+		Select("id, name, scopes, expires_at").
+		Find(&tokens).Error; err != nil {
 		return nil, err
 	}
 	return tokens, nil
