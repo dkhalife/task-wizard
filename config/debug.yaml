@@ -17,9 +17,10 @@ server:
   registration: true
   debug: true
 scheduler_jobs:
-  due_frequency: 5s
-  overdue_frequency: 10s
+  due_frequency: 1m
+  overdue_frequency: 1m
   password_reset_validity: 1m
+  token_expiration_reminder: 1m
 email:
   host: 
   port: 

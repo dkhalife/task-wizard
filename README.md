@@ -97,6 +97,7 @@ The configuration files are yaml mappings with the following values:
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
 | `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
+| `token_expiration_reminder`              | `72h`                                               | How long before an app token expiration to send a reminder for it.          |
 | `email.host`                             | (empty)                                             | The email server host.                                                      |
 | `email.port`                             | (empty)                                             | The email server port.                                                      |
 | `email.email`                            | (empty)                                             | The email address used for sending emails.                                  |
