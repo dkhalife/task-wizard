@@ -1,3 +1,4 @@
 *.exe
+core
 task-wizard.db
 .vscode/launch.json

@@ -34,7 +34,7 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 ## 🚀 Installation
 
-### Using Docker Compose (recommended)
+### 🚢 Using Docker Compose (recommended)
 
 1. In a compose.yml file, paste the following:
 
@@ -56,7 +56,7 @@ services:
 
 Alternatively, you can use a `.env` file and reference it in the compose file using an `env_file` entry.
 
-### Using Docker
+### 🛳️ Using Docker
 
 1. Pull the latest image: `docker pull dkhalife/task-wizard`
 1. Run the container:
@@ -103,25 +103,28 @@ The configuration files are yaml mappings with the following values:
 | `email.email`                            | (empty)                                             | The email address used for sending emails.                                  |
 | `email.password`                         | (empty)                                             | The password for authenticating with the email server.                      |
 
-## 🛠️ Development Environment
+## 🛠️ Development
 
-1. Clone the repo: `git clone https://github.com/dkhalife/tasks-backend.git`
-1. Navigate to the project directory: `cd path/to/cloned/repo`
-1. Install dependencies: `go mod download`
-1. Run the app: `go run .`
+### 🖥️ Devcontainer
+
+A [devcontainer](./.devcontainer/devcontainer.json) configuration is set up in this repo to help jumpstart development with all the required dependencies available for both the frontend and backend. You can use this configuration alongside
+GitHub codespaces to jump into a remote development environment without installing anything on your local machine. For the best experience make sure your codespace has both repos cloned in it. Ports can be forwarded from within the container so that you are able to test changes locally through the VS Code tunnel.
+
+### 📃 Requirements
+
+* GoLang
+
+### 🔁 Inner loop
+
+1. Navigate to the root of the repo
+1. Ensure you have the latest packages installed with `go mod download`
+1. Run the app `go run .`
 1. (optional) For live reload, install air with
 `go install github.com/cosmtrek/air@latest` then to run the app use `air`
 
 ## 🤝 Contributing
 
-Contributions are welcome! If you would like to contribute to this repo, please follow these steps:
-
-1. Fork the repository
-1. Create a new branch: `git checkout -b feature/your-feature-name`
-1. Make your changes and commit them: `git commit -m 'Add some feature'`
-1. Push to the branch: `git push origin feature/your-feature-name`
-1. Submit a pull request
-
+Contributions are welcome! If you would like to contribute to this repo, feel free to fork the repo and submit pull requests.
 If you have ideas but aren't familiar with code, you can also [open issues](https://github.com/dkhalife/tasks-backend/issues).
 
 ## 🔒 License
