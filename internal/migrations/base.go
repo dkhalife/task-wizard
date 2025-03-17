@@ -67,10 +67,9 @@ func Run(ctx context.Context, db *gorm.DB) error {
 		// Run the migration
 		log.Infof("Applying migration: %s", migration.ID())
 		if err := migration.Up(ctx, db); err != nil {
-
-			log.Errorf("Failed to apply migration %s: %s", migration.ID(), err)
+			log.Panicf("Failed to apply migration %s: %s", migration.ID(), err)
 			if err := migration.Down(ctx, db); err != nil {
-				log.Errorf("Failed to rollback migration %s: %s\n", migration.ID(), err)
+				log.Panicf("Failed to rollback migration %s: %s\n", migration.ID(), err)
 			}
 			return err
 		}
@@ -83,7 +82,7 @@ func Run(ctx context.Context, db *gorm.DB) error {
 		}
 
 		if err := db.Create(&record).Error; err != nil {
-			log.Errorf("Failed to record migration %s: %s\n", migration.ID(), err)
+			log.Panicf("Failed to record migration %s: %s\n", migration.ID(), err)
 			return err
 		}
 
@@ -91,7 +90,7 @@ func Run(ctx context.Context, db *gorm.DB) error {
 	}
 
 	if len(registry) == 0 {
-		log.Info("Migratons: No pending migrations")
+		log.Debug("Migratons: No pending migrations")
 	} else {
 		var failedCount = len(registry) - successfulCount - skippedCount
 		log.Infof("Migrations: %d successful, %d failed, %d skipped, %d total in registry", successfulCount, failedCount, skippedCount, len(registry))

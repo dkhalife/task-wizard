@@ -5,10 +5,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 
 	"dkhalife.com/tasks/core/internal/models"
+	"dkhalife.com/tasks/core/internal/services/logging"
 )
 
 type GotifyMessage struct {
@@ -22,16 +22,17 @@ func SendNotificationViaGotify(c context.Context, provider models.NotificationPr
 		Message: message,
 	}
 
+	log := logging.FromContext(c)
+	log.Debug("Sending notification via Gotify")
+
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
-		log.Printf("Failed to marshal message: %v", err)
-		return err
+		return fmt.Errorf("failed to marshal message: %s", err.Error())
 	}
 
 	req, err := http.NewRequest("POST", provider.URL+"/message", bytes.NewBuffer(jsonData))
 	if err != nil {
-		log.Printf("Failed to create HTTP request: %v", err)
-		return err
+		return fmt.Errorf("failed to create HTTP request: %s", err.Error())
 	}
 
 	req.Header.Set("Content-Type", "application/json")
@@ -40,16 +41,14 @@ func SendNotificationViaGotify(c context.Context, provider models.NotificationPr
 	client := &http.Client{}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Printf("Failed to send HTTP request: %v", err)
-		return err
+		return fmt.Errorf("failed to send HTTP request: %s", err.Error())
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Printf("Gotify returned non-OK status: %v", resp.Status)
-		return fmt.Errorf("Gotify returned non-OK status: %v", resp.Status)
+		return fmt.Errorf("gotify returned non-OK status: %d", resp.StatusCode)
 	}
 
-	log.Printf("Notification sent successfully via Gotify")
+	log.Debug("Notification sent successfully via Gotify")
 	return nil
 }

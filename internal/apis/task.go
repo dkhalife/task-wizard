@@ -2,7 +2,6 @@ package apis
 
 import (
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"time"
@@ -12,6 +11,7 @@ import (
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	notifications "dkhalife.com/tasks/core/internal/services/notifications"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -52,8 +52,10 @@ func TasksAPI(cr *tRepo.TaskRepository, nt *notifications.Notifier,
 func (h *TasksAPIHandler) getTasks(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
 	tasks, err := h.tRepo.GetTasks(c, currentIdentity.UserID)
 	if err != nil {
+		log.Errorf("error getting tasks: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting tasks",
 		})
@@ -68,6 +70,7 @@ func (h *TasksAPIHandler) getTasks(c *gin.Context) {
 func (h *TasksAPIHandler) getTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -79,6 +82,7 @@ func (h *TasksAPIHandler) getTask(c *gin.Context) {
 
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
+		log.Errorf("error getting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		})
@@ -100,6 +104,7 @@ func (h *TasksAPIHandler) getTask(c *gin.Context) {
 func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
 	var TaskReq TaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -113,6 +118,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	if TaskReq.NextDueDate != "" {
 		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
 		if err != nil {
+			log.Errorf("error parsing due date: %s", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Due date must be in UTC format",
 			})
@@ -136,6 +142,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	createdTask.ID = id
 
 	if err != nil {
+		log.Errorf("error creating task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error creating task",
 		})
@@ -143,6 +150,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	}
 
 	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentIdentity.UserID, TaskReq.Labels); err != nil {
+		log.Errorf("error assigning labels to task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		})
@@ -161,6 +169,8 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
+
 	var TaskReq TaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -174,6 +184,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	if TaskReq.NextDueDate != "" {
 		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
 		if err != nil {
+			log.Errorf("error parsing due date: %s", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Due date must be in UTC format",
 			})
@@ -194,6 +205,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	oldTask, err := h.tRepo.GetTask(c, taskId)
 
 	if err != nil {
+		log.Errorf("error getting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		})
@@ -208,6 +220,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	}
 
 	if err := h.lRepo.AssignLabelsToTask(c, taskId, currentIdentity.UserID, TaskReq.Labels); err != nil {
+		log.Errorf("error assigning labels to task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		})
@@ -226,6 +239,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	}
 
 	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
+		log.Errorf("error upserting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error upserting task",
 		})
@@ -242,6 +256,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -259,6 +274,7 @@ func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 	}
 
 	if err := h.tRepo.DeleteTask(c, id); err != nil {
+		log.Errorf("error deleting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error deleting task",
 		})
@@ -271,6 +287,7 @@ func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 
@@ -283,6 +300,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
+		log.Errorf("error getting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		})
@@ -291,6 +309,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 
 	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
 	if err != nil {
+		log.Errorf("error scheduling next due date: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error scheduling next due date",
 		})
@@ -298,6 +317,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	}
 
 	if err := h.tRepo.CompleteTask(c, task, currentIdentity.UserID, nextDueDate, nil); err != nil {
+		log.Errorf("error completing task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error completing task",
 		})
@@ -306,8 +326,9 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 
 	updatedTask, err := h.tRepo.GetTask(c, id)
 	if err != nil {
+		log.Errorf("error getting updated task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
+			"error": "Error getting updated task",
 		})
 		return
 	}
@@ -323,6 +344,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 
 func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
 
 	type DueDateReq struct {
 		DueDate string `json:"due_date" binding:"required"`
@@ -330,7 +352,6 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 
 	var dueDateReq DueDateReq
 	if err := c.ShouldBindJSON(&dueDateReq); err != nil {
-		log.Print(err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -348,6 +369,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
+		log.Errorf("error getting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		})
@@ -363,6 +385,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	if dueDateReq.DueDate != "" {
 		rawDueDate, err := time.Parse(time.RFC3339, dueDateReq.DueDate)
 		if err != nil {
+			log.Errorf("error parsing due date: %s", err.Error())
 			c.JSON(http.StatusBadRequest, gin.H{
 				"error": "Due date must be in UTC format",
 			})
@@ -374,6 +397,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	}
 
 	if err := h.tRepo.UpsertTask(c, task); err != nil {
+		log.Errorf("error updating due date: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error updating due date",
 		})
@@ -387,6 +411,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 
 func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
 
 	completeTaskID := c.Param("id")
 	id, err := strconv.Atoi(completeTaskID)
@@ -399,6 +424,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 
 	task, err := h.tRepo.GetTask(c, id)
 	if err != nil {
+		log.Errorf("error getting task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		})
@@ -409,6 +435,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	var nextDueDate *time.Time
 	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
 	if err != nil {
+		log.Errorf("error scheduling next due date: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": fmt.Sprintf("Error scheduling next due date: %s", err),
 		})
@@ -416,6 +443,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	}
 
 	if err := h.tRepo.CompleteTask(c, task, currentIdentity.UserID, nextDueDate, &completedDate); err != nil {
+		log.Errorf("error completing task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error completing task",
 		})
@@ -424,8 +452,9 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 
 	updatedTask, err := h.tRepo.GetTask(c, id)
 	if err != nil {
+		log.Errorf("error getting updated task: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
+			"error": "Error getting updated task",
 		})
 		return
 	}
@@ -441,6 +470,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 
 func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -460,6 +490,7 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 
 	TaskHistory, err := h.tRepo.GetTaskHistory(c, id)
 	if err != nil {
+		log.Errorf("error getting task history: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error getting task history",
 		})

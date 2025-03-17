@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
 )
 
@@ -25,7 +26,7 @@ func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, 
 	return &settings, nil
 }
 
-func (r *NotificationRepository) DeleteAllTaskNotifications(taskID int) error {
+func (r *NotificationRepository) deleteAllTaskNotifications(taskID int) error {
 	return r.db.Where("task_id = ?", taskID).Delete(&models.Notification{}).Error
 }
 
@@ -34,7 +35,11 @@ func (r *NotificationRepository) BatchInsertNotifications(notifications []models
 }
 
 func (r *NotificationRepository) GenerateNotifications(c context.Context, task *models.Task) {
-	r.DeleteAllTaskNotifications(task.ID)
+	log := logging.FromContext(c)
+	if err := r.deleteAllTaskNotifications(task.ID); err != nil {
+		log.Errorf("failed to delete existing notifications: %s", err.Error())
+		return
+	}
 
 	ns := task.Notification
 	if !ns.Enabled {
@@ -67,7 +72,10 @@ func (r *NotificationRepository) GenerateNotifications(c context.Context, task *
 	}
 
 	if len(notifications) > 0 {
-		r.BatchInsertNotifications(notifications)
+		if err := r.BatchInsertNotifications(notifications); err != nil {
+			log.Errorf("failed to insert new notifications: %s", err.Error())
+			return
+		}
 	}
 }
 

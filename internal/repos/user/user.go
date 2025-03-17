@@ -7,7 +7,6 @@ import (
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/lib/pq"
@@ -108,13 +107,11 @@ func (r *UserRepository) ActivateAccount(c context.Context, email string, code s
 }
 
 func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string, token string, password string) error {
-	logger := logging.FromContext(ctx)
-
-	logger.Debugw("account.db.UpdatePasswordByToken", "email", email)
 	upr := &models.UserPasswordReset{
 		Email: email,
 		Token: token,
 	}
+
 	result := r.db.WithContext(ctx).Where("email = ?", email).Where("token = ?", token).Delete(upr)
 	if result.RowsAffected <= 0 {
 		return fmt.Errorf("invalid token")
@@ -124,6 +121,7 @@ func (r *UserRepository) UpdatePasswordByToken(ctx context.Context, email string
 	if chain.Error != nil {
 		return chain.Error
 	}
+
 	if chain.RowsAffected == 0 {
 		return fmt.Errorf("account not found")
 	}
@@ -152,8 +150,7 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 
 	signedToken, err := jwtToken.SignedString([]byte(r.cfg.Jwt.Secret))
 	if err != nil {
-		logging.FromContext(c).Errorw("failed to sign token", "err", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to sign token: %s", err.Error())
 	}
 
 	for _, scope := range scopes {
@@ -175,8 +172,7 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 	}
 
 	if err := r.db.WithContext(c).Create(token).Error; err != nil {
-		logging.FromContext(c).Errorw("failed to save", "err", err)
-		return nil, err
+		return nil, fmt.Errorf("failed to save token: %s", err.Error())
 	}
 
 	return token, nil

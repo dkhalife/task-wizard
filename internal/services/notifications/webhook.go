@@ -9,12 +9,9 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
 )
 
 func SendNotificationViaWebhook(c context.Context, provider models.NotificationProvider, message string) error {
-	log := logging.FromContext(c)
-
 	// Create the payload
 	payload := map[string]string{
 		"message": message,
@@ -22,28 +19,26 @@ func SendNotificationViaWebhook(c context.Context, provider models.NotificationP
 
 	payloadBytes, err := json.Marshal(payload)
 	if err != nil {
-		log.Error("Error marshalling payload", err)
-		return err
+		return fmt.Errorf("error marshalling payload: %s", err.Error())
 	}
 
 	req, err := http.NewRequest(provider.Method, provider.URL, bytes.NewBuffer(payloadBytes))
 	if err != nil {
-		log.Error("Error creating HTTP request", err)
-		return err
+		return fmt.Errorf("error creating HTTP request: %s", err.Error())
 	}
+
 	req.Header.Set("Content-Type", "application/json")
 
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Error("Error sending HTTP request", err)
-		return err
+		return fmt.Errorf("error sending HTTP request: %s", err.Error())
 	}
+
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
-		log.Error("Received non-OK response", "status", resp.StatusCode)
-		return fmt.Errorf("received non-OK response: %s", resp.Status)
+		return fmt.Errorf("received non-OK response: %d", resp.StatusCode)
 	}
 
 	return nil

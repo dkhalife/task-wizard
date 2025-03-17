@@ -2,6 +2,7 @@ package housekeeper
 
 import (
 	"context"
+	"fmt"
 
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 )
@@ -19,7 +20,7 @@ func NewPasswordResetCleaner(ur *uRepo.UserRepository) *PasswordResetCleaner {
 func (prc *PasswordResetCleaner) CleanupStalePasswordResets(c context.Context) error {
 	err := prc.uRepo.DeleteStalePasswordResets(c)
 	if err != nil {
-		return err
+		return fmt.Errorf("error deleting stale password resets: %s", err.Error())
 	}
 
 	return nil
