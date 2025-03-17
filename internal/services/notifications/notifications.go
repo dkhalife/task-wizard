@@ -13,15 +13,15 @@ import (
 )
 
 func (n *Notifier) SendNotification(c context.Context, notification *models.Notification) error {
-	switch notification.NotificationSettings.Provider.Provider {
+	switch notification.User.NotificationSettings.Provider.Provider {
 	case models.NotificationProviderNone:
 		return nil
 
 	case models.NotificationProviderWebhook:
-		return SendNotificationViaWebhook(c, notification.NotificationSettings.Provider, notification.Text)
+		return SendNotificationViaWebhook(c, notification.User.NotificationSettings.Provider, notification.Text)
 
 	case models.NotificationProviderGotify:
-		return SendNotificationViaGotify(c, notification.NotificationSettings.Provider, notification.Text)
+		return SendNotificationViaGotify(c, notification.User.NotificationSettings.Provider, notification.Text)
 
 	}
 

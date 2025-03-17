@@ -13,9 +13,8 @@ type Notification struct {
 	ScheduledFor time.Time `json:"scheduled_for" gorm:"column:scheduled_for;not null;index"`
 	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 
-	Task                 Task                 `json:"-" gorm:"foreignKey:TaskID;"`
-	User                 User                 `json:"-" gorm:"foreignKey:UserID;"`
-	NotificationSettings NotificationSettings `json:"-" gorm:"foreignKey:UserID;references:UserID"`
+	Task Task `json:"-" gorm:"foreignKey:TaskID;constraint:OnDelete:CASCADE;"`
+	User User `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
 }
 
 type NotificationProviderType string
