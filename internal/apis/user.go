@@ -41,6 +41,8 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 		DisplayName string `json:"displayName" binding:"required"`
 	}
 
+	log := logging.FromContext(c)
+
 	var signupReq SignUpReq
 	if err := c.BindJSON(&signupReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -53,6 +55,7 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 	signupReq.DisplayName = html.EscapeString(signupReq.DisplayName)
 
 	if err != nil {
+		log.Errorf("failed to encode password: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Encoding password failed",
 		})
@@ -65,14 +68,16 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 		Email:       signupReq.Email,
 		Disabled:    true,
 	}); err != nil {
+		log.Errorf("failed to create user: %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": err.Error(),
+			"error": "Verify you entered all the fields correctly",
 		})
 		return
 	}
 
 	token, err := auth.GenerateEmailResetToken(c)
 	if err != nil {
+		log.Errorf("failed to generate token: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to generate activation token",
 		})
@@ -81,6 +86,7 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 
 	err = h.userRepo.SetPasswordResetToken(c, signupReq.Email, token)
 	if err != nil {
+		log.Errorf("failed to set token: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to set reset token",
 		})
@@ -95,9 +101,11 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 
 func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
 
 	user, err := h.userRepo.GetUser(c, currentIdentity.UserID)
 	if err != nil {
+		log.Errorf("failed to get user: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get user",
 		})
@@ -106,6 +114,7 @@ func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 
 	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, currentIdentity.UserID)
 	if err != nil {
+		log.Errorf("failed to get notification settings: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get notification settings",
 		})
@@ -136,13 +145,14 @@ func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 
 	_, err := h.userRepo.FindByEmail(c, req.Email)
 	if err != nil {
+		log.Infof("failed to find user by email: %s", err.Error())
 		c.JSON(http.StatusOK, gin.H{})
-		log.Error("account.handler.resetPassword failed to find user")
 		return
 	}
 
 	token, err := auth.GenerateEmailResetToken(c)
 	if err != nil {
+		log.Errorf("failed to generate token: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to generate reset token",
 		})
@@ -151,6 +161,7 @@ func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 
 	err = h.userRepo.SetPasswordResetToken(c, req.Email, token)
 	if err != nil {
+		log.Errorf("failed to set token: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to set reset token",
 		})
@@ -160,7 +171,7 @@ func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 	code := auth.EncodeEmailAndCode(req.Email, token)
 	err = h.email.SendResetPasswordEmail(c, req.Email, code)
 	if err != nil {
-		log.Errorw("failed to send reset email", "err", err)
+		log.Errorf("failed to send email: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to send email",
 		})
@@ -171,13 +182,13 @@ func (h *UsersAPIHandler) resetPassword(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
-	logger := logging.FromContext(c)
+	log := logging.FromContext(c)
 
 	code := c.Query("c")
 
 	email, code, err := auth.DecodeEmailAndCode(code)
 	if err != nil {
-		logger.Errorw("failed to decode email and code", "err", err)
+		log.Errorf("failed to decode email and code: %s", err.Error())
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid reset code",
 		})
@@ -190,7 +201,6 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 
 	var body RequestBody
 	if err := c.ShouldBindJSON(&body); err != nil {
-		logger.Errorw("user.handler.resetAccountPassword failed to bind", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "New password was not provided",
 		})
@@ -200,6 +210,7 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 
 	password, err := auth.EncodePassword(body.Password)
 	if err != nil {
+		log.Errorf("failed to encode password: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": err,
 		})
@@ -208,7 +219,7 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 
 	err = h.userRepo.UpdatePasswordByToken(c.Request.Context(), email, code, password)
 	if err != nil {
-		logger.Errorw("account.handler.resetAccountPassword failed to reset password", "err", err)
+		log.Errorf("failed to update password: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to reset password",
 		})
@@ -250,8 +261,10 @@ func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 		return
 	}
 
+	log := logging.FromContext(c)
 	token, err := h.userRepo.CreateAppToken(c, currentIdentity.UserID, req.Name, req.Scopes, req.Expiration)
 	if err != nil {
+		log.Errorf("failed to create token: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create token",
 		})
@@ -265,9 +278,11 @@ func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 
 func (h *UsersAPIHandler) GetAllUserToken(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
 
 	tokens, err := h.userRepo.GetAllUserTokens(c, currentIdentity.UserID)
 	if err != nil {
+		log.Errorf("failed to get user tokens: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get user tokens",
 		})
@@ -280,12 +295,14 @@ func (h *UsersAPIHandler) GetAllUserToken(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) DeleteUserToken(c *gin.Context) {
+	log := logging.FromContext(c)
 	currentIdentity := auth.CurrentIdentity(c)
 
 	tokenID := c.Param("id")
 
 	err := h.userRepo.DeleteAppToken(c, currentIdentity.UserID, tokenID)
 	if err != nil {
+		log.Errorf("failed to delete token: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to delete the token",
 		})
@@ -311,8 +328,10 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 		return
 	}
 
+	log := logging.FromContext(c)
 	err := h.userRepo.UpdateNotificationSettings(c, currentIdentity.UserID, req.Provider, req.Triggers)
 	if err != nil {
+		log.Errorf("failed to update notification target: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to update notification target",
 		})
@@ -322,6 +341,7 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 	if req.Provider.Provider == models.NotificationProviderNone {
 		err = h.userRepo.DeleteNotificationsForUser(c, currentIdentity.UserID)
 		if err != nil {
+			log.Errorf("failed to delete existing notification: %s", err.Error())
 			c.JSON(http.StatusInternalServerError, gin.H{
 				"error": "Failed to delete existing notification",
 			})
@@ -333,7 +353,7 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 }
 
 func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
-	logger := logging.FromContext(c)
+	log := logging.FromContext(c)
 
 	currentIdentity := auth.CurrentIdentity(c)
 
@@ -344,7 +364,6 @@ func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 	var body RequestBody
 
 	if err := c.ShouldBindJSON(&body); err != nil {
-		logger.Errorw("user.handler.resetAccountPassword failed to bind", "err", err)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -353,6 +372,7 @@ func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 
 	password, err := auth.EncodePassword(body.Password)
 	if err != nil {
+		log.Errorf("failed to encode password: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to encode password",
 		})
@@ -361,7 +381,7 @@ func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {
 
 	err = h.userRepo.UpdatePasswordByUserId(c.Request.Context(), currentIdentity.UserID, password)
 	if err != nil {
-		logger.Errorw("account.handler.resetAccountPassword failed to reset password", "err", err)
+		log.Errorf("failed to update password: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Unable to reset password",
 		})

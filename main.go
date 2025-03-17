@@ -124,22 +124,29 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
 			if cfg.Database.Migration {
-				migration.Migration(db)
-				migrations.Run(context.Background(), db)
+				if err := migration.Migration(db); err != nil {
+					return fmt.Errorf("failed to auto-migrate: %s", err.Error())
+				}
+
+				if err := migrations.Run(context.Background(), db); err != nil {
+					return fmt.Errorf("failed to run migrations: %s", err.Error())
+				}
 			}
 
 			bgScheduler.Start(context.Background())
 
 			go func() {
 				if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+					log := logging.FromContext(ctx)
 					log.Fatalf("listen: %s\n", err)
 				}
 			}()
 
 			return nil
 		},
-		OnStop: func(context.Context) error {
+		OnStop: func(ctx context.Context) error {
 			if err := srv.Shutdown(context.Background()); err != nil {
+				log := logging.FromContext(ctx)
 				log.Fatalf("Server Shutdown: %s", err)
 			}
 			return nil

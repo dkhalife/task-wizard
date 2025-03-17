@@ -54,11 +54,16 @@ type EmailConfig struct {
 }
 
 func LoadConfig() *Config {
-	viper.SetConfigName(os.Getenv("TW_ENV"))
+	env := os.Getenv("TW_ENV")
+	if env == "" {
+		env = "prod"
+	}
+
+	viper.SetConfigName(env)
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
-	err := viper.ReadInConfig()
 
+	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
 	}

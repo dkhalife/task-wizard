@@ -7,6 +7,7 @@ import (
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	models "dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
@@ -59,6 +60,8 @@ func (h *LabelsAPIHandler) getLabels(c *gin.Context) {
 func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
+	log := logging.FromContext(c)
+
 	var req CreateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -74,6 +77,7 @@ func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 	}
 
 	if err := h.lRepo.CreateLabels(c, []*models.Label{label}); err != nil {
+		log.Errorf("Failed to create label: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to create label",
 		})
@@ -91,6 +95,8 @@ func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 
 func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
+
+	log := logging.FromContext(c)
 
 	var req UpdateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -114,6 +120,7 @@ func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 	}
 
 	if err := h.lRepo.UpdateLabel(c, currentIdentity.UserID, label); err != nil {
+		log.Errorf("Failed to update label: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error updating label",
 		})
@@ -130,6 +137,7 @@ func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 }
 
 func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
+	log := logging.FromContext(c)
 	currentIdentity := auth.CurrentIdentity(c)
 
 	labelIDRaw := c.Param("id")
@@ -149,6 +157,7 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 	}
 
 	if err := h.lRepo.DeleteLabel(c, currentIdentity.UserID, labelID); err != nil {
+		log.Errorf("Failed to delete label: %s", err.Error())
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Error unassociating label from task",
 		})

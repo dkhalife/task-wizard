@@ -3,10 +3,10 @@ package repos
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	config "dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
 )
 
@@ -27,18 +27,13 @@ func (r *LabelRepository) GetUserLabels(ctx context.Context, userID int) ([]*mod
 }
 
 func (r *LabelRepository) CreateLabels(ctx context.Context, labels []*models.Label) error {
-	if err := r.db.WithContext(ctx).Create(&labels).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Create(&labels).Error
 }
 
 func (r *LabelRepository) AreLabelsAssignableByUser(ctx context.Context, userID int, labels []int) bool {
-	log := logging.FromContext(ctx)
 	var count int64
 
 	if err := r.db.WithContext(ctx).Model(&models.Label{}).Where("id IN (?) AND created_by = ?", labels, userID).Count(&count).Error; err != nil {
-		log.Error(err)
 		return false
 	}
 
@@ -77,19 +72,17 @@ func (r *LabelRepository) AssignLabelsToTask(ctx context.Context, taskID int, us
 
 func (r *LabelRepository) DeleteLabel(ctx context.Context, userID int, labelID int) error {
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		log := logging.FromContext(ctx)
 		var labelCount int64
 		if err := tx.Model(&models.Label{}).Where("id = ? AND created_by = ?", labelID, userID).Count(&labelCount).Error; err != nil {
-			log.Debug(err)
 			return err
 		}
+
 		if labelCount < 1 {
 			return errors.New("label is not owned by user")
 		}
 
 		if err := tx.Where("id = ?", labelID).Delete(&models.Label{}).Error; err != nil {
-			log.Debug("Error deleting label")
-			return err
+			return fmt.Errorf("error deleting label: %s", err.Error())
 		}
 
 		return nil
@@ -97,9 +90,5 @@ func (r *LabelRepository) DeleteLabel(ctx context.Context, userID int, labelID i
 }
 
 func (r *LabelRepository) UpdateLabel(ctx context.Context, userID int, label *models.Label) error {
-
-	if err := r.db.WithContext(ctx).Model(&models.Label{}).Where("id = ? and created_by = ?", label.ID, userID).Updates(label).Error; err != nil {
-		return err
-	}
-	return nil
+	return r.db.WithContext(ctx).Model(&models.Label{}).Where("id = ? and created_by = ?", label.ID, userID).Updates(label).Error
 }

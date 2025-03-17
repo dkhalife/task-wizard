@@ -7,12 +7,9 @@ import (
 	"strings"
 
 	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 )
-
-const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*()_+-=[]{}|;':,.<>?/~"
 
 var IdentityKey = "id"
 
@@ -47,7 +44,6 @@ func DecodeEmailAndCode(encoded string) (string, string, error) {
 }
 
 func GenerateEmailResetToken(c *gin.Context) (string, error) {
-	logger := logging.FromContext(c)
 	// Define the length of the token (in bytes). For example, 32 bytes will result in a 44-character base64-encoded token.
 	tokenLength := 32
 
@@ -55,8 +51,7 @@ func GenerateEmailResetToken(c *gin.Context) (string, error) {
 	tokenBytes := make([]byte, tokenLength)
 	_, err := rand.Read(tokenBytes)
 	if err != nil {
-		logger.Errorw("password.GenerateEmailResetToken failed to generate random bytes", "err", err)
-		return "", err
+		return "", fmt.Errorf("failed to generate token: %s", err.Error())
 	}
 
 	// Encode the byte slice to a base64 string.

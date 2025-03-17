@@ -36,7 +36,7 @@ func NewScheduler(cfg *config.Config, n *notifications.Notifier, prc *housekeepe
 
 func (s *Scheduler) Start(c context.Context) {
 	log := logging.FromContext(c)
-	log.Debug("Scheduler started")
+	log.Info("Scheduler started")
 
 	go s.runScheduler(c, "NOTIFICATION_SCHEDULER", s.notifier.GenerateOverdueNotifications, s.config.OverdueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_SENDER", s.notifier.LoadAndSendNotificationJob, s.config.DueFrequency)
@@ -48,7 +48,7 @@ func (s *Scheduler) Start(c context.Context) {
 
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {
 	log := logging.FromContext(c)
-	log.Debugf("%s: [%s] Starting job", time.Now().String(), jobName)
+	log.Infof("%s: [%s] Starting job", time.Now().String(), jobName)
 
 	for {
 		select {

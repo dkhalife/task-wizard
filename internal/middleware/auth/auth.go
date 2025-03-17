@@ -43,7 +43,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 			err = auth.Matches(user.Password, req.Password)
 			if err != nil {
 				if err != bcrypt.ErrMismatchedHashAndPassword {
-					logging.FromContext(c).Warnw("middleware.jwt.Authenticator found unknown error when matches password", "err", err)
+					logging.FromContext(c).Errorf("found unknown error when matches password", "err", err)
 				}
 				return nil, jwt.ErrFailedAuthentication
 			}
@@ -65,7 +65,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt
 
 			id, ok := claims[auth.IdentityKey].(string)
 			if !ok {
-				logging.FromContext(c).Errorw("IdentityHandler failed to extract ID from claims", "claims", claims)
+				logging.FromContext(c).Errorw("failed to extract ID from claims")
 				return nil
 			}
 			userID, err := strconv.Atoi(id)

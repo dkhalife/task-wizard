@@ -61,8 +61,7 @@ func (r *TaskRepository) DeleteTask(c context.Context, id int) error {
 
 func (r *TaskRepository) IsTaskOwner(c context.Context, taskID int, userID int) error {
 	var task models.Task
-	err := r.db.WithContext(c).Model(&models.Task{}).Where("id = ? AND created_by = ?", taskID, userID).First(&task).Error
-	return err
+	return r.db.WithContext(c).Model(&models.Task{}).Where("id = ? AND created_by = ?", taskID, userID).First(&task).Error
 }
 
 func (r *TaskRepository) CompleteTask(c context.Context, task *models.Task, userID int, dueDate *time.Time, completedDate *time.Time) error {

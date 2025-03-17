@@ -3,6 +3,7 @@ package email
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net/url"
 
 	"dkhalife.com/tasks/core/config"
@@ -52,15 +53,14 @@ func (es *EmailSender) validateConfig() error {
 	return nil
 }
 
-func (es *EmailSender) sendEmail(c context.Context, to string, subject string, body string) error {
-	log := logging.FromContext(c)
-
+func (es *EmailSender) sendEmail(to string, subject string, body string) error {
 	message := mail.NewMsg()
 	if err := message.From(es.Email); err != nil {
-		log.Fatalf("failed to set From address: %s", err)
+		return fmt.Errorf("failed to set From address: %s", err.Error())
 	}
+
 	if err := message.To(to); err != nil {
-		log.Fatalf("failed to set To address: %s", err)
+		return fmt.Errorf("failed to set To address: %s", err.Error())
 	}
 
 	message.Subject(subject)
@@ -72,14 +72,14 @@ func (es *EmailSender) sendEmail(c context.Context, to string, subject string, b
 		mail.WithUsername(es.Email), mail.WithPassword(es.Password))
 
 	if err != nil {
-		log.Fatalf("failed to create mail client: %s", err)
+		return fmt.Errorf("failed to create mail client: %s", err.Error())
 	}
 
 	if err := client.DialAndSend(message); err != nil {
-		log.Fatalf("failed to send mail: %s", err)
+		return fmt.Errorf("failed to send mail: %s", err.Error())
 	}
 
-	return err
+	return nil
 }
 
 func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code string) error {
@@ -102,7 +102,7 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code
 		</html>
 	`
 
-	err = es.sendEmail(c, to, "Task Wizard - Password Reset", htmlBody)
+	err = es.sendEmail(to, "Task Wizard - Password Reset", htmlBody)
 	if err != nil {
 		return err
 	}
@@ -110,10 +110,12 @@ func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code
 	return nil
 }
 
-func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to string, activationCode string) error {
+func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to string, activationCode string) {
+	log := logging.FromContext(c)
 	err := es.validateConfig()
 	if err != nil {
-		return err
+		log.Errorf("failed to validate email config: %s", err.Error())
+		return
 	}
 
 	activationURL := es.AppHost + "/activate?code=" + url.QueryEscape(activationCode)
@@ -130,12 +132,11 @@ func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to strin
 		</html>
 	`
 
-	err = es.sendEmail(c, to, "Task Wizard - Welcome!", htmlBody)
+	err = es.sendEmail(to, "Task Wizard - Welcome!", htmlBody)
 	if err != nil {
-		return err
+		log.Errorf("failed to send welcome email: %s", err.Error())
+		return
 	}
-
-	return nil
 }
 
 func (es *EmailSender) SendTokenExpirationReminder(c context.Context, tokenName string, to string) error {
@@ -156,7 +157,7 @@ func (es *EmailSender) SendTokenExpirationReminder(c context.Context, tokenName 
 		</html>
 	`
 
-	err = es.sendEmail(c, to, "Task Wizard - Token Expiration Reminder", htmlBody)
+	err = es.sendEmail(to, "Task Wizard - Token Expiration Reminder", htmlBody)
 	if err != nil {
 		return err
 	}

@@ -12,7 +12,7 @@ import (
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 )
 
-func (n *Notifier) SendNotification(c context.Context, notification *models.Notification) error {
+func (n *Notifier) sendNotification(c context.Context, notification *models.Notification) error {
 	switch notification.User.NotificationSettings.Provider.Provider {
 	case models.NotificationProviderNone:
 		return nil
@@ -42,12 +42,12 @@ func NewNotifier(cfg *config.Config, nr *nRepo.NotificationRepository) *Notifier
 
 func (n *Notifier) CleanupSentNotifications(c context.Context) error {
 	log := logging.FromContext(c)
-	deleteBefore := time.Now().UTC().Add(-2 * n.DueFrequency)
+	log.Debug("Cleaning sent notifications")
 
+	deleteBefore := time.Now().UTC().Add(-2 * n.DueFrequency)
 	err := n.nRepo.DeleteSentNotifications(c, deleteBefore)
 	if err != nil {
-		log.Error("Error deleting sent notifications", err)
-		return err
+		return fmt.Errorf("error deleting sent notifications: %s", err.Error())
 	}
 
 	return nil
@@ -57,33 +57,37 @@ func (n *Notifier) LoadAndSendNotificationJob(c context.Context) error {
 	log := logging.FromContext(c)
 
 	pendingNotifications, err := n.nRepo.GetPendingNotification(c, n.DueFrequency)
-	log.Debug("Getting pending notifications", " count ", len(pendingNotifications))
+	log.Debugf("Getting pending notifications, count=%d", len(pendingNotifications))
 
 	if err != nil {
-		log.Error("Error getting pending notifications")
-		return err
+		return fmt.Errorf("error getting pending notifications: %s", err.Error())
 	}
 
 	for _, notification := range pendingNotifications {
-		err := n.SendNotification(c, notification)
+		err := n.sendNotification(c, notification)
 		if err != nil {
-			log.Error("Error sending notification", err)
+			log.Errorf("Error sending notification: %s", err.Error())
 			continue
 		}
 		notification.IsSent = true
 	}
 
-	n.nRepo.MarkNotificationsAsSent(pendingNotifications)
+	if err := n.nRepo.MarkNotificationsAsSent(pendingNotifications); err != nil {
+		return fmt.Errorf("error marking notifications as sent: %s", err.Error())
+	}
+
 	return nil
 }
 
 func (n *Notifier) GenerateOverdueNotifications(c context.Context) error {
+	log := logging.FromContext(c)
+	log.Debug("Generating overdue notifications")
+
 	startTime := time.Now()
 	tasks, err := n.nRepo.GetOverdueTasksWithNotifications(c, startTime)
 
 	if err != nil {
-		logging.FromContext(c).Error("Error getting overdue tasks", err)
-		return err
+		return fmt.Errorf("error getting overdue tasks: %s", err.Error())
 	}
 
 	if len(tasks) == 0 {
@@ -103,6 +107,5 @@ func (n *Notifier) GenerateOverdueNotifications(c context.Context) error {
 		notifications = append(notifications, overdueNotification)
 	}
 
-	err = n.nRepo.BatchInsertNotifications(notifications)
-	return err
+	return n.nRepo.BatchInsertNotifications(notifications)
 }
