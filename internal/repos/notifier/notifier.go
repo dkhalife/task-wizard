@@ -83,7 +83,7 @@ func (r *NotificationRepository) MarkNotificationsAsSent(notifications []*models
 func (r *NotificationRepository) GetPendingNotification(c context.Context, lookback time.Duration) ([]*models.Notification, error) {
 	var notifications []*models.Notification
 	cutoff := time.Now()
-	if err := r.db.Where("is_sent = 0 AND scheduled_for < ?", cutoff).Preload("NotificationSettings").Find(&notifications).Error; err != nil {
+	if err := r.db.Where("is_sent = 0 AND scheduled_for < ?", cutoff).Preload("User.NotificationSettings").Find(&notifications).Error; err != nil {
 		return nil, err
 	}
 	return notifications, nil
