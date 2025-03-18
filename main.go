@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"dkhalife.com/tasks/core/backend"
 	"dkhalife.com/tasks/core/config"
@@ -44,19 +43,11 @@ func main() {
 		}
 	}
 
-	if os.Getenv("TW_ENV") == "debug" {
-		logging.SetConfig(&logging.Config{
-			Encoding:    "console",
-			Level:       level,
-			Development: true,
-		})
-	} else {
-		logging.SetConfig(&logging.Config{
-			Encoding:    "console",
-			Level:       level,
-			Development: false,
-		})
-	}
+	logging.SetConfig(&logging.Config{
+		Encoding:    "console",
+		Level:       level,
+		Development: cfg.Server.Debug,
+	})
 
 	app := fx.New(
 		fx.Supply(cfg),

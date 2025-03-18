@@ -1,14 +1,12 @@
 package config
 
 import (
-	"os"
 	"time"
 
 	"github.com/spf13/viper"
 )
 
 type Config struct {
-	Name          string          `mapstructure:"name" yaml:"name"`
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
 	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
@@ -55,12 +53,7 @@ type EmailConfig struct {
 }
 
 func LoadConfig() *Config {
-	env := os.Getenv("TW_ENV")
-	if env == "" {
-		env = "prod"
-	}
-
-	viper.SetConfigName(env)
+	viper.SetConfigName("config")
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
 

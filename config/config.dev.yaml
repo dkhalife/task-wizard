@@ -1,4 +1,3 @@
-name: "local"
 database:
   migration: true
   path: task-wizard.db

@@ -48,8 +48,6 @@ services:
       - 2021:2021
       volumes:
       - /path/to/host/config:/config
-      environment:
-      - TW_ENV=prod
 ```
 
 2. Run the app with `docker compose up -d` 
@@ -65,7 +63,6 @@ Alternatively, you can use a `.env` file and reference it in the compose file us
 docker run \
    -v /path/to/host/config:/config
    -p 2021:2021 \
-   -e TW_ENV=prod \
    dkhalife/task-wizard
 ```
 
@@ -73,7 +70,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 ## ⚙️ Configuration
 
-In the [config](./config/) directory are a couple of starter configuration files for a `debug` and a `prod` environment. The environment variable `TW_ENV` helps toggle between those configuration files as well as set the verbosity of the logs printed at runtime.
+In the [config](./config/) directory are a couple of starter configuration files for prod and a dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
 The configuration files are yaml mappings with the following values:
 
