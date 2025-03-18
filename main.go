@@ -17,6 +17,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 
@@ -52,6 +53,9 @@ func main() {
 	app := fx.New(
 		fx.Supply(cfg),
 		fx.Supply(logging.DefaultLogger().Desugar()),
+		fx.WithLogger(func() fxevent.Logger {
+			return &fxevent.NopLogger
+		}),
 
 		fx.Provide(auth.NewAuthMiddleware),
 
@@ -133,6 +137,8 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
+			logging.FromContext(ctx).Info("Starting server")
+
 			if cfg.Database.Migration {
 				if err := migration.Migration(db); err != nil {
 					return fmt.Errorf("failed to auto-migrate: %s", err.Error())
@@ -158,6 +164,9 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 			if err := srv.Shutdown(context.Background()); err != nil {
 				log := logging.FromContext(ctx)
 				log.Fatalf("Server Shutdown: %s", err)
+			} else {
+				log := logging.FromContext(ctx)
+				log.Info("Server stopped")
 			}
 			return nil
 		},
