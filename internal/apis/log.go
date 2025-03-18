@@ -58,7 +58,7 @@ func LogRoutes(router *gin.Engine, h *LogsAPIHandler, auth *jwt.GinJWTMiddleware
 
 	logRoutes.Use(auth.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter))
 	{
-		logRoutes.PUT("/warn", h.Warn)
-		logRoutes.PUT("/error", h.Error)
+		logRoutes.POST("/warn", h.Warn)
+		logRoutes.POST("/error", h.Error)
 	}
 }
