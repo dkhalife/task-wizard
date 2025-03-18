@@ -48,18 +48,18 @@ func (s *Scheduler) Start(c context.Context) {
 
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {
 	log := logging.FromContext(c)
-	log.Infof("%s: [%s] Starting job", time.Now().String(), jobName)
+	log.Infof("[%s] Starting job", jobName)
 
 	for {
 		select {
 		case <-s.stopChan:
-			log.Infof("%s: [%s] Stopping job", time.Now().String(), jobName)
+			log.Infof("[%s] Stopping job", jobName)
 			return
 
 		default:
 			err := job(c)
 			if err != nil {
-				log.Errorf("%s: [%s] %s", time.Now().String(), jobName, err)
+				log.Errorf("[%s] %s", jobName, err)
 			}
 
 			time.Sleep(interval)

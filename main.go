@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os"
 
 	"dkhalife.com/tasks/core/backend"
 	"dkhalife.com/tasks/core/config"
@@ -18,6 +17,7 @@ import (
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
+	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap/zapcore"
 	"gorm.io/gorm"
 
@@ -34,23 +34,28 @@ import (
 )
 
 func main() {
-	if os.Getenv("TW_ENV") == "debug" {
-		logging.SetConfig(&logging.Config{
-			Encoding:    "console",
-			Level:       zapcore.Level(zapcore.DebugLevel),
-			Development: true,
-		})
-	} else {
-		logging.SetConfig(&logging.Config{
-			Encoding:    "console",
-			Level:       zapcore.Level(zapcore.WarnLevel),
-			Development: false,
-		})
+	cfg := config.LoadConfig()
+	level, err := zapcore.ParseLevel(cfg.Server.LogLevel)
+	if err != nil {
+		if cfg.Server.Debug {
+			level = zapcore.DebugLevel
+		} else {
+			level = zapcore.WarnLevel
+		}
 	}
 
+	logging.SetConfig(&logging.Config{
+		Encoding:    "console",
+		Level:       level,
+		Development: cfg.Server.Debug,
+	})
+
 	app := fx.New(
-		fx.Supply(config.LoadConfig()),
+		fx.Supply(cfg),
 		fx.Supply(logging.DefaultLogger().Desugar()),
+		fx.WithLogger(func() fxevent.Logger {
+			return &fxevent.NopLogger
+		}),
 
 		fx.Provide(auth.NewAuthMiddleware),
 
@@ -120,9 +125,12 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	config.AllowCredentials = true
 	config.AddAllowHeaders("Authorization", "secretkey")
 	r.Use(cors.New(config))
+	r.Use(utils.RequestLogger())
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
+			logging.FromContext(ctx).Info("Starting server")
+
 			if cfg.Database.Migration {
 				if err := migration.Migration(db); err != nil {
 					return fmt.Errorf("failed to auto-migrate: %s", err.Error())
@@ -148,6 +156,9 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 			if err := srv.Shutdown(context.Background()); err != nil {
 				log := logging.FromContext(ctx)
 				log.Fatalf("Server Shutdown: %s", err)
+			} else {
+				log := logging.FromContext(ctx)
+				log.Info("Server stopped")
 			}
 			return nil
 		},

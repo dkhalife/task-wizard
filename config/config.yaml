@@ -1,26 +1,26 @@
-name: "local"
 database:
   migration: true
-  path: task-wizard.db
+  path: /config/task-wizard.db
 jwt:
   secret: "secret"
   session_time: 168h
   max_refresh: 168h
 server:
-  host_name: localhost
+  host_name: example.com
   port: 2021
   read_timeout: 2s
   write_timeout: 1s
   rate_period: 60s
   rate_limit: 300
-  serve_frontend: false
+  serve_frontend: true
   registration: true
-  debug: true
+  debug: false
+  log_level: "warn"
 scheduler_jobs:
-  due_frequency: 1m
-  overdue_frequency: 1m
-  password_reset_validity: 1m
-  token_expiration_reminder: 1m
+  due_frequency: 5m
+  overdue_frequency: 24h
+  password_reset_validity: 24h
+  token_expiration_reminder: 72h
 email:
   host: 
   port: 

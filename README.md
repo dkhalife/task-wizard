@@ -48,8 +48,6 @@ services:
       - 2021:2021
       volumes:
       - /path/to/host/config:/config
-      environment:
-      - TW_ENV=prod
 ```
 
 2. Run the app with `docker compose up -d` 
@@ -65,7 +63,6 @@ Alternatively, you can use a `.env` file and reference it in the compose file us
 docker run \
    -v /path/to/host/config:/config
    -p 2021:2021 \
-   -e TW_ENV=prod \
    dkhalife/task-wizard
 ```
 
@@ -73,7 +70,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 ## ⚙️ Configuration
 
-In the [config](./config/) directory are a couple of starter configuration files for a `debug` and a `prod` environment. The environment variable `TW_ENV` helps toggle between those configuration files as well as set the verbosity of the logs printed at runtime.
+In the [config](./config/) directory are a couple of starter configuration files for prod and a dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
 The configuration files are yaml mappings with the following values:
 
@@ -94,6 +91,7 @@ The configuration files are yaml mappings with the following values:
 | `server.serve_frontend`                  | `true`                                              | Indicates if the frontend should be served by the backend server.           |
 | `server.registration`                    | `true`                                              | Indicates whether new accounts can be created on the backend server.        |
 | `server.debug`                           | `false`                                             | Indicates if the server should run in debug mode (only use for development) |
+| `server.log_level`                       | `debug` when `server.debug` = `true`, else `warn`   | The min level to log (debug, info, warn, error, dpanic, panic, fatal).      |
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
 | `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
