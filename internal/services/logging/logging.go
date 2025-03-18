@@ -52,6 +52,13 @@ func NewLogger(conf *Config) *zap.SugaredLogger {
 		OutputPaths:      []string{"stdout"},
 		ErrorOutputPaths: []string{"stderr"},
 	}
+
+	if conf.Development {
+		cfg.EncoderConfig.EncodeCaller = zapcore.ShortCallerEncoder
+	} else {
+		cfg.EncoderConfig.EncodeCaller = nil
+	}
+
 	logger, err := cfg.Build()
 	if err != nil {
 		logger = zap.NewNop()
