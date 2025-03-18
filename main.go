@@ -120,6 +120,15 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	config.AllowCredentials = true
 	config.AddAllowHeaders("Authorization", "secretkey")
 	r.Use(cors.New(config))
+	r.Use(utils.RequestLogger())
+
+	r.Use(func(c *gin.Context) {
+		c.Next()
+
+		log := logging.FromContext(c)
+		log.Infof("IP:%s UA:%q Route:%s Status:%d\n",
+			c.ClientIP(), c.Request.UserAgent(), c.Request.URL.Path, c.Writer.Status())
+	})
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {

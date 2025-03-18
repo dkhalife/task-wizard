@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/config"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
@@ -59,5 +60,15 @@ func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
 		}()
 		c.Request = c.Request.WithContext(ctx)
 		c.Next()
+	}
+}
+
+func RequestLogger() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Next()
+
+		log := logging.FromContext(c)
+		log.Infof("IP:%s UA:%q Route:%s Status:%d\n",
+			c.ClientIP(), c.Request.UserAgent(), c.Request.URL.Path, c.Writer.Status())
 	}
 }
