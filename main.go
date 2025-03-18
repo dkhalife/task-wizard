@@ -83,6 +83,7 @@ func main() {
 		// Labels:
 		fx.Provide(lRepo.NewLabelRepository),
 		fx.Provide(apis.LabelsAPI),
+		fx.Provide(apis.LogsAPI),
 
 		fx.Provide(frontend.NewHandler),
 		fx.Provide(backend.NewHandler),
@@ -91,6 +92,7 @@ func main() {
 			apis.TaskRoutes,
 			apis.UserRoutes,
 			apis.LabelRoutes,
+			apis.LogRoutes,
 			frontend.Routes,
 			backend.Routes,
 
