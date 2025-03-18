@@ -34,22 +34,32 @@ import (
 )
 
 func main() {
+	cfg := config.LoadConfig()
+	level, err := zapcore.ParseLevel(cfg.Server.LogLevel)
+	if err != nil {
+		if cfg.Server.Debug {
+			level = zapcore.DebugLevel
+		} else {
+			level = zapcore.WarnLevel
+		}
+	}
+
 	if os.Getenv("TW_ENV") == "debug" {
 		logging.SetConfig(&logging.Config{
 			Encoding:    "console",
-			Level:       zapcore.Level(zapcore.DebugLevel),
+			Level:       level,
 			Development: true,
 		})
 	} else {
 		logging.SetConfig(&logging.Config{
 			Encoding:    "console",
-			Level:       zapcore.Level(zapcore.WarnLevel),
+			Level:       level,
 			Development: false,
 		})
 	}
 
 	app := fx.New(
-		fx.Supply(config.LoadConfig()),
+		fx.Supply(cfg),
 		fx.Supply(logging.DefaultLogger().Desugar()),
 
 		fx.Provide(auth.NewAuthMiddleware),

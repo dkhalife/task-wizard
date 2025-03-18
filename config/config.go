@@ -37,6 +37,7 @@ type ServerConfig struct {
 	ServeFrontend bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
 	Registration  bool          `mapstructure:"registration" yaml:"registration"`
 	Debug         bool          `mapstructure:"debug" yaml:"debug"`
+	LogLevel      string        `mapstructure:"log_level" yaml:"log_level"`
 }
 
 type SchedulerConfig struct {

@@ -16,6 +16,7 @@ server:
   serve_frontend: true
   registration: true
   debug: false
+  log_level: "warn"
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h
