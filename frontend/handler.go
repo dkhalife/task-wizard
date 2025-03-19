@@ -35,13 +35,14 @@ func staticMiddleware(root string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		_, err := fs.Stat(embeddedFiles, "dist"+c.Request.URL.Path)
 		if err != nil {
-			c.Next()
+			c.AbortWithStatus(http.StatusNotFound)
 			return
 		}
-		fileServer.ServeHTTP(c.Writer, c.Request)
 
+		fileServer.ServeHTTP(c.Writer, c.Request)
 	}
 }
+
 func staticMiddlewareNoRoute(root string) gin.HandlerFunc {
 	fileServer := http.FileServer(getFileSystem(root))
 
