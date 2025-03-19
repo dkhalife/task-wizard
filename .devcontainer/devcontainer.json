@@ -13,4 +13,22 @@
 			"nvmVersion": "latest"
 		}
 	},
+	"customizations": {
+		"codespaces": {
+			"repositories": {
+				"dkhalife/tasks-frontend": {
+					"permissions": {
+						"contents": "write",
+						"pullRequests": "write"
+					}
+				},
+				"dkhalife/tasks-backend": {
+					"permissions": {
+						"contents": "write",
+						"pullRequests": "write"
+					}
+				}
+			}
+		}
+	}
 }
