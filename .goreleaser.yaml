@@ -30,10 +30,8 @@ archives:
   - goos: windows
     format: zip
   files:
-  - src: "config/debug.yaml"
-    dst: "config/debug.yaml"
-  - src: "config/prod.yaml"
-    dst: "config/prod.yaml"
+  - src: "config/config.yaml"
+    dst: "config/config.yaml"
 changelog:
   sort: asc
   filters:
