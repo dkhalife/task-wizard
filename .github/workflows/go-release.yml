@@ -38,8 +38,8 @@ jobs:
           yarn install
       - name: Build Frontend
         run: |
-          cd frontend-code
           export VITE_BACKEND_VERSION=$(git tag --sort=-creatordate | sed -n '1p' | sed 's/^v//')
+          cd frontend-code
           yarn build
 
       - name: Copy Frontend
