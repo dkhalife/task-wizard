@@ -36,18 +36,14 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 	level, err := zapcore.ParseLevel(cfg.Server.LogLevel)
-	if err != nil {
-		if cfg.Server.Debug {
-			level = zapcore.DebugLevel
-		} else {
-			level = zapcore.WarnLevel
-		}
+	if err == nil {
+		level = zapcore.WarnLevel
 	}
 
 	logging.SetConfig(&logging.Config{
 		Encoding:    "console",
 		Level:       level,
-		Development: cfg.Server.Debug,
+		Development: level == zapcore.DebugLevel,
 	})
 
 	app := fx.New(
@@ -109,7 +105,7 @@ func main() {
 }
 
 func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *scheduler.Scheduler) *gin.Engine {
-	if cfg.Server.Debug {
+	if cfg.Server.LogLevel == "debug" {
 		gin.SetMode(gin.DebugMode)
 	} else {
 		gin.SetMode(gin.ReleaseMode)

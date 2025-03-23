@@ -90,7 +90,6 @@ The configuration files are yaml mappings with the following values:
 | `server.rate_limit`                      | `300`                                               | The maximum number of requests allowed within the rate period.              |
 | `server.serve_frontend`                  | `true`                                              | Indicates if the frontend should be served by the backend server.           |
 | `server.registration`                    | `true`                                              | Indicates whether new accounts can be created on the backend server.        |
-| `server.debug`                           | `false`                                             | Indicates if the server should run in debug mode (only use for development) |
 | `server.log_level`                       | `debug` when `server.debug` = `true`, else `warn`   | The min level to log (debug, info, warn, error, dpanic, panic, fatal).      |
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
