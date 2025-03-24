@@ -14,7 +14,6 @@ server:
   rate_limit: 300
   serve_frontend: true
   registration: true
-  debug: false
   log_level: "warn"
 scheduler_jobs:
   due_frequency: 5m
