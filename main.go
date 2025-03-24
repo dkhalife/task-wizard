@@ -91,8 +91,6 @@ func main() {
 			apis.LogRoutes,
 			frontend.Routes,
 			backend.Routes,
-
-			func(r *gin.Engine) {},
 		),
 	)
 
@@ -134,7 +132,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 					return fmt.Errorf("failed to auto-migrate: %s", err.Error())
 				}
 
-				if err := migrations.Run(context.Background(), db); err != nil {
+				if err := migrations.Run(ctx, db); err != nil {
 					return fmt.Errorf("failed to run migrations: %s", err.Error())
 				}
 			}
@@ -151,7 +149,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
-			if err := srv.Shutdown(context.Background()); err != nil {
+			if err := srv.Shutdown(ctx); err != nil {
 				log := logging.FromContext(ctx)
 				log.Fatalf("Server Shutdown: %s", err)
 			} else {
