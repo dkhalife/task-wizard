@@ -6,7 +6,7 @@ import (
 )
 
 func Migration(db *gorm.DB) error {
-	if err := db.AutoMigrate(
+	return db.AutoMigrate(
 		models.User{},
 		models.UserPasswordReset{},
 		models.AppToken{},
@@ -15,9 +15,5 @@ func Migration(db *gorm.DB) error {
 		models.TaskHistory{},
 		models.NotificationSettings{},
 		models.Notification{},
-	); err != nil {
-		return err
-	}
-
-	return nil
+	)
 }
