@@ -3,3 +3,4 @@ core
 tmp
 task-wizard.db
 .vscode/launch.json
+coverage.out

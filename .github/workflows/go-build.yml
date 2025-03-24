@@ -32,3 +32,6 @@ jobs:
 
     - name: Lint
       run: golangci-lint run
+
+    - name: Run Tests and Generate Coverage
+      run: go test -v -coverprofile=coverage.out ./...
