@@ -36,7 +36,7 @@ import (
 func main() {
 	cfg := config.LoadConfig()
 	level, err := zapcore.ParseLevel(cfg.Server.LogLevel)
-	if err == nil {
+	if err != nil {
 		level = zapcore.WarnLevel
 	}
 
