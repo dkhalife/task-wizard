@@ -68,7 +68,7 @@ func RequestLogger() gin.HandlerFunc {
 		c.Next()
 
 		log := logging.FromContext(c)
-		log.Infof("IP:%s UA:%q Route:%s Status:%d\n",
+		log.Infof("IP:%s UA:%q Route:%s Status:%d",
 			c.ClientIP(), c.Request.UserAgent(), c.Request.URL.Path, c.Writer.Status())
 	}
 }
