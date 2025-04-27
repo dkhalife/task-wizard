@@ -57,7 +57,7 @@ func (r *NotificationRepository) GenerateNotifications(c context.Context, task *
 			UserID:       task.CreatedBy,
 			IsSent:       false,
 			ScheduledFor: *task.NextDueDate,
-			Text:         fmt.Sprintf("📅 *%s* is due today", task.Title),
+			Text:         fmt.Sprintf("📅 *%s* is due", task.Title),
 		})
 	}
 
