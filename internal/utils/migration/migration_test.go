@@ -4,19 +4,39 @@ import (
 	"testing"
 
 	"dkhalife.com/tasks/core/internal/models"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
-func TestMigration(t *testing.T) {
-	// Create an in-memory SQLite database for testing
-	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
-	assert.NoError(t, err)
+type MigrationTestSuite struct {
+	suite.Suite
+	db *gorm.DB
+}
 
+func TestMigrationTestSuite(t *testing.T) {
+	suite.Run(t, new(MigrationTestSuite))
+}
+
+func (s *MigrationTestSuite) SetupTest() {
+	db, err := gorm.Open(sqlite.Open(":memory:"), &gorm.Config{})
+	s.Require().NoError(err)
+	s.db = db
+}
+
+func (s *MigrationTestSuite) TearDownTest() {
+	if s.db != nil {
+		sqlDB, err := s.db.DB()
+		if err == nil {
+			sqlDB.Close()
+		}
+	}
+}
+
+func (s *MigrationTestSuite) TestMigration() {
 	// Run the migration
-	err = Migration(db)
-	assert.NoError(t, err)
+	err := Migration(s.db)
+	s.Require().NoError(err)
 
 	// Verify that tables were created
 	for _, model := range []interface{}{
@@ -29,6 +49,6 @@ func TestMigration(t *testing.T) {
 		&models.NotificationSettings{},
 		&models.Notification{},
 	} {
-		assert.True(t, db.Migrator().HasTable(model), "Table for model should exist")
+		s.True(s.db.Migrator().HasTable(model), "Table for model %T should exist", model)
 	}
 }

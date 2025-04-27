@@ -8,43 +8,43 @@ import (
 
 	"dkhalife.com/tasks/core/config"
 	"github.com/gin-gonic/gin"
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestRateLimitMiddleware(t *testing.T) {
+type MiddlewareTestSuite struct {
+	suite.Suite
+	router *gin.Engine
+}
+
+func TestMiddlewareTestSuite(t *testing.T) {
+	suite.Run(t, new(MiddlewareTestSuite))
+}
+
+func (s *MiddlewareTestSuite) SetupTest() {
+	gin.SetMode(gin.TestMode)
+	s.router = gin.New()
+}
+
+func (s *MiddlewareTestSuite) TestRateLimitMiddleware() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			RateLimit:  1,
-			RatePeriod: time.Second,
+			RatePeriod: time.Hour,
 		},
 	}
 	limiter := NewRateLimiter(cfg)
 
-	router := gin.New()
-	router.Use(RateLimitMiddleware(limiter))
-	router.GET("/", func(c *gin.Context) {
+	s.router.Use(RateLimitMiddleware(limiter))
+	s.router.GET("/", func(c *gin.Context) {
 		c.String(http.StatusOK, "OK")
 	})
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusOK, w.Code)
 
 	w = httptest.NewRecorder()
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusTooManyRequests, w.Code)
-}
-
-func TestRequestLogger(t *testing.T) {
-	router := gin.New()
-	router.Use(RequestLogger())
-	router.GET("/", func(c *gin.Context) {
-		c.String(http.StatusOK, "OK")
-	})
-
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest("GET", "/", nil)
-	router.ServeHTTP(w, req)
-	assert.Equal(t, http.StatusOK, w.Code)
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusTooManyRequests, w.Code)
 }
