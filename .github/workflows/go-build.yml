@@ -34,10 +34,9 @@ jobs:
       run: golangci-lint run
 
     - name: Run Tests and Generate Coverage
-      run: go test -v -coverprofile=coverage.out ./...
+      run: go test -v -coverprofile=coverage.txt ./...
 
-    - name: Upload Coverage Report
-      uses: actions/upload-artifact@v3
+    - name: Upload coverage reports to Codecov
+      uses: codecov/codecov-action@v5
       with:
-        name: coverage-report
-        path: coverage.out
+        token: ${{ secrets.CODECOV_TOKEN }}
