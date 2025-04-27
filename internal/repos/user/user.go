@@ -219,7 +219,7 @@ func (r *UserRepository) GetAppTokensNearingExpiration(c context.Context, before
 	var tokens []*models.AppToken
 	if err := r.db.WithContext(c).
 		Where("expires_at > ?", lowerBound).
-		Where("expires_at <= ?", lowerBound.Add(before)).
+		Where("expires_at <= ?", lowerBound.Add(2*before)).
 		Preload("User").
 		Find(&tokens).Error; err != nil {
 		return nil, err

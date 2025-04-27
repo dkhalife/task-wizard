@@ -3,31 +3,39 @@ package auth
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/suite"
 )
 
-func TestEncodePasswordAndMatches(t *testing.T) {
-	password := "securepassword"
-	hashedPassword, err := EncodePassword(password)
-	assert.NoError(t, err)
-	assert.NoError(t, Matches(hashedPassword, password))
-	assert.Error(t, Matches(hashedPassword, "wrongpassword"))
+type AuthTestSuite struct {
+	suite.Suite
 }
 
-func TestEncodeAndDecodeEmailAndCode(t *testing.T) {
+func TestAuthTestSuite(t *testing.T) {
+	suite.Run(t, new(AuthTestSuite))
+}
+
+func (s *AuthTestSuite) TestEncodePasswordAndMatches() {
+	password := "securepassword"
+	hashedPassword, err := EncodePassword(password)
+	s.Require().NoError(err)
+	s.NoError(Matches(hashedPassword, password))
+	s.Error(Matches(hashedPassword, "wrongpassword"))
+}
+
+func (s *AuthTestSuite) TestEncodeAndDecodeEmailAndCode() {
 	email := "user@example.com"
 	code := "reset-code"
 
 	encoded := EncodeEmailAndCode(email, code)
 	decodedEmail, decodedCode, err := DecodeEmailAndCode(encoded)
 
-	assert.NoError(t, err)
-	assert.Equal(t, email, decodedEmail)
-	assert.Equal(t, code, decodedCode)
+	s.Require().NoError(err)
+	s.Equal(email, decodedEmail)
+	s.Equal(code, decodedCode)
 }
 
-func TestGenerateEmailResetToken(t *testing.T) {
+func (s *AuthTestSuite) TestGenerateEmailResetToken() {
 	token, err := GenerateEmailResetToken(nil)
-	assert.NoError(t, err)
-	assert.NotEmpty(t, token)
+	s.NoError(err)
+	s.NotEmpty(token)
 }

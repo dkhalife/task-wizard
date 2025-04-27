@@ -1,0 +1,40 @@
+package test
+
+import (
+	"fmt"
+	"log"
+	"os"
+	"time"
+
+	"dkhalife.com/tasks/core/internal/utils/migration"
+	"github.com/stretchr/testify/suite"
+	"gorm.io/driver/sqlite"
+	"gorm.io/gorm"
+)
+
+type DatabaseTestSuite struct {
+	suite.Suite
+	DB         *gorm.DB
+	dbFilePath string
+}
+
+func (suite *DatabaseTestSuite) SetupTest() {
+	suite.dbFilePath = fmt.Sprintf("%s/testdb_%d.db", os.TempDir(), time.Now().UnixNano())
+	db, err := gorm.Open(sqlite.Open(suite.dbFilePath), &gorm.Config{})
+	suite.Require().NoError(err)
+
+	err = migration.Migration(db)
+	suite.Require().NoError(err)
+
+	suite.DB = db
+}
+
+func (suite *DatabaseTestSuite) TearDownTest() {
+	// Close the database connection
+	db, err := suite.DB.DB()
+	if err != nil {
+		log.Printf("failed to get database connection: %v", err)
+		return
+	}
+	db.Close()
+}
