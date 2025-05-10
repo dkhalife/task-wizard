@@ -32,6 +32,8 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 🗝️ Fine-grained access tokens for endless integration possibilities
 
+🌐 Authenticated CalDAV endpoint at `/dav/tasks` with app token as the password
+
 ## 🚀 Installation
 
 ### 🚢 Using Docker Compose (recommended)
@@ -71,6 +73,8 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 ## ⚙️ Configuration
 
 In the [config](./config/) directory are a couple of starter configuration files for prod and a dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
+
+**Note:** You can set `email.password` and `jwt.secret` using environment variables `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility.
 
 The configuration files are yaml mappings with the following values:
 
