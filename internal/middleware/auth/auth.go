@@ -22,7 +22,7 @@ type signIn struct {
 	Password string `form:"password" json:"password" binding:"required"`
 }
 
-func NewAuthMiddleware(cfg *config.Config, userRepo *uRepo.UserRepository) (*jwt.GinJWTMiddleware, error) {
+func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJWTMiddleware, error) {
 	return jwt.New(&jwt.GinJWTMiddleware{
 		Realm:       "Task Wizard",
 		Key:         []byte(cfg.Jwt.Secret),

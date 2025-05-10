@@ -25,7 +25,9 @@ type EmailSender struct {
 	Password string
 }
 
-func NewEmailSender(conf *config.Config) *EmailSender {
+var _ IEmailSender = (*EmailSender)(nil)
+
+func NewEmailSender(conf *config.Config) IEmailSender {
 	return &EmailSender{
 		AppHost:  conf.Server.HostName,
 		Host:     conf.EmailConfig.Host,

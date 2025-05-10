@@ -29,6 +29,7 @@ type IUserRepo interface {
 	DeleteStalePasswordResets(c context.Context) error
 	GetAppTokensNearingExpiration(c context.Context, before time.Duration) ([]*models.AppToken, error)
 	DeleteStaleAppTokens(c context.Context) error
+	GetLastCreatedOrModifiedForUserResources(c context.Context, userID int) (string, error)
 }
 
 type UserRepository struct {
@@ -36,7 +37,9 @@ type UserRepository struct {
 	db  *gorm.DB
 }
 
-func NewUserRepository(db *gorm.DB, cfg *config.Config) *UserRepository {
+var _ IUserRepo = (*UserRepository)(nil)
+
+func NewUserRepository(db *gorm.DB, cfg *config.Config) IUserRepo {
 	return &UserRepository{cfg, db}
 }
 
@@ -256,12 +259,8 @@ func (r *UserRepository) GetLastCreatedOrModifiedForUserResources(c context.Cont
 	err := r.db.WithContext(c).Raw(`
 		SELECT 
 			MAX(
-				MAX(
-					COALESCE(MAX(labels.updated_at), '1970-01-01 00:00:00'),
-					COALESCE(MAX(labels.created_at), '1970-01-01 00:00:00'),
-					COALESCE(MAX(tasks.updated_at), '1970-01-01 00:00:00'),
-					COALESCE(MAX(tasks.created_at), '1970-01-01 00:00:00')
-				)
+				COALESCE(MAX(updated_at), '1970-01-01 00:00:00'),
+				COALESCE(MAX(created_at), '1970-01-01 00:00:00')
 			) AS last_modified
 		FROM (
 			SELECT updated_at, created_at FROM labels WHERE created_by = ?

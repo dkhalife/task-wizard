@@ -15,7 +15,7 @@ import (
 
 type UserTestSuite struct {
 	test.DatabaseTestSuite
-	repo *UserRepository
+	repo IUserRepo
 	cfg  *config.Config
 }
 
@@ -72,7 +72,7 @@ func (s *UserTestSuite) TestCreateUserRegistrationDisabled() {
 	ctx := context.Background()
 
 	// Disable registration
-	s.repo.cfg.Server.Registration = false
+	s.cfg.Server.Registration = false
 
 	user := &models.User{
 		Email:    "test@example.com",
