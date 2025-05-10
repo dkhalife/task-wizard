@@ -143,7 +143,7 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 	expiresAt := time.Now().UTC().Add(duration)
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		auth.IdentityKey: fmt.Sprintf("%d", userID),
-		"exp":            expiresAt,
+		"exp":            expiresAt.Unix(),
 		"type":           "app",
 		"scopes":         scopes,
 	})
