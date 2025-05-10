@@ -232,3 +232,20 @@ func (r *UserRepository) DeleteStaleAppTokens(c context.Context) error {
 	now := time.Now().UTC()
 	return r.db.WithContext(c).Where("expires_at <= ?", now).Delete(&models.AppToken{}).Error
 }
+
+func (r *UserRepository) GetLastCreatedOrModifiedForUserResources(c context.Context, userID int) (string, error) {
+	var result string
+	err := r.db.WithContext(c).Raw(`
+		SELECT MAX(
+			COALESCE(MAX(labels.updated_at), '1970-01-01 00:00:00'),
+			COALESCE(MAX(labels.created_at), '1970-01-01 00:00:00'),
+			COALESCE(MAX(tasks.updated_at), '1970-01-01 00:00:00'),
+			COALESCE(MAX(tasks.created_at), '1970-01-01 00:00:00')
+		) AS last_modified
+		FROM labels
+		LEFT JOIN tasks ON tasks.created_by = labels.created_by
+		WHERE labels.created_by = ?
+	`, userID).Scan(&result).Error
+
+	return result, err
+}
