@@ -8,10 +8,10 @@ import (
 )
 
 type PasswordResetCleaner struct {
-	uRepo *uRepo.UserRepository
+	uRepo uRepo.IUserRepo
 }
 
-func NewPasswordResetCleaner(ur *uRepo.UserRepository) *PasswordResetCleaner {
+func NewPasswordResetCleaner(ur uRepo.IUserRepo) *PasswordResetCleaner {
 	return &PasswordResetCleaner{
 		uRepo: ur,
 	}
