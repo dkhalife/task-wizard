@@ -183,7 +183,7 @@ func (r *CalDavRepository) PropfindUserTasks(c context.Context, userID int) (mod
 						},
 					},
 					DisplayName:         "Task Wizard",
-					CalendarTimeZone:    "UCT",
+					CalendarTimeZone:    "UTC",
 					CalendarDescription: "",
 					CalendarOrder:       "0",
 					CalendarColor:       "",
