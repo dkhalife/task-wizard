@@ -11,6 +11,12 @@ import (
 	"github.com/wneessen/go-mail"
 )
 
+type IEmailSender interface {
+	SendResetPasswordEmail(ctx context.Context, to string, code string) error
+	SendWelcomeEmail(ctx context.Context, name string, to string, activationCode string)
+	SendTokenExpirationReminder(ctx context.Context, tokenName string, to string) error
+}
+
 type EmailSender struct {
 	AppHost  string
 	Host     string

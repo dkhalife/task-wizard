@@ -13,6 +13,24 @@ import (
 	"gorm.io/gorm"
 )
 
+type IUserRepo interface {
+	CreateUser(c context.Context, user *models.User) error
+	GetUser(c context.Context, id int) (*models.User, error)
+	FindByEmail(c context.Context, email string) (*models.User, error)
+	SetPasswordResetToken(c context.Context, email string, token string) error
+	ActivateAccount(c context.Context, email string, code string) (bool, error)
+	UpdatePasswordByToken(ctx context.Context, email string, token string, password string) error
+	CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope, days int) (*models.AppToken, error)
+	GetAllUserTokens(c context.Context, userID int) ([]*models.AppToken, error)
+	DeleteAppToken(c context.Context, userID int, tokenID string) error
+	UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error
+	DeleteNotificationsForUser(c context.Context, userID int) error
+	UpdatePasswordByUserId(c context.Context, userID int, password string) error
+	DeleteStalePasswordResets(c context.Context) error
+	GetAppTokensNearingExpiration(c context.Context, before time.Duration) ([]*models.AppToken, error)
+	DeleteStaleAppTokens(c context.Context) error
+}
+
 type UserRepository struct {
 	cfg *config.Config
 	db  *gorm.DB
@@ -143,7 +161,7 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 	expiresAt := time.Now().UTC().Add(duration)
 	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		auth.IdentityKey: fmt.Sprintf("%d", userID),
-		"exp":            expiresAt,
+		"exp":            expiresAt.Unix(),
 		"type":           "app",
 		"scopes":         scopes,
 	})
