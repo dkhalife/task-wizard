@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"dkhalife.com/tasks/core/config"
@@ -98,6 +99,10 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJW
 			return false
 		},
 		Unauthorized: func(c *gin.Context, code int, message string) {
+			if strings.HasPrefix(c.Request.URL.Path, "/dav") {
+				c.Header("WWW-Authenticate", `Basic realm="Task Wizard"`)
+			}
+
 			c.JSON(code, gin.H{
 				"error": message,
 			})

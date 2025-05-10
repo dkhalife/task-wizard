@@ -52,6 +52,8 @@ const (
 	ApiTokenScopeUserRead   ApiTokenScope = "user:read"
 	ApiTokenScopeUserWrite  ApiTokenScope = "user:write"
 	ApiTokenScopeTokenWrite ApiTokenScope = "token:write"
+	ApiTokenScopeDavRead    ApiTokenScope = "dav:read"
+	ApiTokenScopeDavWrite   ApiTokenScope = "dav:write"
 )
 
 type AppToken struct {
