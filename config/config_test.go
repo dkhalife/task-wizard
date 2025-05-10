@@ -10,14 +10,13 @@ import (
 )
 
 func TestLoadConfig_Success(t *testing.T) {
-	os.MkdirAll("./config", 0755)
+	_ = os.MkdirAll("./config", 0755)
 	f, err := os.Create("./config/config.yaml")
-	if err != nil {
-		t.Fatalf("failed to create config.yaml: %v", err)
-	}
+	assert.NoError(t, err, "failed to create config.yaml")
+
 	defer os.Remove("./config/config.yaml")
 	defer f.Close()
-	f.WriteString(`server:
+	_, err = f.WriteString(`server:
   port: 1234
   log_level: debug
   registration: true
@@ -42,6 +41,8 @@ email:
   email: test@example.com
   password: testpass
 `)
+
+	assert.NoError(t, err)
 
 	viper.Reset()
 	cfg := LoadConfig()
@@ -71,10 +72,10 @@ email:
 }
 
 func TestLoadConfig_PanicOnMissingFile(t *testing.T) {
-	os.Remove("./config/config.yaml")
+	_ = os.Remove("./config/config.yaml")
 	viper.Reset()
-	defer func() {
-		recover() // expect panic
-	}()
-	LoadConfig()
+
+	assert.Panics(t, func() {
+		_ = LoadConfig()
+	})
 }
