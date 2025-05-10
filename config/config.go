@@ -56,6 +56,10 @@ func LoadConfig() *Config {
 	viper.AddConfigPath("./config")
 	viper.SetConfigType("yaml")
 
+	// Allow values with secrets to be set via environment variables
+	viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
+	viper.BindEnv("email.password", "TW_EMAIL_PASSWORD")
+
 	err := viper.ReadInConfig()
 	if err != nil {
 		panic(err)
