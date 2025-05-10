@@ -12,11 +12,11 @@ import (
 
 type AppTokenCleaner struct {
 	cfg   *config.Config
-	uRepo *uRepo.UserRepository
-	es    *email.EmailSender
+	uRepo uRepo.IUserRepo
+	es    email.IEmailSender
 }
 
-func NewAppTokenCleaner(cfg *config.Config, ur *uRepo.UserRepository, es *email.EmailSender) *AppTokenCleaner {
+func NewAppTokenCleaner(cfg *config.Config, ur uRepo.IUserRepo, es email.IEmailSender) *AppTokenCleaner {
 	return &AppTokenCleaner{
 		cfg:   cfg,
 		uRepo: ur,
