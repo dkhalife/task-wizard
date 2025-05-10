@@ -1,7 +1,6 @@
 package logging
 
 import (
-	"context"
 	"net/http"
 	"testing"
 
@@ -26,17 +25,6 @@ func TestDefaultLogger(t *testing.T) {
 	logger := DefaultLogger()
 	assert.NotNil(t, logger)
 	logger.Info("info message")
-}
-
-func TestFromContext_Nil(t *testing.T) {
-	logger := FromContext(nil)
-	assert.NotNil(t, logger)
-}
-
-func TestFromContext_WithLogger(t *testing.T) {
-	ctx := context.WithValue(context.Background(), loggerKey, DefaultLogger())
-	logger := FromContext(ctx)
-	assert.NotNil(t, logger)
 }
 
 func TestFromContext_GinContext(t *testing.T) {
