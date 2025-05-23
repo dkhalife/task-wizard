@@ -74,6 +74,10 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJW
 				return nil
 			}
 
+			tokenType, ok := claims["type"].(string)
+			if !ok {
+				return nil
+			}
 			scopesRaw, ok := claims["scopes"].([]interface{})
 			if !ok {
 				return nil
@@ -85,10 +89,19 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJW
 					scopes = append(scopes, models.ApiTokenScope(s))
 				}
 			}
+			// For app tokens, verify the token exists in the database
+			if tokenType == "app" {
+				authHeader := c.GetHeader("Authorization")
+			var identityType models.IdentityType
+			if tokenType == "app" {
+				identityType = models.IdentityTypeApp
+			} else {
+				identityType = models.IdentityTypeUser
+			}
 
 			return &models.SignedInIdentity{
 				UserID: userID,
-				Type:   models.IdentityTypeUser,
+				Type:   identityType,
 				Scopes: scopes,
 			}
 		},
