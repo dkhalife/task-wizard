@@ -9,6 +9,7 @@ type Task struct {
 	Title        string                     `json:"title" gorm:"column:title;not null"`
 	Frequency    Frequency                  `json:"frequency" gorm:"embedded;embeddedPrefix:frequency_"`
 	NextDueDate  *time.Time                 `json:"next_due_date" gorm:"column:next_due_date;index"`
+	EndDate      *time.Time                 `json:"end_date" gorm:"column:end_date;default:NULL"`
 	IsRolling    bool                       `json:"is_rolling" gorm:"column:is_rolling;default:false"`
 	CreatedBy    int                        `json:"-" gorm:"column:created_by;not null"`
 	IsActive     bool                       `json:"-" gorm:"column:is_active;default:true"`

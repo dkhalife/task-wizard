@@ -65,6 +65,39 @@ func (s *TaskTestSuite) TestCreateTask() {
 	s.Equal(string(models.RepeatOnce), string(savedTask.Frequency.Type))
 }
 
+func (s *TaskTestSuite) TestCreateTaskWithEndDate() {
+	ctx := context.Background()
+	dueDate := time.Now().Add(24 * time.Hour)
+	endDate := time.Now().Add(30 * 24 * time.Hour) // 30 days from now
+
+	task := &models.Task{
+		Title:       "Recurring Task with End Date",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		EndDate:     &endDate,
+		IsRolling:   false,
+		IsActive:    true,
+		Frequency: models.Frequency{
+			Type: models.RepeatWeekly,
+		},
+	}
+
+	id, err := s.repo.CreateTask(ctx, task)
+	s.Require().NoError(err)
+	s.Require().Greater(id, 0)
+
+	var savedTask models.Task
+	err = s.DB.First(&savedTask, id).Error
+	s.Require().NoError(err)
+	s.Equal("Recurring Task with End Date", savedTask.Title)
+	s.Equal(s.testUser.ID, savedTask.CreatedBy)
+	s.WithinDuration(*savedTask.NextDueDate, dueDate, time.Second)
+	s.WithinDuration(*savedTask.EndDate, endDate, time.Second)
+	s.Equal(false, savedTask.IsRolling)
+	s.Equal(true, savedTask.IsActive)
+	s.Equal(string(models.RepeatWeekly), string(savedTask.Frequency.Type))
+}
+
 func (s *TaskTestSuite) TestUpsertTask() {
 	ctx := context.Background()
 	dueDate := time.Now().Add(24 * time.Hour)
@@ -474,6 +507,18 @@ func (s *TaskTestSuite) TestScheduleNextDueDate() {
 			completedDate: now.Add(48 * time.Hour), // Completed 2 days later
 			expectedType:  "time",
 			expectedDelta: 7 * 24 * time.Hour, // Should be 7 days from completion
+		},
+		{
+			name: "End date restriction",
+			task: &models.Task{
+				NextDueDate: &now,
+				EndDate:     &now, // End date is today
+				Frequency: models.Frequency{
+					Type: models.RepeatDaily,
+				},
+			},
+			completedDate: now,
+			expectedType:  "nil", // Should not calculate a next due date
 		},
 	}
 
