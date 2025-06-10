@@ -64,14 +64,23 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJW
 		IdentityHandler: func(c *gin.Context) interface{} {
 			claims := jwt.ExtractClaims(c)
 
-			id, ok := claims[auth.IdentityKey].(string)
+			userIDRaw, ok := claims[auth.IdentityKey].(string)
 			if !ok {
 				logging.FromContext(c).Errorw("failed to extract ID from claims")
 				return nil
 			}
-			userID, err := strconv.Atoi(id)
+			userID, err := strconv.Atoi(userIDRaw)
 			if err != nil {
 				return nil
+			}
+
+			var tokenID = 0
+			appTokenIDRaw, ok := claims[auth.AppTokenKey].(string)
+			if ok {
+				tokenID, err = strconv.Atoi(appTokenIDRaw)
+				if err != nil {
+					tokenID = 0
+				}
 			}
 
 			scopesRaw, ok := claims["scopes"].([]interface{})
@@ -87,13 +96,39 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJW
 			}
 
 			return &models.SignedInIdentity{
-				UserID: userID,
-				Type:   models.IdentityTypeUser,
-				Scopes: scopes,
+				UserID:  userID,
+				TokenID: tokenID,
+				Type:    models.IdentityType(claims["type"].(string)),
+				Scopes:  scopes,
 			}
 		},
 		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if _, ok := data.(*models.SignedInIdentity); ok {
+			if identity, ok := data.(*models.SignedInIdentity); ok {
+				if identity.Type == models.IdentityTypeUser {
+					// Check that the user still exists
+					_, err := userRepo.GetUser(c.Request.Context(), identity.UserID)
+					if err != nil {
+						logging.FromContext(c).Errorw("failed to find user", "err", err)
+						return false
+					}
+				} else if identity.Type == models.IdentityTypeApp {
+					// An app token id must be present
+					if identity.TokenID == 0 {
+						logging.FromContext(c).Errorw("app token ID is nil")
+						return false
+					}
+
+					// Check that the app token still exists
+					_, err := userRepo.GetAppTokenByID(c.Request.Context(), identity.TokenID)
+					if err != nil {
+						logging.FromContext(c).Errorw("failed to find app token", "err", err)
+						return false
+					}
+				} else {
+					logging.FromContext(c).Errorw("unknown identity type", "type", identity.Type)
+					return false
+				}
+
 				return true
 			}
 			return false

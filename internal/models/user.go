@@ -30,9 +30,10 @@ const (
 )
 
 type SignedInIdentity struct {
-	UserID int
-	Type   IdentityType
-	Scopes []ApiTokenScope
+	UserID  int
+	TokenID int
+	Type    IdentityType
+	Scopes  []ApiTokenScope
 }
 
 type UserPasswordReset struct {
