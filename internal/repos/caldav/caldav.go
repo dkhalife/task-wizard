@@ -30,12 +30,17 @@ func formatHTTPDate(t time.Time) string {
 }
 
 func generateETag(task *models.Task) string {
+	// Calculate the latest modification timestamp, this will
+	// cover all cases where data might have changed in the task
+	// or its associated labels.
 	latest := task.UpdatedAt
 	if latest == nil {
 		latest = &task.CreatedAt
 	}
 
+	labelIDs := make([]string, 0, len(task.Labels))
 	for _, label := range task.Labels {
+		labelIDs = append(labelIDs, strconv.Itoa(label.ID))
 		if label.UpdatedAt != nil && label.UpdatedAt.After(*latest) {
 			latest = label.UpdatedAt
 		} else if label.CreatedAt.After(*latest) {
@@ -43,7 +48,16 @@ func generateETag(task *models.Task) string {
 		}
 	}
 
-	hash := md5.Sum([]byte(latest.UTC().Format("20060102T150405Z")))
+	base := latest.UTC().Format("20060102T150405Z")
+
+	// Including the label ids covers the cases where association
+	// of labels to tasks changes without requiring a new date
+	// field update.
+	if len(labelIDs) > 0 {
+		base = base + ";" + strings.Join(labelIDs, ";")
+	}
+
+	hash := md5.Sum([]byte(base))
 	return fmt.Sprintf("\"%s\"", hex.EncodeToString(hash[:]))
 }
 
