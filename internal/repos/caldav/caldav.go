@@ -54,6 +54,7 @@ func generateETag(task *models.Task) string {
 	// of labels to tasks changes without requiring a new date
 	// field update.
 	if len(labelIDs) > 0 {
+		sort.Strings(labelIDs) // Ensure labelIDs are sorted for consistent ETag generation
 		base = base + ";" + strings.Join(labelIDs, ";")
 	}
 
