@@ -124,6 +124,9 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJW
 						logging.FromContext(c).Errorw("failed to find app token", "err", err)
 						return false
 					}
+				} else {
+					logging.FromContext(c).Errorw("unknown identity type", "type", identity.Type)
+					return false
 				}
 
 				return true
