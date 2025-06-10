@@ -164,7 +164,7 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 	var token *models.AppToken
 	err := r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
 		var nextID int
-		if err := tx.Raw("SELECT MAX(id)+1 AS next_id FROM app_tokens").Scan(&nextID).Error; err != nil {
+		if err := tx.Raw("SELECT COALESCE(MAX(id), 0)+1 AS next_id FROM app_tokens").Scan(&nextID).Error; err != nil {
 			return fmt.Errorf("failed to get next token id: %w", err)
 		}
 
