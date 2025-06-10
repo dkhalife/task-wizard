@@ -181,5 +181,9 @@ func ScheduleNextDueDate(task *models.Task, completedDate time.Time) (*time.Time
 		}
 	}
 
+	if task.EndDate != nil && nextDueDate.After(*task.EndDate) {
+		return nil, nil
+	}
+
 	return &nextDueDate, nil
 }
