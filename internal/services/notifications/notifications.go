@@ -40,7 +40,7 @@ func NewNotifier(cfg *config.Config, nr *nRepo.NotificationRepository) *Notifier
 	}
 }
 
-func (n *Notifier) CleanupInvalidNotifications(c context.Context) error {
+func (n *Notifier) cleanupInvalidNotifications(c context.Context) error {
 	log := logging.FromContext(c)
 	log.Debug("Cleaning up notifications for invalid or inactive tasks")
 
@@ -66,7 +66,7 @@ func (n *Notifier) CleanupInvalidNotifications(c context.Context) error {
 	return nil
 }
 
-func (n *Notifier) CleanupSentNotifications(c context.Context) error {
+func (n *Notifier) cleanupSentNotifications(c context.Context) error {
 	log := logging.FromContext(c)
 	log.Debug("Cleaning sent notifications")
 
@@ -74,6 +74,18 @@ func (n *Notifier) CleanupSentNotifications(c context.Context) error {
 	err := n.nRepo.DeleteSentNotifications(c, deleteBefore)
 	if err != nil {
 		return fmt.Errorf("error deleting sent notifications: %s", err.Error())
+	}
+
+	return nil
+}
+
+func (n *Notifier) CleanupNotifications(c context.Context) error {
+	if err := n.cleanupInvalidNotifications(c); err != nil {
+		return fmt.Errorf("error cleaning up invalid notifications: %s", err.Error())
+	}
+
+	if err := n.cleanupSentNotifications(c); err != nil {
+		return fmt.Errorf("error cleaning up sent notifications: %s", err.Error())
 	}
 
 	return nil
