@@ -20,6 +20,8 @@ scheduler_jobs:
   overdue_frequency: 24h
   password_reset_validity: 24h
   token_expiration_reminder: 72h
+  notification_cleanup: 10m
+  token_expiration_cleanup: 24h
 email:
   host: 
   port: 

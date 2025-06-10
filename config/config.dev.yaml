@@ -20,6 +20,8 @@ scheduler_jobs:
   overdue_frequency: 1m
   password_reset_validity: 1m
   token_expiration_reminder: 1m
+  notification_cleanup: 10s
+  token_expiration_cleanup: 1h
 email:
   host: 
   port: 

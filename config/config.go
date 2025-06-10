@@ -42,6 +42,8 @@ type SchedulerConfig struct {
 	OverdueFrequency        time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
 	PasswordResetValidity   time.Duration `mapstructure:"password_reset_validity" yaml:"password_reset_validity" default:"24h"`
 	TokenExpirationReminder time.Duration `mapstructure:"token_expiration_reminder" yaml:"token_expiration_reminder" default:"72h"`
+	NotificationCleanup     time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
+	TokenExpirationCleanup  time.Duration `mapstructure:"token_expiration_cleanup" yaml:"token_expiration_cleanup" default:"24h"`
 }
 
 type EmailConfig struct {

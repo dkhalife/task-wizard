@@ -40,10 +40,10 @@ func (s *Scheduler) Start(c context.Context) {
 
 	go s.runScheduler(c, "NOTIFICATION_SCHEDULER", s.notifier.GenerateOverdueNotifications, s.config.OverdueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_SENDER", s.notifier.LoadAndSendNotificationJob, s.config.DueFrequency)
-	go s.runScheduler(c, "NOTIFICATION_CLEANUP", s.notifier.CleanupSentNotifications, 2*s.config.DueFrequency)
+	go s.runScheduler(c, "NOTIFICATION_CLEANUP", s.notifier.CleanupNotifications, s.config.NotificationCleanup)
 	go s.runScheduler(c, "PASSWORD_RESET_CLEANUP", s.passwordResetCleaner.CleanupStalePasswordResets, s.config.PasswordResetValidity)
 	go s.runScheduler(c, "TOKEN_EXPIRATION_REMINDER", s.appTokenCleaner.SendTokenExpirationReminder, s.config.TokenExpirationReminder)
-	go s.runScheduler(c, "TOKEN_EXPIRATION_CLEANUP", s.appTokenCleaner.CleanupExpiredTokens, time.Duration(24)*time.Hour)
+	go s.runScheduler(c, "TOKEN_EXPIRATION_CLEANUP", s.appTokenCleaner.CleanupExpiredTokens, s.config.TokenExpirationCleanup)
 }
 
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {
