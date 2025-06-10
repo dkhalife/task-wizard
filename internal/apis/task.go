@@ -26,6 +26,7 @@ type TaskReq struct {
 	ID           string                            `json:"id"`
 	Title        string                            `json:"title" binding:"required"`
 	NextDueDate  string                            `json:"next_due_date"`
+	EndDate      string                            `json:"end_date"`
 	IsRolling    bool                              `json:"is_rolling"`
 	Frequency    models.Frequency                  `json:"frequency"`
 	Notification models.NotificationTriggerOptions `json:"notification"`
@@ -114,7 +115,6 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	}
 
 	var dueDate *time.Time
-
 	if TaskReq.NextDueDate != "" {
 		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
 		if err != nil {
@@ -129,10 +129,26 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 		dueDate = &rawDueDate
 	}
 
+	var endDate *time.Time
+	if TaskReq.EndDate != "" {
+		rawEndDate, err := time.Parse(time.RFC3339, TaskReq.EndDate)
+		if err != nil {
+			log.Errorf("error parsing end date: %s", err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "End date must be in UTC format",
+			})
+			return
+		}
+
+		rawEndDate = rawEndDate.UTC()
+		endDate = &rawEndDate
+	}
+
 	createdTask := &models.Task{
 		Title:        TaskReq.Title,
 		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
+		EndDate:      endDate,
 		CreatedBy:    currentIdentity.UserID,
 		IsRolling:    TaskReq.IsRolling,
 		IsActive:     true,
@@ -180,7 +196,6 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	}
 
 	var dueDate *time.Time
-
 	if TaskReq.NextDueDate != "" {
 		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
 		if err != nil {
@@ -193,6 +208,21 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 
 		rawDueDate = rawDueDate.UTC()
 		dueDate = &rawDueDate
+	}
+
+	var endDate *time.Time
+	if TaskReq.EndDate != "" {
+		rawEndDate, err := time.Parse(time.RFC3339, TaskReq.EndDate)
+		if err != nil {
+			log.Errorf("error parsing end date: %s", err.Error())
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "End date must be in UTC format",
+			})
+			return
+		}
+
+		rawEndDate = rawEndDate.UTC()
+		endDate = &rawEndDate
 	}
 
 	taskId, err := strconv.Atoi(TaskReq.ID)
@@ -232,6 +262,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 		Title:        TaskReq.Title,
 		Frequency:    TaskReq.Frequency,
 		NextDueDate:  dueDate,
+		EndDate:      endDate,
 		CreatedBy:    currentIdentity.UserID,
 		IsRolling:    TaskReq.IsRolling,
 		Notification: TaskReq.Notification,
