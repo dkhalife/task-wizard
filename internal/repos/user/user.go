@@ -21,6 +21,7 @@ type IUserRepo interface {
 	ActivateAccount(c context.Context, email string, code string) (bool, error)
 	UpdatePasswordByToken(ctx context.Context, email string, token string, password string) error
 	CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope, days int) (*models.AppToken, error)
+	GetAppTokenByID(c context.Context, tokenId int) (*models.AppToken, error)
 	GetAllUserTokens(c context.Context, userID int) ([]*models.AppToken, error)
 	DeleteAppToken(c context.Context, userID int, tokenID string) error
 	UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error
@@ -160,43 +161,62 @@ func convertScopesToStringArray(scopes []models.ApiTokenScope) []string {
 }
 
 func (r *UserRepository) CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope, days int) (*models.AppToken, error) {
-	duration := time.Duration(days) * 24 * time.Hour
-	expiresAt := time.Now().UTC().Add(duration)
-	jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		auth.IdentityKey: fmt.Sprintf("%d", userID),
-		"exp":            expiresAt.Unix(),
-		"type":           "app",
-		"scopes":         scopes,
+	var token *models.AppToken
+	err := r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		var nextID int
+		if err := tx.Raw("SELECT MAX(id)+1 AS next_id FROM app_tokens").Scan(&nextID).Error; err != nil {
+			return fmt.Errorf("failed to get next token id: %w", err)
+		}
+
+		for _, scope := range scopes {
+			if scope == models.ApiTokenScopeUserRead || scope == models.ApiTokenScopeUserWrite {
+				return fmt.Errorf("user scopes are not allowed")
+			}
+
+			if scope == models.ApiTokenScopeTokenWrite {
+				return fmt.Errorf("token scopes are not allowed")
+			}
+		}
+
+		duration := time.Duration(days) * 24 * time.Hour
+		expiresAt := time.Now().UTC().Add(duration)
+		jwtToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+			auth.AppTokenKey: fmt.Sprintf("%d", nextID),
+			auth.IdentityKey: fmt.Sprintf("%d", userID),
+			"exp":            expiresAt.Unix(),
+			"type":           "app",
+			"scopes":         scopes,
+		})
+
+		signedToken, err := jwtToken.SignedString([]byte(r.cfg.Jwt.Secret))
+		if err != nil {
+			return fmt.Errorf("failed to sign token: %s", err.Error())
+		}
+
+		token = &models.AppToken{
+			ID:        nextID,
+			UserID:    userID,
+			Name:      name,
+			Token:     signedToken,
+			ExpiresAt: expiresAt,
+			Scopes:    convertScopesToStringArray(scopes),
+		}
+
+		if err := tx.Create(token).Error; err != nil {
+			return fmt.Errorf("failed to save token: %s", err.Error())
+		}
+		return nil
 	})
 
-	signedToken, err := jwtToken.SignedString([]byte(r.cfg.Jwt.Secret))
-	if err != nil {
-		return nil, fmt.Errorf("failed to sign token: %s", err.Error())
+	return token, err
+}
+
+func (r *UserRepository) GetAppTokenByID(c context.Context, tokenId int) (*models.AppToken, error) {
+	var token models.AppToken
+	if err := r.db.WithContext(c).Where("id = ?", tokenId).First(&token).Error; err != nil {
+		return nil, err
 	}
-
-	for _, scope := range scopes {
-		if scope == models.ApiTokenScopeUserRead || scope == models.ApiTokenScopeUserWrite {
-			return nil, fmt.Errorf("user scopes are not allowed")
-		}
-
-		if scope == models.ApiTokenScopeTokenWrite {
-			return nil, fmt.Errorf("token scopes are not allowed")
-		}
-	}
-
-	token := &models.AppToken{
-		UserID:    userID,
-		Name:      name,
-		Token:     signedToken,
-		ExpiresAt: expiresAt,
-		Scopes:    convertScopesToStringArray(scopes),
-	}
-
-	if err := r.db.WithContext(c).Create(token).Error; err != nil {
-		return nil, fmt.Errorf("failed to save token: %s", err.Error())
-	}
-
-	return token, nil
+	return &token, nil
 }
 
 func (r *UserRepository) GetAllUserTokens(c context.Context, userID int) ([]*models.AppToken, error) {

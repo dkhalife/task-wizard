@@ -11,7 +11,8 @@ import (
 	"golang.org/x/crypto/bcrypt"
 )
 
-var IdentityKey = "id"
+var IdentityKey = "user_id"
+var AppTokenKey = "token_id"
 
 func EncodePassword(password string) (string, error) {
 	bytes, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
