@@ -40,6 +40,32 @@ func NewNotifier(cfg *config.Config, nr *nRepo.NotificationRepository) *Notifier
 	}
 }
 
+func (n *Notifier) CleanupInvalidNotifications(c context.Context) error {
+	log := logging.FromContext(c)
+	log.Debug("Cleaning up notifications for invalid or inactive tasks")
+
+	invalidNotifications, err := n.nRepo.GetNotificationsWithMissingUserOrTask(c)
+	if err != nil {
+		return fmt.Errorf("error fetching invalid notifications: %s", err.Error())
+	}
+
+	if len(invalidNotifications) == 0 {
+		return nil
+	}
+
+	ids := make([]int, 0, len(invalidNotifications))
+	for _, notif := range invalidNotifications {
+		ids = append(ids, notif.ID)
+	}
+
+	if err := n.nRepo.DeleteNotificationsByIDs(c, ids); err != nil {
+		return fmt.Errorf("error deleting invalid notifications: %s", err.Error())
+	}
+
+	log.Debugf("Deleted %d invalid/inactive notifications", len(ids))
+	return nil
+}
+
 func (n *Notifier) CleanupSentNotifications(c context.Context) error {
 	log := logging.FromContext(c)
 	log.Debug("Cleaning sent notifications")

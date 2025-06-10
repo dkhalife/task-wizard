@@ -26,8 +26,33 @@ func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, 
 	return &settings, nil
 }
 
+func (r *NotificationRepository) DeleteNotificationsByIDs(c context.Context, ids []int) error {
+	if len(ids) == 0 {
+		return nil
+	}
+
+	return r.db.WithContext(c).Where("id IN ?", ids).Delete(&models.Notification{}).Error
+}
+
 func (r *NotificationRepository) deleteAllTaskNotifications(taskID int) error {
 	return r.db.Where("task_id = ?", taskID).Delete(&models.Notification{}).Error
+}
+
+func (r *NotificationRepository) GetNotificationsWithMissingUserOrTask(c context.Context) ([]*models.Notification, error) {
+	var notifications []*models.Notification
+	err := r.db.WithContext(c).
+		Raw(`
+			SELECT n.*
+			FROM notifications n
+			LEFT JOIN users u ON n.user_id = u.id
+			LEFT JOIN tasks t ON n.task_id = t.id
+			WHERE u.id IS NULL OR t.id IS NULL
+		`).Scan(&notifications).Error
+	if err != nil {
+		return nil, err
+	}
+
+	return notifications, nil
 }
 
 func (r *NotificationRepository) BatchInsertNotifications(notifications []models.Notification) error {
