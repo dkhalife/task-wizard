@@ -37,4 +37,11 @@ func (suite *DatabaseTestSuite) TearDownTest() {
 		return
 	}
 	db.Close()
+
+	// Remove the temporary database file created for the test
+	if suite.dbFilePath != "" {
+		if err := os.Remove(suite.dbFilePath); err != nil && !os.IsNotExist(err) {
+			log.Printf("failed to remove db file %s: %v", suite.dbFilePath, err)
+		}
+	}
 }
