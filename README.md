@@ -14,7 +14,7 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 * All the user data sent by this frontend only ever goes to a single backend
 * 🔜 When data is stored, it is encrypted with a user key
-* The code is continously scanned by a CI that runs CodeQL
+* The code is continuously scanned by a CI that runs CodeQL
 * Dependencies are kept to a minimum
 * When vulnerabilities are detected in dependencies they are auto updated with Dependabot
 
