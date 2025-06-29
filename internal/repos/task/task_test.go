@@ -561,8 +561,6 @@ func (s *TaskTestSuite) TestGetCompletedTasks() {
 		}
 		err := s.DB.Create(t).Error
 		s.Require().NoError(err)
-		err = s.DB.Model(&models.Task{}).Where("id = ?", t.ID).Update("is_active", false).Error
-		s.Require().NoError(err)
 	}
 
 	var count int64
