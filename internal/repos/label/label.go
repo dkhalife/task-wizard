@@ -58,11 +58,11 @@ func (r *LabelRepository) AssignLabelsToTask(ctx context.Context, taskID int, us
 	}
 
 	return r.db.WithContext(ctx).Transaction(func(tx *gorm.DB) error {
-		if err := r.db.WithContext(ctx).Where("task_id = ?", taskID).Delete(&models.TaskLabel{}).Error; err != nil {
+		if err := tx.WithContext(ctx).Where("task_id = ?", taskID).Delete(&models.TaskLabel{}).Error; err != nil {
 			return err
 		}
 
-		if err := r.db.WithContext(ctx).Create(&taskLabels).Error; err != nil {
+		if err := tx.WithContext(ctx).Create(&taskLabels).Error; err != nil {
 			return err
 		}
 
