@@ -210,6 +210,62 @@ func (h *CalDAVAPIHandler) handleReport(c *gin.Context) {
 	c.Data(http.StatusMultiStatus, "application/xml; charset=utf-8", data)
 }
 
+func (h *CalDAVAPIHandler) handlePut(c *gin.Context) {
+	log := logging.FromContext(c)
+
+	if !strings.HasSuffix(c.Request.URL.Path, ".ics") {
+		c.AbortWithStatus(http.StatusMethodNotAllowed)
+		return
+	}
+
+	body, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		log.Errorf("Error reading request body: %s", err.Error())
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	filename := path.Base(c.Request.URL.Path)
+	taskID, err := strconv.Atoi(strings.TrimSuffix(filename, ".ics"))
+	if err != nil {
+		log.Infof("Invalid task ID: %s", err.Error())
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	title, due, err := caldav.ParseVTODO(string(body))
+	if err != nil {
+		log.Errorf("Error parsing VTODO: %s", err.Error())
+		c.AbortWithStatus(http.StatusBadRequest)
+		return
+	}
+
+	currentIdentity := auth.CurrentIdentity(c)
+	if currentIdentity == nil {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	task, err := h.tRepo.GetTask(c, taskID)
+	if err != nil {
+		c.AbortWithStatus(http.StatusNotFound)
+		return
+	}
+
+	if task.CreatedBy != currentIdentity.UserID {
+		c.AbortWithStatus(http.StatusForbidden)
+		return
+	}
+
+	if err := h.cRepo.UpdateTask(c, taskID, title, due); err != nil {
+		log.Errorf("Error updating task: %s", err.Error())
+		c.AbortWithStatus(http.StatusInternalServerError)
+		return
+	}
+
+	c.Status(http.StatusNoContent)
+}
+
 func (h *CalDAVAPIHandler) handleRootRedirect(c *gin.Context) {
 	log := logging.FromContext(c)
 	log.Infof("Redirecting CalDAV %s request from / to /dav/tasks/", c.Request.Method)
@@ -242,6 +298,7 @@ func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *jwt.GinJWTMiddl
 		davRoutes.Handle("PROPFIND", "/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavRead), h.handlePropfind)
 		davRoutes.Handle("REPORT", "/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavRead), h.handleReport)
 		davRoutes.GET("/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavRead), h.handleGet)
+		davRoutes.PUT("/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavWrite), h.handlePut)
 	}
 
 	router.Handle("PROPFIND", "/", h.handleRootRedirect)

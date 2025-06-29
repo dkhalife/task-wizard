@@ -290,3 +290,15 @@ func (r *CalDavRepository) MultiGet(c context.Context, request models.CalendarMu
 
 	return response, nil
 }
+
+func (r *CalDavRepository) UpdateTask(c context.Context, taskID int, title string, dueDate *time.Time) error {
+	task, err := r.tRepo.GetTask(c, taskID)
+	if err != nil {
+		return err
+	}
+
+	task.Title = title
+	task.NextDueDate = dueDate
+
+	return r.tRepo.UpsertTask(c, task)
+}
