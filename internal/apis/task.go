@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"net/http"
@@ -551,9 +552,9 @@ func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		h.nRepo.GenerateNotifications(c, updatedTask)
-	}()
+	go func(task *models.Task) {
+		h.nRepo.GenerateNotifications(context.Background(), task)
+	}(updatedTask)
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,
