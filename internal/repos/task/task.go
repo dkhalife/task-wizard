@@ -107,6 +107,30 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *models.Task, user
 	return err
 }
 
+func (r *TaskRepository) UncompleteTask(c context.Context, taskID int) error {
+	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
+		var last models.TaskHistory
+		if err := tx.Where("task_id = ?", taskID).Order("id desc").First(&last).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Delete(&last).Error; err != nil {
+			return err
+		}
+
+		updates := map[string]interface{}{
+			"next_due_date": last.DueDate,
+			"is_active":     true,
+		}
+
+		if err := tx.Model(&models.Task{}).Where("id = ?", taskID).Updates(updates).Error; err != nil {
+			return err
+		}
+
+		return nil
+	})
+}
+
 func (r *TaskRepository) GetTaskHistory(c context.Context, taskID int) ([]*models.TaskHistory, error) {
 	var histories []*models.TaskHistory
 	if err := r.db.WithContext(c).Where("task_id = ?", taskID).Order("due_date desc").Find(&histories).Error; err != nil {
