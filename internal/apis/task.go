@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -16,6 +17,7 @@ import (
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"gorm.io/gorm"
 )
 
 type LabelReq struct {
@@ -499,6 +501,65 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	})
 }
 
+func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
+
+	rawID := c.Param("id")
+	id, err := strconv.Atoi(rawID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid task ID",
+		})
+		return
+	}
+
+	task, err := h.tRepo.GetTask(c, id)
+	if err != nil {
+		log.Errorf("error getting task: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error getting task",
+		})
+		return
+	}
+
+	if currentIdentity.UserID != task.CreatedBy {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error": "You are not allowed to update this task",
+		})
+		return
+	}
+
+	if err := h.tRepo.UncompleteTask(c, id); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "Task was not completed already"})
+			return
+		}
+		log.Errorf("error uncompleting task: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error uncompleting task",
+		})
+		return
+	}
+
+	updatedTask, err := h.tRepo.GetTask(c, id)
+	if err != nil {
+		log.Errorf("error getting updated task: %s", err.Error())
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Error getting updated task",
+		})
+		return
+	}
+
+	go func() {
+		h.nRepo.GenerateNotifications(c, updatedTask)
+	}()
+
+	c.JSON(http.StatusOK, gin.H{
+		"task": updatedTask,
+	})
+}
+
 func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 	log := logging.FromContext(c)
@@ -543,6 +604,7 @@ func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *jwt.GinJWTMiddlewa
 		tasksRoutes.GET("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTask)
 		tasksRoutes.GET("/:id/history", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.GetTaskHistory)
 		tasksRoutes.POST("/:id/do", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.completeTask)
+		tasksRoutes.POST("/:id/undo", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.uncompleteTask)
 		tasksRoutes.POST("/:id/skip", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.skipTask)
 		tasksRoutes.PUT("/:id/dueDate", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.updateDueDate)
 		tasksRoutes.DELETE("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.deleteTask)

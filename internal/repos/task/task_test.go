@@ -366,6 +366,41 @@ func (s *TaskTestSuite) TestCompleteTask() {
 	s.WithinDuration(*updatedRecurringTask.NextDueDate, nextDueDate, time.Second)
 }
 
+func (s *TaskTestSuite) TestUncompleteTask() {
+	ctx := context.Background()
+	dueDate := time.Now().Add(24 * time.Hour)
+	completedDate := time.Now()
+
+	task := &models.Task{
+		Title:       "Undo Task",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		IsActive:    true,
+		Frequency: models.Frequency{
+			Type: models.RepeatOnce,
+		},
+	}
+
+	err := s.DB.Create(task).Error
+	s.Require().NoError(err)
+
+	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, nil, &completedDate)
+	s.Require().NoError(err)
+
+	err = s.repo.UncompleteTask(ctx, task.ID)
+	s.Require().NoError(err)
+
+	var updatedTask models.Task
+	err = s.DB.First(&updatedTask, task.ID).Error
+	s.Require().NoError(err)
+	s.True(updatedTask.IsActive)
+	s.WithinDuration(dueDate, *updatedTask.NextDueDate, time.Second)
+
+	var count int64
+	s.DB.Model(&models.TaskHistory{}).Where("task_id = ?", task.ID).Count(&count)
+	s.Equal(int64(0), count)
+}
+
 func (s *TaskTestSuite) TestGetTaskHistory() {
 	ctx := context.Background()
 	dueDate := time.Now().Add(-24 * time.Hour) // Due yesterday
