@@ -2,6 +2,7 @@ package repos
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -547,4 +548,48 @@ func (s *TaskTestSuite) TestScheduleNextDueDate() {
 			}
 		})
 	}
+}
+
+func (s *TaskTestSuite) TestGetCompletedTasks() {
+	ctx := context.Background()
+
+	for i := 0; i < 5; i++ {
+		t := &models.Task{
+			Title:     fmt.Sprintf("Task %d", i+1),
+			CreatedBy: s.testUser.ID,
+			IsActive:  false,
+		}
+		err := s.DB.Create(t).Error
+		s.Require().NoError(err)
+		err = s.DB.Model(&models.Task{}).Where("id = ?", t.ID).Update("is_active", false).Error
+		s.Require().NoError(err)
+	}
+
+	var count int64
+	err := s.DB.Model(&models.Task{}).Where("created_by = ? AND is_active = 0", s.testUser.ID).Count(&count).Error
+	s.Require().NoError(err)
+	s.Require().Equal(int64(5), count)
+
+	anotherUser := &models.User{Email: "other@example.com", Password: "pass"}
+	err = s.DB.Create(anotherUser).Error
+	s.Require().NoError(err)
+	otherTask := &models.Task{Title: "Other", CreatedBy: anotherUser.ID, IsActive: false}
+	err = s.DB.Create(otherTask).Error
+	s.Require().NoError(err)
+
+	tasks, err := s.repo.GetCompletedTasks(ctx, s.testUser.ID, 2, 0)
+	s.Require().NoError(err)
+	s.Len(tasks, 2)
+	s.Equal("Task 5", tasks[0].Title)
+	s.Equal("Task 4", tasks[1].Title)
+
+	tasks, err = s.repo.GetCompletedTasks(ctx, s.testUser.ID, 2, 2)
+	s.Require().NoError(err)
+	s.Len(tasks, 2)
+	s.Equal("Task 3", tasks[0].Title)
+	s.Equal("Task 2", tasks[1].Title)
+
+	tasks, err = s.repo.GetCompletedTasks(ctx, s.testUser.ID, 2, 10)
+	s.Require().NoError(err)
+	s.Len(tasks, 0)
 }

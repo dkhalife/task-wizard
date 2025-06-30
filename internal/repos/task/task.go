@@ -54,6 +54,22 @@ func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*models.Task
 	return tasks, nil
 }
 
+func (r *TaskRepository) GetCompletedTasks(c context.Context, userID int, limit int, offset int) ([]*models.Task, error) {
+	var tasks []*models.Task
+
+	if err := r.db.WithContext(c).
+		Where("created_by = ? AND is_active = 0", userID).
+		Order("id DESC").
+		Offset(offset).
+		Limit(limit).
+		Preload("Labels").
+		Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func (r *TaskRepository) DeleteTask(c context.Context, id int) error {
 	r.db.WithContext(c).Where("task_id = ?", id)
 	return r.db.WithContext(c).Delete(&models.Task{}, id).Error
