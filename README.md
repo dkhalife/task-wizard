@@ -74,7 +74,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 In the [config](./config/) directory are a couple of starter configuration files for prod and a dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.password` and `jwt.secret` using environment variables `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility.
+**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password` and `jwt.secret` using environment variables `TW_EMAIL_HOST`, `TW_EMAIL_PORT`, `TW_EMAIL_SENDER`, `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility.
 
 The configuration files are yaml mappings with the following values:
 

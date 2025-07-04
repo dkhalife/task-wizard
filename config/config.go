@@ -60,6 +60,9 @@ func LoadConfig() *Config {
 
 	// Allow values with secrets to be set via environment variables
 	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
+	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
+	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
+	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
 	_ = viper.BindEnv("email.password", "TW_EMAIL_PASSWORD")
 
 	err := viper.ReadInConfig()

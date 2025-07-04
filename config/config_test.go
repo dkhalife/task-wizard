@@ -79,3 +79,41 @@ func TestLoadConfig_PanicOnMissingFile(t *testing.T) {
 		_ = LoadConfig()
 	})
 }
+
+func TestLoadConfig_EmailEnvOverride(t *testing.T) {
+	_ = os.MkdirAll("./config", 0755)
+	f, err := os.Create("./config/config.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("./config/config.yaml")
+	defer f.Close()
+
+	_, err = f.WriteString(`email:
+  host: smtp.example.com
+  port: 25
+  email: test@example.com
+  password: testpass
+server:
+  port: 1234
+jwt:
+  secret: secret
+`)
+	assert.NoError(t, err)
+
+	os.Setenv("TW_EMAIL_HOST", "smtp.override.com")
+	os.Setenv("TW_EMAIL_PORT", "2525")
+	os.Setenv("TW_EMAIL_SENDER", "override@example.com")
+	os.Setenv("TW_EMAIL_PASSWORD", "overridepass")
+
+	viper.Reset()
+	cfg := LoadConfig()
+
+	assert.Equal(t, "smtp.override.com", cfg.EmailConfig.Host)
+	assert.Equal(t, 2525, cfg.EmailConfig.Port)
+	assert.Equal(t, "override@example.com", cfg.EmailConfig.Email)
+	assert.Equal(t, "overridepass", cfg.EmailConfig.Password)
+
+	os.Unsetenv("TW_EMAIL_HOST")
+	os.Unsetenv("TW_EMAIL_PORT")
+	os.Unsetenv("TW_EMAIL_SENDER")
+	os.Unsetenv("TW_EMAIL_PASSWORD")
+}
