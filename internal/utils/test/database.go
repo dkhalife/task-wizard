@@ -6,9 +6,10 @@ import (
 	"os"
 	"time"
 
+	"dkhalife.com/tasks/core/config"
+	dbutil "dkhalife.com/tasks/core/internal/utils/database"
 	"dkhalife.com/tasks/core/internal/utils/migration"
 	"github.com/stretchr/testify/suite"
-	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
 )
 
@@ -20,7 +21,8 @@ type DatabaseTestSuite struct {
 
 func (suite *DatabaseTestSuite) SetupTest() {
 	suite.dbFilePath = fmt.Sprintf("%s/testdb_%d.db", os.TempDir(), time.Now().UnixNano())
-	db, err := gorm.Open(sqlite.Open(suite.dbFilePath), &gorm.Config{})
+	cfg := &config.Config{Database: config.DatabaseConfig{FilePath: suite.dbFilePath}}
+	db, err := dbutil.NewDatabase(cfg)
 	suite.Require().NoError(err)
 
 	err = migration.Migration(db)
