@@ -18,6 +18,7 @@ import (
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
 
@@ -210,9 +211,10 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		h.nRepo.GenerateNotifications(c, createdTask)
-	}()
+	go func(task *models.Task, logger *zap.SugaredLogger) {
+		ctx := logging.ContextWithLogger(context.Background(), logger)
+		h.nRepo.GenerateNotifications(ctx, task)
+	}(createdTask, log)
 
 	c.JSON(http.StatusCreated, gin.H{
 		"task": id,
@@ -314,9 +316,10 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		h.nRepo.GenerateNotifications(c, updatedTask)
-	}()
+	go func(task *models.Task, logger *zap.SugaredLogger) {
+		ctx := logging.ContextWithLogger(context.Background(), logger)
+		h.nRepo.GenerateNotifications(ctx, task)
+	}(updatedTask, log)
 
 	c.JSON(http.StatusNoContent, gin.H{})
 }
@@ -401,9 +404,10 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		h.nRepo.GenerateNotifications(c, updatedTask)
-	}()
+	go func(task *models.Task, logger *zap.SugaredLogger) {
+		ctx := logging.ContextWithLogger(context.Background(), logger)
+		h.nRepo.GenerateNotifications(ctx, task)
+	}(updatedTask, log)
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,
@@ -527,9 +531,10 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
-	go func() {
-		h.nRepo.GenerateNotifications(c, updatedTask)
-	}()
+	go func(task *models.Task, logger *zap.SugaredLogger) {
+		ctx := logging.ContextWithLogger(context.Background(), logger)
+		h.nRepo.GenerateNotifications(ctx, task)
+	}(updatedTask, log)
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,
@@ -586,9 +591,10 @@ func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 		return
 	}
 
-	go func(task *models.Task) {
-		h.nRepo.GenerateNotifications(context.Background(), task)
-	}(updatedTask)
+	go func(task *models.Task, logger *zap.SugaredLogger) {
+		ctx := logging.ContextWithLogger(context.Background(), logger)
+		h.nRepo.GenerateNotifications(ctx, task)
+	}(updatedTask, log)
 
 	c.JSON(http.StatusOK, gin.H{
 		"task": updatedTask,

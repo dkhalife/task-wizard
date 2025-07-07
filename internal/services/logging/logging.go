@@ -9,9 +9,9 @@ import (
 	"go.uber.org/zap/zapcore"
 )
 
-type contextKey = string
+type contextKey string
 
-const loggerKey = contextKey("logger")
+const loggerKey contextKey = "logger"
 
 var (
 	defaultLogger     *zap.SugaredLogger
@@ -71,6 +71,13 @@ func DefaultLogger() *zap.SugaredLogger {
 		defaultLogger = NewLogger(conf)
 	})
 	return defaultLogger
+}
+
+func ContextWithLogger(ctx context.Context, logger *zap.SugaredLogger) context.Context {
+	if ctx == nil {
+		panic("nil context passed to ContextWithLogger")
+	}
+	return context.WithValue(ctx, loggerKey, logger)
 }
 
 func FromContext(ctx context.Context) *zap.SugaredLogger {
