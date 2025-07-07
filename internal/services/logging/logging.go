@@ -73,10 +73,9 @@ func DefaultLogger() *zap.SugaredLogger {
 	return defaultLogger
 }
 
-// ContextWithLogger returns a new context with the given logger attached.
 func ContextWithLogger(ctx context.Context, logger *zap.SugaredLogger) context.Context {
 	if ctx == nil {
-		ctx = context.Background()
+		panic("nil context passed to ContextWithLogger")
 	}
 	return context.WithValue(ctx, loggerKey, logger)
 }
