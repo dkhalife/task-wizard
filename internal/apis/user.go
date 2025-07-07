@@ -1,6 +1,7 @@
 package apis
 
 import (
+	"context"
 	"html"
 	"net/http"
 
@@ -16,6 +17,7 @@ import (
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	limiter "github.com/ulule/limiter/v3"
+	"go.uber.org/zap"
 )
 
 type UsersAPIHandler struct {
@@ -94,7 +96,10 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 	}
 
 	code := auth.EncodeEmailAndCode(signupReq.Email, token)
-	go h.email.SendWelcomeEmail(c, signupReq.DisplayName, signupReq.Email, code)
+	go func(name, email, code string, logger *zap.SugaredLogger) {
+		ctx := context.WithValue(context.Background(), "logger", logger)
+		h.email.SendWelcomeEmail(ctx, name, email, code)
+	}(signupReq.DisplayName, signupReq.Email, code, log)
 
 	c.JSON(http.StatusCreated, gin.H{})
 }
