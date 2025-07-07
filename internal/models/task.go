@@ -11,7 +11,7 @@ type Task struct {
 	NextDueDate  *time.Time                 `json:"next_due_date" gorm:"column:next_due_date;index"`
 	EndDate      *time.Time                 `json:"end_date" gorm:"column:end_date;default:NULL"`
 	IsRolling    bool                       `json:"is_rolling" gorm:"column:is_rolling;default:false"`
-	CreatedBy    int                        `json:"-" gorm:"column:created_by;not null"`
+	CreatedBy    int                        `json:"-" gorm:"column:created_by;not null;index"`
 	IsActive     bool                       `json:"-" gorm:"column:is_active;default:true"`
 	Notification NotificationTriggerOptions `json:"notification" gorm:"embedded;embeddedPrefix:notification_"`
 	CreatedAt    time.Time                  `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
