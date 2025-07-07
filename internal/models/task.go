@@ -24,7 +24,7 @@ type Task struct {
 
 type TaskHistory struct {
 	ID            int        `json:"id" gorm:"primary_key"`
-	TaskID        int        `json:"task_id" gorm:"column:task_id;not null"`
+	TaskID        int        `json:"task_id" gorm:"column:task_id;not null;index:idx_task_histories_task_id"`
 	CompletedDate *time.Time `json:"completed_date" gorm:"column:completed_date"`
 	DueDate       *time.Time `json:"due_date" gorm:"column:due_date"`
 }
