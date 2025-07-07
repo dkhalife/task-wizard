@@ -212,7 +212,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	}
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := logging.ContextWithLogger(context.Background(), logger)
 		h.nRepo.GenerateNotifications(ctx, task)
 	}(createdTask, log)
 
@@ -317,7 +317,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	}
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := logging.ContextWithLogger(context.Background(), logger)
 		h.nRepo.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 
@@ -405,7 +405,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	}
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := logging.ContextWithLogger(context.Background(), logger)
 		h.nRepo.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 
@@ -532,7 +532,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	}
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := logging.ContextWithLogger(context.Background(), logger)
 		h.nRepo.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 
@@ -592,7 +592,7 @@ func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 	}
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := logging.ContextWithLogger(context.Background(), logger)
 		h.nRepo.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 

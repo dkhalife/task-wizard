@@ -97,7 +97,7 @@ func (h *UsersAPIHandler) signUp(c *gin.Context) {
 
 	code := auth.EncodeEmailAndCode(signupReq.Email, token)
 	go func(name, email, code string, logger *zap.SugaredLogger) {
-		ctx := context.WithValue(context.Background(), "logger", logger)
+		ctx := logging.ContextWithLogger(context.Background(), logger)
 		h.email.SendWelcomeEmail(ctx, name, email, code)
 	}(signupReq.DisplayName, signupReq.Email, code, log)
 
