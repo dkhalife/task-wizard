@@ -7,22 +7,26 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/config"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/glebarez/sqlite"
 	"gorm.io/gorm"
 	gormLogger "gorm.io/gorm/logger"
 )
 
 func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
-	level := gormLogger.Warn
+	var level gormLogger.LogLevel
 	switch strings.ToLower(cfg.Server.LogLevel) {
-	case "debug", "info":
+	case "debug":
 		level = gormLogger.Info
+		logging.DefaultLogger().Error("DEBUG level set: SQL queries will be logged and may contain sensitive data")
 	case "warn", "warning":
 		level = gormLogger.Warn
 	case "error":
 		level = gormLogger.Error
 	case "silent":
 		level = gormLogger.Silent
+	default:
+		level = gormLogger.Warn
 	}
 
 	logger := gormLogger.New(
