@@ -59,6 +59,64 @@ func (s *WSServerTestSuite) TestHandleConnection_Authorized() {
 	s.Require().NoError(err)
 	s.Equal(http.StatusSwitchingProtocols, resp.StatusCode)
 	s.Equal(1, len(s.server.connections))
+	s.Equal(1, len(s.server.userConnections))
+
+	conn.Close()
+	time.Sleep(50 * time.Millisecond)
+
+	s.Equal(0, len(s.server.connections))
+	s.Equal(0, len(s.server.userConnections))
+}
+
+func (s *WSServerTestSuite) TestMultipleConnectionsAndCleanup() {
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Set("X-Test-Auth", "true")
+
+	conn1, _, err := websocket.DefaultDialer.Dial(url, header)
+	s.Require().NoError(err)
+	conn2, _, err := websocket.DefaultDialer.Dial(url, header)
+	s.Require().NoError(err)
+
+	s.Equal(2, len(s.server.connections))
+	s.Equal(1, len(s.server.userConnections))
+	s.Equal(2, len(s.server.userConnections[1]))
+
+	conn1.Close()
+	conn2.Close()
+	time.Sleep(50 * time.Millisecond)
+
+	s.Equal(0, len(s.server.connections))
+	s.Equal(0, len(s.server.userConnections))
+}
+
+func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
+	s.server.pingPeriod = 50 * time.Millisecond
+	s.server.pongWait = 200 * time.Millisecond
+
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Set("X-Test-Auth", "true")
+
+	conn, _, err := websocket.DefaultDialer.Dial(url, header)
+	s.Require().NoError(err)
+
+	go func() {
+		for {
+			if _, _, err := conn.ReadMessage(); err != nil {
+				return
+			}
+		}
+	}()
+
+	time.Sleep(2 * s.server.pongWait)
+	s.Equal(1, len(s.server.connections))
 
 	conn.Close()
 	time.Sleep(50 * time.Millisecond)
