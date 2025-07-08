@@ -12,7 +12,7 @@ type Task struct {
 	EndDate      *time.Time                 `json:"end_date" gorm:"column:end_date;default:NULL"`
 	IsRolling    bool                       `json:"is_rolling" gorm:"column:is_rolling;default:false"`
 	CreatedBy    int                        `json:"-" gorm:"column:created_by;not null;index:idx_tasks_created_by"`
-	IsActive     bool                       `json:"-" gorm:"column:is_active;default:true"`
+	IsActive     bool                       `json:"-" gorm:"column:is_active;default:true;index:idx_tasks_is_active"`
 	Notification NotificationTriggerOptions `json:"notification" gorm:"embedded;embeddedPrefix:notification_"`
 	CreatedAt    time.Time                  `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 	UpdatedAt    *time.Time                 `json:"-" gorm:"column:updated_at;default:NULL;autoUpdateTime"`
