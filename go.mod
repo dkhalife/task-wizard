@@ -9,6 +9,7 @@ require (
 	github.com/gin-contrib/cors v1.7.2
 	github.com/gin-gonic/gin v1.10.0
 	github.com/glebarez/sqlite v1.11.0
+	github.com/gorilla/websocket v1.5.3
 	github.com/spf13/viper v1.19.0
 	github.com/ulule/limiter/v3 v3.11.2
 	go.uber.org/fx v1.22.0
