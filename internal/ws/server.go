@@ -72,7 +72,11 @@ func (s *WSServer) listen(ctx context.Context, wsConn *websocket.Conn) {
 
 	for {
 		if _, _, err := wsConn.ReadMessage(); err != nil {
-			logging.FromContext(ctx).Errorf("websocket read error: %v", err)
+			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
+				logging.FromContext(ctx).Debugf("websocket connection closed: %v", err)
+			} else {
+				logging.FromContext(ctx).Errorf("websocket read error: %v", err)
+			}
 			return
 		}
 	}
