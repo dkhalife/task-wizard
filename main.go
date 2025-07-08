@@ -14,6 +14,7 @@ import (
 	database "dkhalife.com/tasks/core/internal/utils/database"
 	"dkhalife.com/tasks/core/internal/utils/email"
 	utils "dkhalife.com/tasks/core/internal/utils/middleware"
+	ws "dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/fx"
@@ -75,6 +76,7 @@ func main() {
 		fx.Provide(email.NewEmailSender),
 		// add handlers also
 		fx.Provide(newServer),
+		fx.Provide(ws.NewWSServer),
 		fx.Provide(scheduler.NewScheduler),
 
 		// Labels:
@@ -93,6 +95,7 @@ func main() {
 			apis.LabelRoutes,
 			apis.CalDAVRoutes,
 			apis.LogRoutes,
+			ws.Routes,
 			frontend.Routes,
 			backend.Routes,
 		),
