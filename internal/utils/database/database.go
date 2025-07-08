@@ -14,11 +14,11 @@ import (
 )
 
 func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
-	level := gormLogger.Warn
+	var level gormLogger.LogLevel
 	switch strings.ToLower(cfg.Server.LogLevel) {
 	case "debug":
 		level = gormLogger.Info
-		logging.DefaultLogger().Warn("DEBUG level set: SQL queries will be logged and may contain sensitive data")
+		logging.DefaultLogger().Error("DEBUG level set: SQL queries will be logged and may contain sensitive data")
 	case "warn", "warning":
 		level = gormLogger.Warn
 	case "error":
