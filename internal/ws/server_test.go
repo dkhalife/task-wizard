@@ -27,7 +27,7 @@ func TestWSServerTestSuite(t *testing.T) {
 
 func (s *WSServerTestSuite) SetupTest() {
 	gin.SetMode(gin.TestMode)
-	s.server = NewWSServer()
+	s.server = NewWSServer(nil, nil, nil)
 	s.router = gin.New()
 	s.router.Use(func(c *gin.Context) {
 		if c.GetHeader("X-Test-Auth") == "true" {

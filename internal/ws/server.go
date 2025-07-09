@@ -2,11 +2,15 @@ package ws
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
+	lRepo "dkhalife.com/tasks/core/internal/repos/label"
+	tRepo "dkhalife.com/tasks/core/internal/repos/task"
+	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	authutil "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
@@ -28,10 +32,13 @@ type WSServer struct {
 	userConnections map[int]map[*websocket.Conn]*connection
 	pingPeriod      time.Duration
 	pongWait        time.Duration
+	tRepo           *tRepo.TaskRepository
+	lRepo           *lRepo.LabelRepository
+	uRepo           uRepo.IUserRepo
 }
 
 // NewWSServer creates a new websocket server instance.
-func NewWSServer() *WSServer {
+func NewWSServer(tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
 	return &WSServer{
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -42,6 +49,9 @@ func NewWSServer() *WSServer {
 		userConnections: make(map[int]map[*websocket.Conn]*connection),
 		pongWait:        60 * time.Second,
 		pingPeriod:      54 * time.Second,
+		tRepo:           tRepo,
+		lRepo:           lRepo,
+		uRepo:           uRepo,
 	}
 }
 
@@ -121,7 +131,8 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 	}()
 
 	for {
-		if _, _, err := wsConn.ReadMessage(); err != nil {
+		var msg WSMessage
+		if err := wsConn.ReadJSON(&msg); err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 				logging.FromContext(ctx).Debugf("websocket connection closed: %v", err)
 			} else {
@@ -129,10 +140,22 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 			}
 			return
 		}
+
+		if err := s.handleMessage(ctx, conn, msg); err != nil {
+			resp := WSResponse{Action: msg.Action, Error: err.Error()}
+			if err := wsConn.WriteJSON(resp); err != nil {
+				logging.FromContext(ctx).Errorf("websocket write error: %v", err)
+				return
+			}
+		}
 	}
 }
 
 // Routes registers WebSocket routes.
 func Routes(router *gin.Engine, s *WSServer, auth *jwt.GinJWTMiddleware) {
 	router.GET("/api/ws", auth.MiddlewareFunc(), s.HandleConnection)
+}
+
+func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) error {
+	return fmt.Errorf("websocket action handling not implemented")
 }
