@@ -37,6 +37,21 @@ func (s *WSServerTestSuite) SetupTest() {
 	s.router.GET("/ws", s.server.HandleConnection)
 }
 
+func (s *WSServerTestSuite) dial(ts *httptest.Server) (*websocket.Conn, *http.Response, error) {
+	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+	header := http.Header{}
+	header.Set("X-Test-Auth", "true")
+	return websocket.DefaultDialer.Dial(url, header)
+}
+
+func (s *WSServerTestSuite) waitForConnections(n int) {
+	s.Eventually(func() bool {
+		s.server.mu.Lock()
+		defer s.server.mu.Unlock()
+		return len(s.server.connections) == n
+	}, time.Second, 10*time.Millisecond)
+}
+
 func (s *WSServerTestSuite) TestHandleConnection_Unauthorized() {
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest(http.MethodGet, "/ws", nil)
@@ -51,20 +66,14 @@ func (s *WSServerTestSuite) TestHandleConnection_Authorized() {
 	ts := httptest.NewServer(s.router)
 	defer ts.Close()
 
-	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
-	header := http.Header{}
-	header.Set("X-Test-Auth", "true")
-
-	conn, resp, err := websocket.DefaultDialer.Dial(url, header)
+	conn, resp, err := s.dial(ts)
 	s.Require().NoError(err)
 	s.Equal(http.StatusSwitchingProtocols, resp.StatusCode)
-	s.Equal(1, len(s.server.connections))
+	s.waitForConnections(1)
 	s.Equal(1, len(s.server.userConnections))
 
 	conn.Close()
-	time.Sleep(50 * time.Millisecond)
-
-	s.Equal(0, len(s.server.connections))
+	s.waitForConnections(0)
 	s.Equal(0, len(s.server.userConnections))
 }
 
@@ -72,24 +81,18 @@ func (s *WSServerTestSuite) TestMultipleConnectionsAndCleanup() {
 	ts := httptest.NewServer(s.router)
 	defer ts.Close()
 
-	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
-	header := http.Header{}
-	header.Set("X-Test-Auth", "true")
-
-	conn1, _, err := websocket.DefaultDialer.Dial(url, header)
+	conn1, _, err := s.dial(ts)
 	s.Require().NoError(err)
-	conn2, _, err := websocket.DefaultDialer.Dial(url, header)
+	conn2, _, err := s.dial(ts)
 	s.Require().NoError(err)
 
-	s.Equal(2, len(s.server.connections))
+	s.waitForConnections(2)
 	s.Equal(1, len(s.server.userConnections))
 	s.Equal(2, len(s.server.userConnections[1]))
 
 	conn1.Close()
 	conn2.Close()
-	time.Sleep(50 * time.Millisecond)
-
-	s.Equal(0, len(s.server.connections))
+	s.waitForConnections(0)
 	s.Equal(0, len(s.server.userConnections))
 }
 
@@ -100,11 +103,7 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 	ts := httptest.NewServer(s.router)
 	defer ts.Close()
 
-	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
-	header := http.Header{}
-	header.Set("X-Test-Auth", "true")
-
-	conn, _, err := websocket.DefaultDialer.Dial(url, header)
+	conn, _, err := s.dial(ts)
 	s.Require().NoError(err)
 
 	go func() {
@@ -119,7 +118,5 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 	s.Equal(1, len(s.server.connections))
 
 	conn.Close()
-	time.Sleep(50 * time.Millisecond)
-
-	s.Equal(0, len(s.server.connections))
+	s.waitForConnections(0)
 }

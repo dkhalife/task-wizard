@@ -76,9 +76,14 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 // listen waits for messages on a connection and removes it when closed.
 func (s *WSServer) listen(ctx context.Context, conn *connection) {
 	wsConn := conn.ws
-	wsConn.SetReadDeadline(time.Now().Add(s.pongWait))
+	if err := wsConn.SetReadDeadline(time.Now().Add(s.pongWait)); err != nil {
+		logging.FromContext(ctx).Errorf("set read deadline error: %v", err)
+	}
 	wsConn.SetPongHandler(func(string) error {
-		return wsConn.SetReadDeadline(time.Now().Add(s.pongWait))
+		if err := wsConn.SetReadDeadline(time.Now().Add(s.pongWait)); err != nil {
+			logging.FromContext(ctx).Errorf("set read deadline error: %v", err)
+		}
+		return nil
 	})
 
 	ticker := time.NewTicker(s.pingPeriod)
