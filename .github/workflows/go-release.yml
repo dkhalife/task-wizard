@@ -11,6 +11,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    environment: stable
     name: Build and Push Docker Image
     steps:
       - name: Checkout Code
