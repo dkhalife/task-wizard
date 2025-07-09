@@ -4,6 +4,7 @@ import (
 	"context"
 	"net/http"
 	"sync"
+	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/services/logging"
@@ -21,9 +22,12 @@ type connection struct {
 
 // WSServer keeps track of active websocket connections.
 type WSServer struct {
-	upgrader    websocket.Upgrader
-	mu          sync.Mutex
-	connections map[*websocket.Conn]*connection
+	upgrader        websocket.Upgrader
+	mu              sync.Mutex
+	connections     map[*websocket.Conn]*connection
+	userConnections map[int]map[*websocket.Conn]*connection
+	pingPeriod      time.Duration
+	pongWait        time.Duration
 }
 
 // NewWSServer creates a new websocket server instance.
@@ -34,7 +38,10 @@ func NewWSServer() *WSServer {
 			WriteBufferSize: 1024,
 			CheckOrigin:     func(r *http.Request) bool { return true },
 		},
-		connections: make(map[*websocket.Conn]*connection),
+		connections:     make(map[*websocket.Conn]*connection),
+		userConnections: make(map[int]map[*websocket.Conn]*connection),
+		pongWait:        60 * time.Second,
+		pingPeriod:      54 * time.Second,
 	}
 }
 
@@ -53,20 +60,63 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 		return
 	}
 
+	conn := &connection{ws: wsConn, identity: identity}
+
 	s.mu.Lock()
-	s.connections[wsConn] = &connection{ws: wsConn, identity: identity}
+	s.connections[wsConn] = conn
+	if s.userConnections[identity.UserID] == nil {
+		s.userConnections[identity.UserID] = make(map[*websocket.Conn]*connection)
+	}
+	s.userConnections[identity.UserID][wsConn] = conn
 	s.mu.Unlock()
 
-	go s.listen(c, wsConn)
+	go s.listen(c, conn)
 }
 
 // listen waits for messages on a connection and removes it when closed.
-func (s *WSServer) listen(ctx context.Context, wsConn *websocket.Conn) {
+func (s *WSServer) listen(ctx context.Context, conn *connection) {
+	wsConn := conn.ws
+	if err := wsConn.SetReadDeadline(time.Now().Add(s.pongWait)); err != nil {
+		logging.FromContext(ctx).Errorf("set read deadline error: %v", err)
+	}
+	wsConn.SetPongHandler(func(string) error {
+		if err := wsConn.SetReadDeadline(time.Now().Add(s.pongWait)); err != nil {
+			logging.FromContext(ctx).Errorf("set read deadline error: %v", err)
+		}
+		return nil
+	})
+
+	ticker := time.NewTicker(s.pingPeriod)
+	done := make(chan struct{})
+
+	go func() {
+		for {
+			select {
+			case <-ticker.C:
+				if err := wsConn.WriteMessage(websocket.PingMessage, nil); err != nil {
+					logging.FromContext(ctx).Errorf("websocket ping error: %v", err)
+					wsConn.Close()
+					return
+				}
+			case <-done:
+				return
+			}
+		}
+	}()
+
 	defer func() {
+		close(done)
+		ticker.Stop()
 		logging.FromContext(ctx).Debugf("cleaning up websocket connection")
 		wsConn.Close()
 		s.mu.Lock()
 		delete(s.connections, wsConn)
+		if uMap, ok := s.userConnections[conn.identity.UserID]; ok {
+			delete(uMap, wsConn)
+			if len(uMap) == 0 {
+				delete(s.userConnections, conn.identity.UserID)
+			}
+		}
 		s.mu.Unlock()
 	}()
 
