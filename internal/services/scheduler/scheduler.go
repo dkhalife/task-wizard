@@ -17,7 +17,7 @@ const (
 )
 
 type Scheduler struct {
-	stopChan             chan bool
+	stopChan             chan struct{}
 	notifier             *notifications.Notifier
 	passwordResetCleaner *housekeeper.PasswordResetCleaner
 	appTokenCleaner      *housekeeper.AppTokenCleaner
@@ -26,7 +26,7 @@ type Scheduler struct {
 
 func NewScheduler(cfg *config.Config, n *notifications.Notifier, prc *housekeeper.PasswordResetCleaner, atk *housekeeper.AppTokenCleaner) *Scheduler {
 	return &Scheduler{
-		stopChan:             make(chan bool),
+		stopChan:             make(chan struct{}),
 		notifier:             n,
 		passwordResetCleaner: prc,
 		appTokenCleaner:      atk,
@@ -68,5 +68,5 @@ func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c c
 }
 
 func (s *Scheduler) Stop() {
-	s.stopChan <- true
+	close(s.stopChan)
 }
