@@ -78,6 +78,13 @@ func generateCategories(task *models.Task) string {
 func generateVTODO(task *models.Task) string {
 	created := task.CreatedAt.UTC().Format("20060102T150405Z")
 
+	// Sanitize the task title for iCalendar compatibility
+	sanitizedTitle := strings.ReplaceAll(task.Title, "\r", "")
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, "\n", "")
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, "\\", "\\\\")
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, ",", "\\,")
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, ";", "\\;")
+
 	var lastModified string
 	if task.UpdatedAt != nil {
 		lastModified = task.UpdatedAt.UTC().Format("20060102T150405Z")
@@ -114,7 +121,7 @@ END:VCALENDAR`,
 		lastModified,
 		lastModified,
 		task.ID,
-		task.Title,
+		sanitizedTitle,
 		dueDate,
 		categories)
 
