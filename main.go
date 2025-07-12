@@ -166,6 +166,8 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 			return nil
 		},
 		OnStop: func(ctx context.Context) error {
+			bgScheduler.Stop()
+
 			if err := srv.Shutdown(ctx); err != nil {
 				log := logging.FromContext(ctx)
 				log.Fatalf("Server Shutdown: %s", err)
