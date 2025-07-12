@@ -67,3 +67,9 @@ type AppToken struct {
 	ExpiresAt time.Time      `json:"expires_at" gorm:"column:expires_at;default:CURRENT_TIMESTAMP"`
 	User      User           `json:"-" gorm:"foreignKey:UserID"`
 }
+
+type CreateAppTokenRequest struct {
+	Name       string          `json:"name" binding:"required"`
+	Scopes     []ApiTokenScope `json:"scopes" binding:"required"`
+	Expiration int             `json:"expiration" binding:"required"`
+}

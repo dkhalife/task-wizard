@@ -2,7 +2,6 @@ package repos
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -370,7 +369,7 @@ func (s *UserTestSuite) TestDeleteAppToken() {
 	s.Require().NoError(err)
 
 	// Delete the token
-	err = s.repo.DeleteAppToken(ctx, testUser.ID, fmt.Sprintf("%d", token.ID))
+	err = s.repo.DeleteAppToken(ctx, testUser.ID, token.ID)
 	s.Require().NoError(err)
 
 	// Verify it's deleted

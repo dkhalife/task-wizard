@@ -33,6 +33,7 @@ import (
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
 	"dkhalife.com/tasks/core/internal/services/scheduler"
+	uService "dkhalife.com/tasks/core/internal/services/users"
 	migration "dkhalife.com/tasks/core/internal/utils/migration"
 )
 
@@ -84,6 +85,7 @@ func main() {
 		fx.Provide(cRepo.NewCalDavRepository),
 		fx.Provide(lRepo.NewLabelRepository),
 		fx.Provide(lService.NewLabelService),
+		fx.Provide(uService.NewUserService),
 		fx.Provide(apis.LabelsAPI),
 		fx.Provide(apis.LogsAPI),
 		fx.Provide(apis.CalDAVAPI),

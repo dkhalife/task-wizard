@@ -23,7 +23,7 @@ type IUserRepo interface {
 	CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope, days int) (*models.AppToken, error)
 	GetAppTokenByID(c context.Context, tokenId int) (*models.AppToken, error)
 	GetAllUserTokens(c context.Context, userID int) ([]*models.AppToken, error)
-	DeleteAppToken(c context.Context, userID int, tokenID string) error
+	DeleteAppToken(c context.Context, userID int, tokenID int) error
 	UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error
 	DeleteNotificationsForUser(c context.Context, userID int) error
 	UpdatePasswordByUserId(c context.Context, userID int, password string) error
@@ -231,7 +231,7 @@ func (r *UserRepository) GetAllUserTokens(c context.Context, userID int) ([]*mod
 	return tokens, nil
 }
 
-func (r *UserRepository) DeleteAppToken(c context.Context, userID int, tokenID string) error {
+func (r *UserRepository) DeleteAppToken(c context.Context, userID int, tokenID int) error {
 	return r.db.WithContext(c).Where("id = ? AND user_id = ?", tokenID, userID).Delete(&models.AppToken{}).Error
 }
 
