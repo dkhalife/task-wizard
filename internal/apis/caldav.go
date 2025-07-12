@@ -273,7 +273,13 @@ func (h *CalDAVAPIHandler) handleRootRedirect(c *gin.Context) {
 	// Save the request body for forwarding
 	var bodyBytes []byte
 	if c.Request.Body != nil {
-		bodyBytes, _ = io.ReadAll(c.Request.Body)
+		var err error
+		bodyBytes, err = io.ReadAll(c.Request.Body)
+		if err != nil {
+			log.Errorf("Error reading request body: %s", err.Error())
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
+		}
 		c.Request.Body = io.NopCloser(bytes.NewBuffer(bodyBytes))
 	}
 
