@@ -7,9 +7,10 @@ import (
 	"testing"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
+	"dkhalife.com/tasks/core/config"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/gin-gonic/gin"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/suite"
 )
@@ -19,6 +20,7 @@ type WSServerTestSuite struct {
 	suite.Suite
 	router *gin.Engine
 	server *WSServer
+	cfg    *config.Config
 }
 
 func TestWSServerTestSuite(t *testing.T) {
@@ -27,20 +29,36 @@ func TestWSServerTestSuite(t *testing.T) {
 
 func (s *WSServerTestSuite) SetupTest() {
 	gin.SetMode(gin.TestMode)
-	s.server = NewWSServer(nil, nil, nil)
+	s.cfg = &config.Config{
+		Jwt: config.JwtConfig{
+			Secret:      "test-secret",
+			SessionTime: time.Hour,
+			MaxRefresh:  time.Hour,
+		},
+	}
+	s.server = NewWSServer(s.cfg, nil, nil, nil)
 	s.router = gin.New()
-	s.router.Use(func(c *gin.Context) {
-		if c.GetHeader("X-Test-Auth") == "true" {
-			c.Set(auth.IdentityKey, &models.SignedInIdentity{UserID: 1})
-		}
-	})
 	s.router.GET("/ws", s.server.HandleConnection)
+}
+
+func (s *WSServerTestSuite) createTestJWT(userID int) string {
+	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		auth.IdentityKey: "1",
+		"exp":            time.Now().Add(time.Hour).Unix(),
+		"type":           "user",
+		"scopes":         []string{"read", "write"},
+	})
+
+	signedToken, err := token.SignedString([]byte(s.cfg.Jwt.Secret))
+	s.Require().NoError(err)
+	return signedToken
 }
 
 func (s *WSServerTestSuite) dial(ts *httptest.Server) (*websocket.Conn, *http.Response, error) {
 	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
 	header := http.Header{}
-	header.Set("X-Test-Auth", "true")
+	jwtToken := s.createTestJWT(1)
+	header.Set("Sec-WebSocket-Protocol", "test-protocol, "+jwtToken)
 	return websocket.DefaultDialer.Dial(url, header)
 }
 
@@ -53,12 +71,18 @@ func (s *WSServerTestSuite) waitForConnections(n int) {
 }
 
 func (s *WSServerTestSuite) TestHandleConnection_Unauthorized() {
-	w := httptest.NewRecorder()
-	req, _ := http.NewRequest(http.MethodGet, "/ws", nil)
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
 
-	s.router.ServeHTTP(w, req)
-
-	s.Equal(http.StatusUnauthorized, w.Code)
+	// Try to connect without proper protocol header
+	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+	header := http.Header{}
+	// Don't set the required Sec-WebSocket-Protocol header
+	conn, _, err := websocket.DefaultDialer.Dial(url, header)
+	if conn != nil {
+		conn.Close()
+	}
+	s.Error(err)
 	s.Equal(0, len(s.server.connections))
 }
 
@@ -106,17 +130,29 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 	conn, _, err := s.dial(ts)
 	s.Require().NoError(err)
 
+	// Set up proper ping/pong handler
+	conn.SetPongHandler(func(appData string) error {
+		return nil
+	})
+
+	// Set up a goroutine to handle incoming messages
+	done := make(chan struct{})
 	go func() {
+		defer close(done)
 		for {
-			if _, _, err := conn.ReadMessage(); err != nil {
+			_, _, err := conn.ReadMessage()
+			if err != nil {
 				return
 			}
+			// The ping/pong is handled automatically by the SetPongHandler
 		}
 	}()
 
-	time.Sleep(2 * s.server.pongWait)
+	// Wait for a few ping cycles to ensure the connection stays alive
+	time.Sleep(3 * s.server.pingPeriod)
 	s.Equal(1, len(s.server.connections))
 
 	conn.Close()
+	<-done // Wait for the reading goroutine to finish
 	s.waitForConnections(0)
 }

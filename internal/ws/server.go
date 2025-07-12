@@ -26,6 +26,7 @@ import (
 type connection struct {
 	ws       *websocket.Conn
 	identity *models.SignedInIdentity
+	writeMu  sync.Mutex // Protects concurrent writes to websocket
 }
 
 // WSServer keeps track of active websocket connections.
@@ -80,7 +81,7 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 		return
 	}
 
-	token, _ := jwt.Parse(bearerToken, func(t *jwt.Token) (interface{}, error) {
+	token, err := jwt.Parse(bearerToken, func(t *jwt.Token) (interface{}, error) {
 		if jwt.GetSigningMethod("HS256") != t.Method {
 			return nil, errors.New("invalid signing algorithm")
 		}
@@ -88,16 +89,13 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 		return []byte(s.cfg.Jwt.Secret), nil
 	})
 
-	if token == nil || !token.Valid {
+	if err != nil || token == nil || !token.Valid {
 		logging.FromContext(c).Debug("token is invalid or missing")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	claims := jwt.MapClaims{}
-	for key, value := range token.Claims.(jwt.MapClaims) {
-		claims[key] = value
-	}
+	claims := token.Claims.(jwt.MapClaims)
 
 	userIdRaw, ok := claims[auth.IdentityKey]
 	if !ok {
@@ -143,6 +141,7 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 
 	scopesRaw, ok := claims["scopes"].([]interface{})
 	if !ok {
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
@@ -201,9 +200,9 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 		for {
 			select {
 			case <-ticker.C:
-				if err := wsConn.WriteMessage(websocket.PingMessage, nil); err != nil {
+				if err := conn.safeWriteMessage(websocket.PingMessage, nil); err != nil {
 					logging.FromContext(ctx).Errorf("websocket ping error: %v", err)
-					wsConn.Close()
+					conn.safeClose()
 					return
 				}
 			case <-done:
@@ -216,7 +215,7 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 		close(done)
 		ticker.Stop()
 		logging.FromContext(ctx).Debugf("cleaning up websocket connection")
-		wsConn.Close()
+		conn.safeClose()
 		s.mu.Lock()
 		delete(s.connections, wsConn)
 		if uMap, ok := s.userConnections[conn.identity.UserID]; ok {
@@ -227,15 +226,6 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 		}
 		s.mu.Unlock()
 	}()
-
-	time.Sleep(100 * time.Millisecond)
-
-	resp := WSResponse{Action: "hello"}
-	err := wsConn.WriteJSON(resp)
-	if err != nil {
-		logging.FromContext(ctx).Errorf("websocket write error: %v", err)
-		return
-	}
 
 	for {
 		var msg WSMessage
@@ -250,12 +240,33 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 
 		if err := s.handleMessage(ctx, conn, msg); err != nil {
 			resp := WSResponse{Action: msg.Action, Error: err.Error()}
-			if err := wsConn.WriteJSON(resp); err != nil {
+			if err := conn.safeWriteJSON(resp); err != nil {
 				logging.FromContext(ctx).Errorf("websocket write error: %v", err)
 				return
 			}
 		}
 	}
+}
+
+// safeWriteMessage writes a message to the websocket connection with proper synchronization.
+func (c *connection) safeWriteMessage(messageType int, data []byte) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.ws.WriteMessage(messageType, data)
+}
+
+// safeWriteJSON writes a JSON message to the websocket connection with proper synchronization.
+func (c *connection) safeWriteJSON(v interface{}) error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.ws.WriteJSON(v)
+}
+
+// safeClose closes the websocket connection with proper synchronization.
+func (c *connection) safeClose() error {
+	c.writeMu.Lock()
+	defer c.writeMu.Unlock()
+	return c.ws.Close()
 }
 
 // Routes registers WebSocket routes.
