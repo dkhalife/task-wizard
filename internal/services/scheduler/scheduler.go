@@ -10,12 +10,6 @@ import (
 	"dkhalife.com/tasks/core/internal/services/notifications"
 )
 
-type keyType string
-
-const (
-	SchedulerKey keyType = "scheduler"
-)
-
 type Scheduler struct {
 	stopChan             chan bool
 	notifier             *notifications.Notifier
