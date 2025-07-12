@@ -1,6 +1,8 @@
 package ws
 
 import (
+	"context"
+	"encoding/json"
 	"net/http"
 	"net/http/httptest"
 	"strconv"
@@ -156,4 +158,36 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 	conn.Close()
 	<-done // Wait for the reading goroutine to finish
 	s.waitForConnections(0)
+}
+
+func (s *WSServerTestSuite) TestRegisterHandler_DuplicatePanics() {
+	handler := func(ctx context.Context, conn *connection, msg WSMessage) (*WSResponse, error) {
+		return nil, nil
+	}
+
+	s.server.RegisterHandler("dup", handler)
+	s.Panics(func() { s.server.RegisterHandler("dup", handler) })
+}
+
+func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
+	s.server.RegisterHandler("echo", func(ctx context.Context, conn *connection, msg WSMessage) (*WSResponse, error) {
+		return &WSResponse{Action: "echo", Data: msg.Data}, nil
+	})
+
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	conn, _, err := s.dial(ts)
+	s.Require().NoError(err)
+	defer conn.Close()
+
+	s.waitForConnections(1)
+
+	payload := WSMessage{Action: "echo", Data: json.RawMessage(`"hello"`)}
+	s.NoError(conn.WriteJSON(payload))
+
+	var resp WSResponse
+	s.NoError(conn.ReadJSON(&resp))
+	s.Equal("echo", resp.Action)
+	s.Equal("hello", resp.Data)
 }

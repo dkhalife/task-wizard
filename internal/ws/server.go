@@ -35,6 +35,7 @@ type WSServer struct {
 	mu              sync.Mutex
 	connections     map[*websocket.Conn]*connection
 	userConnections map[int]map[*websocket.Conn]*connection
+	handlers        map[string]messageHandler
 	pingPeriod      time.Duration
 	pongWait        time.Duration
 	cfg             *config.Config
@@ -42,6 +43,8 @@ type WSServer struct {
 	lRepo           *lRepo.LabelRepository
 	uRepo           uRepo.IUserRepo
 }
+
+type messageHandler func(ctx context.Context, conn *connection, msg WSMessage) (*WSResponse, error)
 
 // NewWSServer creates a new websocket server instance.
 func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
@@ -53,6 +56,7 @@ func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.L
 		},
 		connections:     make(map[*websocket.Conn]*connection),
 		userConnections: make(map[int]map[*websocket.Conn]*connection),
+		handlers:        make(map[string]messageHandler),
 		pongWait:        60 * time.Second,
 		pingPeriod:      54 * time.Second,
 		cfg:             cfg,
@@ -60,6 +64,18 @@ func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.L
 		lRepo:           lRepo,
 		uRepo:           uRepo,
 	}
+}
+
+// RegisterHandler registers a handler for a specific action. Only one handler
+// can be registered per action. Registering multiple handlers for the same
+// action will cause a panic.
+func (s *WSServer) RegisterHandler(action string, handler messageHandler) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.handlers[action]; ok {
+		panic(fmt.Sprintf("handler already registered for action %s", action))
+	}
+	s.handlers[action] = handler
 }
 
 // HandleConnection upgrades an HTTP request to a WebSocket connection and stores the
@@ -275,7 +291,27 @@ func Routes(router *gin.Engine, s *WSServer) {
 }
 
 func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) error {
-	return fmt.Errorf("websocket action handling not implemented")
+	s.mu.Lock()
+	handler, ok := s.handlers[msg.Action]
+	s.mu.Unlock()
+
+	if !ok {
+		logging.FromContext(ctx).Errorf("no handler registered for action %s", msg.Action)
+		return nil
+	}
+
+	resp, err := handler(ctx, conn, msg)
+	if err != nil {
+		return err
+	}
+
+	if resp != nil {
+		if err := conn.safeWriteJSON(resp); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
