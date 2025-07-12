@@ -277,3 +277,15 @@ func Routes(router *gin.Engine, s *WSServer) {
 func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) error {
 	return fmt.Errorf("websocket action handling not implemented")
 }
+
+func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
+	go func() {
+		s.mu.Lock()
+		conns := s.userConnections[userID]
+		s.mu.Unlock()
+
+		for _, c := range conns {
+			_ = c.safeWriteJSON(resp)
+		}
+	}()
+}
