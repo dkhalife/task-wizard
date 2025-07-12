@@ -58,13 +58,20 @@ func (s *LabelService) CreateLabel(ctx context.Context, userId int, req models.C
 		}
 	}
 
-	return http.StatusCreated, gin.H{
+	newLabel := gin.H{
 		"label": gin.H{
 			"id":    label.ID,
 			"name":  label.Name,
 			"color": label.Color,
 		},
 	}
+
+	s.ws.BroadcastToUser(userId, ws.WSResponse{
+		Action: "label_created",
+		Data:   newLabel,
+	})
+
+	return http.StatusCreated, newLabel
 }
 
 func (s *LabelService) UpdateLabel(ctx context.Context, userId int, req models.UpdateLabelReq) (int, interface{}) {
@@ -89,13 +96,20 @@ func (s *LabelService) UpdateLabel(ctx context.Context, userId int, req models.U
 		}
 	}
 
-	return http.StatusOK, gin.H{
+	updatedLabel := gin.H{
 		"label": gin.H{
 			"id":    label.ID,
 			"name":  label.Name,
 			"color": label.Color,
 		},
 	}
+
+	s.ws.BroadcastToUser(userId, ws.WSResponse{
+		Action: "label_updated",
+		Data:   updatedLabel,
+	})
+
+	return http.StatusOK, updatedLabel
 }
 
 func (s *LabelService) DeleteLabel(ctx context.Context, userID int, labelID int) (int, interface{}) {
@@ -107,5 +121,11 @@ func (s *LabelService) DeleteLabel(ctx context.Context, userID int, labelID int)
 		}
 	}
 
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "label_deleted",
+		Data: gin.H{
+			"id": labelID,
+		},
+	})
 	return http.StatusNoContent, nil
 }
