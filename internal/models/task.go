@@ -54,3 +54,7 @@ type UpdateTaskReq struct {
 	Notification NotificationTriggerOptions `json:"notification"`
 	Labels       []int                      `json:"labels"`
 }
+
+type UpdateDueDateReq struct {
+	DueDate string `json:"due_date" binding:"required"`
+}

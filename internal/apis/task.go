@@ -1,66 +1,36 @@
 package apis
 
 import (
-	"context"
-	"errors"
-	"fmt"
 	"net/http"
 	"strconv"
-	"time"
 
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/models"
-	lRepo "dkhalife.com/tasks/core/internal/repos/label"
-	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
-	tRepo "dkhalife.com/tasks/core/internal/repos/task"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	notifications "dkhalife.com/tasks/core/internal/services/notifications"
+	tService "dkhalife.com/tasks/core/internal/services/tasks"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
-	"go.uber.org/zap"
-	"gorm.io/gorm"
 )
 
 type TasksAPIHandler struct {
-	tRepo    *tRepo.TaskRepository
-	notifier *notifications.Notifier
-	nRepo    *nRepo.NotificationRepository
-	lRepo    *lRepo.LabelRepository
+	tService *tService.TaskService
 }
 
-func TasksAPI(cr *tRepo.TaskRepository, nt *notifications.Notifier,
-	nRepo *nRepo.NotificationRepository, lRepo *lRepo.LabelRepository) *TasksAPIHandler {
+func TasksAPI(tService *tService.TaskService) *TasksAPIHandler {
 	return &TasksAPIHandler{
-		tRepo:    cr,
-		notifier: nt,
-		nRepo:    nRepo,
-		lRepo:    lRepo,
+		tService: tService,
 	}
 }
 
 func (h *TasksAPIHandler) getTasks(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	log := logging.FromContext(c)
-	tasks, err := h.tRepo.GetTasks(c, currentIdentity.UserID)
-	if err != nil {
-		log.Errorf("error getting tasks: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting tasks",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"tasks": tasks,
-	})
+	status, response := h.tService.GetUserTasks(c, currentIdentity.UserID)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) getCompletedTasks(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-
-	log := logging.FromContext(c)
 
 	limitStr := c.DefaultQuery("limit", "10")
 	pageStr := c.DefaultQuery("page", "1")
@@ -77,24 +47,13 @@ func (h *TasksAPIHandler) getCompletedTasks(c *gin.Context) {
 		return
 	}
 
-	offset := (page - 1) * limit
-
-	tasks, err := h.tRepo.GetCompletedTasks(c, currentIdentity.UserID, limit, offset)
-	if err != nil {
-		log.Errorf("error getting completed tasks: %s", err.Error())
-		c.Status(http.StatusInternalServerError)
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"tasks": tasks,
-	})
+	status, response := h.tService.GetCompletedTasks(c, currentIdentity.UserID, limit, page)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) getTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	log := logging.FromContext(c)
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -104,31 +63,13 @@ func (h *TasksAPIHandler) getTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
-		})
-		return
-	}
-
-	if currentIdentity.UserID != task.CreatedBy {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not allowed to view this task",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"task": task,
-	})
+	status, response := h.tService.GetTask(c, currentIdentity.UserID, id)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	log := logging.FromContext(c)
 	var TaskReq models.CreateTaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
@@ -137,79 +78,12 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 		return
 	}
 
-	var dueDate *time.Time
-	if TaskReq.NextDueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
-		if err != nil {
-			log.Errorf("error parsing due date: %s", err.Error())
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Due date must be in UTC format",
-			})
-			return
-		}
-
-		rawDueDate = rawDueDate.UTC()
-		dueDate = &rawDueDate
-	}
-
-	var endDate *time.Time
-	if TaskReq.EndDate != "" {
-		rawEndDate, err := time.Parse(time.RFC3339, TaskReq.EndDate)
-		if err != nil {
-			log.Errorf("error parsing end date: %s", err.Error())
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "End date must be in UTC format",
-			})
-			return
-		}
-
-		rawEndDate = rawEndDate.UTC()
-		endDate = &rawEndDate
-	}
-
-	createdTask := &models.Task{
-		Title:        TaskReq.Title,
-		Frequency:    TaskReq.Frequency,
-		NextDueDate:  dueDate,
-		EndDate:      endDate,
-		CreatedBy:    currentIdentity.UserID,
-		IsRolling:    TaskReq.IsRolling,
-		IsActive:     true,
-		Notification: TaskReq.Notification,
-	}
-	id, err := h.tRepo.CreateTask(c, createdTask)
-	createdTask.ID = id
-
-	if err != nil {
-		log.Errorf("error creating task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error creating task",
-		})
-		return
-	}
-
-	if err := h.lRepo.AssignLabelsToTask(c, createdTask.ID, currentIdentity.UserID, TaskReq.Labels); err != nil {
-		log.Errorf("error assigning labels to task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error adding labels",
-		})
-		return
-	}
-
-	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := logging.ContextWithLogger(context.Background(), logger)
-		h.nRepo.GenerateNotifications(ctx, task)
-	}(createdTask, log)
-
-	c.JSON(http.StatusCreated, gin.H{
-		"task": id,
-	})
+	status, response := h.tService.CreateTask(c, currentIdentity.UserID, TaskReq)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) editTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-
-	log := logging.FromContext(c)
 
 	var TaskReq models.UpdateTaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
@@ -219,100 +93,13 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 		return
 	}
 
-	var dueDate *time.Time
-	if TaskReq.NextDueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, TaskReq.NextDueDate)
-		if err != nil {
-			log.Errorf("error parsing due date: %s", err.Error())
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Due date must be in UTC format",
-			})
-			return
-		}
-
-		rawDueDate = rawDueDate.UTC()
-		dueDate = &rawDueDate
-	}
-
-	var endDate *time.Time
-	if TaskReq.EndDate != "" {
-		rawEndDate, err := time.Parse(time.RFC3339, TaskReq.EndDate)
-		if err != nil {
-			log.Errorf("error parsing end date: %s", err.Error())
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "End date must be in UTC format",
-			})
-			return
-		}
-
-		rawEndDate = rawEndDate.UTC()
-		endDate = &rawEndDate
-	}
-
-	taskId, err := strconv.Atoi(TaskReq.ID)
-	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid task ID",
-		})
-		return
-	}
-	oldTask, err := h.tRepo.GetTask(c, taskId)
-
-	if err != nil {
-		log.Errorf("error getting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
-		})
-		return
-	}
-
-	if currentIdentity.UserID != oldTask.CreatedBy {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not allowed to edit this task",
-		})
-		return
-	}
-
-	if err := h.lRepo.AssignLabelsToTask(c, taskId, currentIdentity.UserID, TaskReq.Labels); err != nil {
-		log.Errorf("error assigning labels to task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error adding labels",
-		})
-		return
-	}
-
-	updatedTask := &models.Task{
-		ID:           taskId,
-		Title:        TaskReq.Title,
-		Frequency:    TaskReq.Frequency,
-		NextDueDate:  dueDate,
-		EndDate:      endDate,
-		CreatedBy:    currentIdentity.UserID,
-		IsRolling:    TaskReq.IsRolling,
-		Notification: TaskReq.Notification,
-		IsActive:     oldTask.IsActive,
-	}
-
-	if err := h.tRepo.UpsertTask(c, updatedTask); err != nil {
-		log.Errorf("error upserting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error upserting task",
-		})
-		return
-	}
-
-	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := logging.ContextWithLogger(context.Background(), logger)
-		h.nRepo.GenerateNotifications(ctx, task)
-	}(updatedTask, log)
-
-	c.JSON(http.StatusNoContent, gin.H{})
+	status, response := h.tService.EditTask(c, currentIdentity.UserID, TaskReq)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	log := logging.FromContext(c)
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
@@ -322,28 +109,13 @@ func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 		return
 	}
 
-	if err := h.tRepo.IsTaskOwner(c, id, currentIdentity.UserID); err != nil {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not allowed to delete this task",
-		})
-		return
-	}
-
-	if err := h.tRepo.DeleteTask(c, id); err != nil {
-		log.Errorf("error deleting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error deleting task",
-		})
-		return
-	}
-
-	c.JSON(http.StatusNoContent, gin.H{})
+	status, response := h.tService.DeleteTask(c, currentIdentity.UserID, id)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	log := logging.FromContext(c)
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 
@@ -354,60 +126,14 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
-		})
-		return
-	}
-
-	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
-	if err != nil {
-		log.Errorf("error scheduling next due date: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error scheduling next due date",
-		})
-		return
-	}
-
-	if err := h.tRepo.CompleteTask(c, task, currentIdentity.UserID, nextDueDate, nil); err != nil {
-		log.Errorf("error completing task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error completing task",
-		})
-		return
-	}
-
-	updatedTask, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting updated task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting updated task",
-		})
-		return
-	}
-
-	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := logging.ContextWithLogger(context.Background(), logger)
-		h.nRepo.GenerateNotifications(ctx, task)
-	}(updatedTask, log)
-
-	c.JSON(http.StatusOK, gin.H{
-		"task": updatedTask,
-	})
+	status, response := h.tService.SkipTask(c, currentIdentity.UserID, id)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-	log := logging.FromContext(c)
 
-	type DueDateReq struct {
-		DueDate string `json:"due_date" binding:"required"`
-	}
-
-	var dueDateReq DueDateReq
+	var dueDateReq models.UpdateDueDateReq
 	if err := c.ShouldBindJSON(&dueDateReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -424,51 +150,12 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 		return
 	}
 
-	task, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
-		})
-		return
-	}
-
-	if currentIdentity.UserID != task.CreatedBy {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not allowed to update this task",
-		})
-	}
-
-	if dueDateReq.DueDate != "" {
-		rawDueDate, err := time.Parse(time.RFC3339, dueDateReq.DueDate)
-		if err != nil {
-			log.Errorf("error parsing due date: %s", err.Error())
-			c.JSON(http.StatusBadRequest, gin.H{
-				"error": "Due date must be in UTC format",
-			})
-			return
-		}
-
-		rawDueDate = rawDueDate.UTC()
-		task.NextDueDate = &rawDueDate
-	}
-
-	if err := h.tRepo.UpsertTask(c, task); err != nil {
-		log.Errorf("error updating due date: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error updating due date",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"task": task,
-	})
+	status, response := h.tService.UpdateDueDate(c, currentIdentity.UserID, id, dueDateReq)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-	log := logging.FromContext(c)
 
 	completeTaskID := c.Param("id")
 	id, err := strconv.Atoi(completeTaskID)
@@ -479,56 +166,12 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
-		})
-		return
-	}
-
-	var completedDate time.Time = time.Now().UTC()
-	var nextDueDate *time.Time
-	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
-	if err != nil {
-		log.Errorf("error scheduling next due date: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("Error scheduling next due date: %s", err),
-		})
-		return
-	}
-
-	if err := h.tRepo.CompleteTask(c, task, currentIdentity.UserID, nextDueDate, &completedDate); err != nil {
-		log.Errorf("error completing task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error completing task",
-		})
-		return
-	}
-
-	updatedTask, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting updated task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting updated task",
-		})
-		return
-	}
-
-	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := logging.ContextWithLogger(context.Background(), logger)
-		h.nRepo.GenerateNotifications(ctx, task)
-	}(updatedTask, log)
-
-	c.JSON(http.StatusOK, gin.H{
-		"task": updatedTask,
-	})
+	status, response := h.tService.CompleteTask(c, currentIdentity.UserID, id)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-	log := logging.FromContext(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -539,56 +182,12 @@ func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 		return
 	}
 
-	task, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task",
-		})
-		return
-	}
-
-	if currentIdentity.UserID != task.CreatedBy {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not allowed to update this task",
-		})
-		return
-	}
-
-	if err := h.tRepo.UncompleteTask(c, id); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			c.JSON(http.StatusBadRequest, gin.H{"error": "Task was not completed already"})
-			return
-		}
-		log.Errorf("error uncompleting task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error uncompleting task",
-		})
-		return
-	}
-
-	updatedTask, err := h.tRepo.GetTask(c, id)
-	if err != nil {
-		log.Errorf("error getting updated task: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting updated task",
-		})
-		return
-	}
-
-	go func(task *models.Task, logger *zap.SugaredLogger) {
-		ctx := logging.ContextWithLogger(context.Background(), logger)
-		h.nRepo.GenerateNotifications(ctx, task)
-	}(updatedTask, log)
-
-	c.JSON(http.StatusOK, gin.H{
-		"task": updatedTask,
-	})
+	status, response := h.tService.UncompleteTask(c, currentIdentity.UserID, id)
+	c.JSON(status, response)
 }
 
 func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-	log := logging.FromContext(c)
 
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
@@ -599,25 +198,8 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 		return
 	}
 
-	if err := h.tRepo.IsTaskOwner(c, id, currentIdentity.UserID); err != nil {
-		c.JSON(http.StatusForbidden, gin.H{
-			"error": "You are not allowed to view this task's history",
-		})
-		return
-	}
-
-	TaskHistory, err := h.tRepo.GetTaskHistory(c, id)
-	if err != nil {
-		log.Errorf("error getting task history: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Error getting task history",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"history": TaskHistory,
-	})
+	status, response := h.tService.GetTaskHistory(c, currentIdentity.UserID, id)
+	c.JSON(status, response)
 }
 
 func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *jwt.GinJWTMiddleware) {
