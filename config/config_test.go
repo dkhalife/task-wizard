@@ -106,6 +106,7 @@ jwt:
 	os.Setenv("TW_EMAIL_PORT", "2525")
 	os.Setenv("TW_EMAIL_SENDER", "override@example.com")
 	os.Setenv("TW_EMAIL_PASSWORD", "overridepass")
+	os.Setenv("TW_JWT_SECRET", "s3cret")
 
 	viper.Reset()
 	cfg := LoadConfig()
@@ -119,4 +120,5 @@ jwt:
 	os.Unsetenv("TW_EMAIL_PORT")
 	os.Unsetenv("TW_EMAIL_SENDER")
 	os.Unsetenv("TW_EMAIL_PASSWORD")
+	os.Unsetenv("TW_JWT_SECRET")
 }

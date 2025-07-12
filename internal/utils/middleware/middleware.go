@@ -35,7 +35,8 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 		// Use the IP as the key, which is the client IP.
 		context, err := limiter.Get(c.Request.Context(), c.ClientIP())
 		if err != nil {
-			panic(err)
+			c.AbortWithStatus(http.StatusInternalServerError)
+			return
 		}
 
 		if context.Reached {

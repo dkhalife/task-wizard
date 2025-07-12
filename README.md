@@ -72,9 +72,9 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 ## ⚙️ Configuration
 
-In the [config](./config/) directory are a couple of starter configuration files for prod and a dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
+In the [config](./config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password` and `jwt.secret` using environment variables `TW_EMAIL_HOST`, `TW_EMAIL_PORT`, `TW_EMAIL_SENDER`, `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility.
+**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password` and `jwt.secret` using environment variables `TW_EMAIL_HOST`, `TW_EMAIL_PORT`, `TW_EMAIL_SENDER`, `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
 
 The configuration files are yaml mappings with the following values:
 
@@ -83,7 +83,7 @@ The configuration files are yaml mappings with the following values:
 | `name`                                   | `"prod"`                                            | The name of the environment configuration.                                  |
 | `database.migration`                     | `true`                                              | Indicates if database migration should be performed.                        |
 | `database.path`                          | `/config/task-wizard.db`                            | The path at which to store the SQLite database.                             |
-| `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that.**   |
+| `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that or set `TW_JWT_SECRET`.**   |
 | `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
 | `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
 | `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
@@ -95,6 +95,8 @@ The configuration files are yaml mappings with the following values:
 | `server.serve_frontend`                  | `true`                                              | Indicates if the frontend should be served by the backend server.           |
 | `server.registration`                    | `true`                                              | Indicates whether new accounts can be created on the backend server.        |
 | `server.log_level`                       | `debug` when `server.debug` = `true`, else `warn`   | The min level to log (debug, info, warn, error, dpanic, panic, fatal).      |
+| `server.allowed_origins`                 | `(empty)`                                           | Origins allowed to issue cross-domain requests.                             |
+| `server.allow_credentials`               | `false`                                             | Whether cross-domain requests can include credentials.                      |
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
 | `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |

@@ -123,11 +123,15 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
-	config := cors.DefaultConfig()
-	config.AllowAllOrigins = true
-	config.AllowCredentials = true
-	config.AddAllowHeaders("Authorization", "secretkey")
-	r.Use(cors.New(config))
+	if len(cfg.Server.AllowedOrigins) > 0 {
+		corsCfg := cors.DefaultConfig()
+		corsCfg.AllowOrigins = cfg.Server.AllowedOrigins
+		if cfg.Server.AllowCorsCredentials {
+			corsCfg.AllowCredentials = true
+		}
+		corsCfg.AddAllowHeaders("Authorization")
+		r.Use(cors.New(corsCfg))
+	}
 	r.Use(utils.RequestLogger())
 
 	lc.Append(fx.Hook{
