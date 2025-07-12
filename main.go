@@ -126,7 +126,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	if len(cfg.Server.AllowedOrigins) > 0 {
 		corsCfg := cors.DefaultConfig()
 		corsCfg.AllowOrigins = cfg.Server.AllowedOrigins
-		if cfg.Server.AllowCredentials {
+		if cfg.Server.AllowCorsCredentials {
 			corsCfg.AllowCredentials = true
 		}
 		corsCfg.AddAllowHeaders("Authorization")

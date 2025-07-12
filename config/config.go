@@ -1,7 +1,7 @@
 package config
 
 import (
-       "time"
+	"time"
 
 	"github.com/spf13/viper"
 )
@@ -26,17 +26,17 @@ type JwtConfig struct {
 }
 
 type ServerConfig struct {
-	HostName         string        `mapstructure:"host_name" yaml:"host_name"`
-	Port             int           `mapstructure:"port" yaml:"port"`
-	RatePeriod       time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
-	RateLimit        int           `mapstructure:"rate_limit" yaml:"rate_limit"`
-	ReadTimeout      time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
-	WriteTimeout     time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
-	ServeFrontend    bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
-	Registration     bool          `mapstructure:"registration" yaml:"registration"`
-	LogLevel         string        `mapstructure:"log_level" yaml:"log_level"`
-	AllowedOrigins   []string      `mapstructure:"allowed_origins" yaml:"allowed_origins"`
-	AllowCredentials bool          `mapstructure:"allow_credentials" yaml:"allow_credentials"`
+	HostName             string        `mapstructure:"host_name" yaml:"host_name"`
+	Port                 int           `mapstructure:"port" yaml:"port"`
+	RatePeriod           time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
+	RateLimit            int           `mapstructure:"rate_limit" yaml:"rate_limit"`
+	ReadTimeout          time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout         time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
+	ServeFrontend        bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Registration         bool          `mapstructure:"registration" yaml:"registration"`
+	LogLevel             string        `mapstructure:"log_level" yaml:"log_level"`
+	AllowedOrigins       []string      `mapstructure:"allowed_origins" yaml:"allowed_origins"`
+	AllowCorsCredentials bool          `mapstructure:"allow_cors_credentials" yaml:"allow_cors_credentials"`
 }
 
 type SchedulerConfig struct {
@@ -78,9 +78,9 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 
-       if config.Jwt.Secret == "secret" {
-               panic("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
-       }
+	if config.Jwt.Secret == "secret" {
+		panic("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
+	}
 
 	return &config
 }
