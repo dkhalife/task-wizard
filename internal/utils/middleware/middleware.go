@@ -1,22 +1,16 @@
 package middleware
 
 import (
-	"context"
 	"encoding/base64"
 	"net/http"
 	"strconv"
 	"strings"
-	"time"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
-)
-
-const (
-	XRequestIdKey = "X-Request-ID"
 )
 
 func NewRateLimiter(cfg *config.Config) *limiter.Limiter {
@@ -47,21 +41,6 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 		c.Header("X-RateLimit-Limit", strconv.FormatInt(context.Limit, 10))
 		c.Header("X-RateLimit-Remaining", strconv.FormatInt(context.Remaining, 10))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(context.Reset, 10))
-		c.Next()
-	}
-}
-
-func TimeoutMiddleware(timeout time.Duration) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		ctx, cancel := context.WithTimeout(c.Request.Context(), timeout)
-
-		defer func() {
-			if ctx.Err() == context.DeadlineExceeded {
-				c.AbortWithStatus(http.StatusGatewayTimeout)
-			}
-			cancel()
-		}()
-		c.Request = c.Request.WithContext(ctx)
 		c.Next()
 	}
 }

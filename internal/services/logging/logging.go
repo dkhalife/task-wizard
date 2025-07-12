@@ -40,8 +40,8 @@ func SetConfig(c *Config) {
 	}
 }
 
-// NewLogger creates a new logger with the given log level
-func NewLogger(conf *Config) *zap.SugaredLogger {
+// newLogger creates a new logger with the given log level
+func newLogger(conf *Config) *zap.SugaredLogger {
 	ec := zap.NewProductionEncoderConfig()
 	ec.EncodeTime = zapcore.ISO8601TimeEncoder
 	cfg := zap.Config{
@@ -68,7 +68,7 @@ func NewLogger(conf *Config) *zap.SugaredLogger {
 
 func DefaultLogger() *zap.SugaredLogger {
 	defaultLoggerOnce.Do(func() {
-		defaultLogger = NewLogger(conf)
+		defaultLogger = newLogger(conf)
 	})
 	return defaultLogger
 }
