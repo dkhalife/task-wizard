@@ -470,7 +470,7 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 	}(updatedTask, log)
 
 	s.ws.BroadcastToUser(userID, ws.WSResponse{
-		Action: "task_updated",
+		Action: "task_uncompleted",
 		Data:   updatedTask,
 	})
 
