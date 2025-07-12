@@ -32,7 +32,7 @@ type connection struct {
 // WSServer keeps track of active websocket connections.
 type WSServer struct {
 	upgrader        websocket.Upgrader
-	mu              sync.Mutex
+	mu              sync.RWMutex
 	connections     map[*websocket.Conn]*connection
 	userConnections map[int]map[*websocket.Conn]*connection
 	handlers        map[string]messageHandler
@@ -291,9 +291,9 @@ func Routes(router *gin.Engine, s *WSServer) {
 }
 
 func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) error {
-	s.mu.Lock()
+	s.mu.RLock()
 	handler, ok := s.handlers[msg.Action]
-	s.mu.Unlock()
+	s.mu.RUnlock()
 
 	if !ok {
 		logging.FromContext(ctx).Errorf("no handler registered for action %s", msg.Action)
@@ -316,9 +316,9 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 
 func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
 	go func() {
-		s.mu.Lock()
+		s.mu.RLock()
 		conns := s.userConnections[userID]
-		s.mu.Unlock()
+		s.mu.RUnlock()
 
 		log := logging.FromContext(context.Background())
 

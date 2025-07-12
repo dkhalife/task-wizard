@@ -67,8 +67,8 @@ func (s *WSServerTestSuite) dial(ts *httptest.Server) (*websocket.Conn, *http.Re
 
 func (s *WSServerTestSuite) waitForConnections(n int) {
 	s.Eventually(func() bool {
-		s.server.mu.Lock()
-		defer s.server.mu.Unlock()
+		s.server.mu.RLock()
+		defer s.server.mu.RUnlock()
 		return len(s.server.connections) == n
 	}, time.Second, 10*time.Millisecond)
 }
