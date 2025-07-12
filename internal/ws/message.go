@@ -11,6 +11,6 @@ type WSMessage struct {
 // WSResponse represents a message sent back to the client.
 type WSResponse struct {
 	Action string      `json:"action"`
+	Status int         `json:"status"`
 	Data   interface{} `json:"data,omitempty"`
-	Error  string      `json:"error,omitempty"`
 }
