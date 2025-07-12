@@ -26,16 +26,14 @@ type UsersAPIHandler struct {
 	userRepo    uRepo.IUserRepo
 	userService *users.UserService
 	nRepo       *nRepo.NotificationRepository
-	jwtAuth     *jwt.GinJWTMiddleware
 	email       email.IEmailSender
 }
 
-func UsersAPI(ur uRepo.IUserRepo, nRepo *nRepo.NotificationRepository, us *users.UserService, jwtAuth *jwt.GinJWTMiddleware, email email.IEmailSender, config *config.Config) *UsersAPIHandler {
+func UsersAPI(ur uRepo.IUserRepo, nRepo *nRepo.NotificationRepository, us *users.UserService, email email.IEmailSender, config *config.Config) *UsersAPIHandler {
 	return &UsersAPIHandler{
 		userRepo:    ur,
 		userService: us,
 		nRepo:       nRepo,
-		jwtAuth:     jwtAuth,
 		email:       email,
 	}
 }
