@@ -81,6 +81,7 @@ func generateVTODO(task *models.Task) string {
 	// Sanitize the task title for iCalendar compatibility
 	sanitizedTitle := strings.ReplaceAll(task.Title, "\r", "")
 	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, "\n", "")
+	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, "\\", "\\\\")
 	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, ",", "\\,")
 	sanitizedTitle = strings.ReplaceAll(sanitizedTitle, ";", "\\;")
 

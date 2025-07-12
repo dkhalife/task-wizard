@@ -33,3 +33,15 @@ func TestGenerateVTODO_TitleSpecialChars(t *testing.T) {
 
 	require.Contains(t, vtodo, "SUMMARY:Task\\;with\\,chars")
 }
+
+func TestGenerateVTODO_TitleBackslash(t *testing.T) {
+	task := &models.Task{
+		ID:        3,
+		Title:     "Back\\slash",
+		CreatedAt: time.Date(2023, 1, 2, 3, 4, 5, 0, time.UTC),
+	}
+
+	vtodo := generateVTODO(task)
+
+	require.Contains(t, vtodo, "SUMMARY:Back\\\\slash")
+}
