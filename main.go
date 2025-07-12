@@ -126,7 +126,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	config := cors.DefaultConfig()
 	config.AllowAllOrigins = true
 	config.AllowCredentials = true
-	config.AddAllowHeaders("Authorization", "secretkey")
+	config.AddAllowHeaders("Authorization")
 	r.Use(cors.New(config))
 	r.Use(utils.RequestLogger())
 
