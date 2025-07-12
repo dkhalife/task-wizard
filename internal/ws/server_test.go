@@ -161,8 +161,8 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 }
 
 func (s *WSServerTestSuite) TestRegisterHandler_DuplicatePanics() {
-	handler := func(ctx context.Context, conn *connection, msg WSMessage) (*WSResponse, error) {
-		return nil, nil
+	handler := func(ctx context.Context, userID int, msg WSMessage) *WSResponse {
+		return nil
 	}
 
 	s.server.RegisterHandler("dup", handler)
@@ -170,8 +170,11 @@ func (s *WSServerTestSuite) TestRegisterHandler_DuplicatePanics() {
 }
 
 func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
-	s.server.RegisterHandler("echo", func(ctx context.Context, conn *connection, msg WSMessage) (*WSResponse, error) {
-		return &WSResponse{Action: "echo", Data: msg.Data}, nil
+	s.server.RegisterHandler("echo", func(ctx context.Context, userID int, msg WSMessage) *WSResponse {
+		return &WSResponse{
+			Action: "echo",
+			Data:   msg.Data,
+		}
 	})
 
 	ts := httptest.NewServer(s.router)
