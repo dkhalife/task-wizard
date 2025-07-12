@@ -285,12 +285,7 @@ func (h *UsersAPIHandler) DeleteUserToken(c *gin.Context) {
 func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	type Request struct {
-		Provider models.NotificationProvider       `json:"provider" binding:"required"`
-		Triggers models.NotificationTriggerOptions `json:"triggers" binding:"required"`
-	}
-
-	var req Request
+	var req models.NotificationUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -298,28 +293,8 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 		return
 	}
 
-	log := logging.FromContext(c)
-	err := h.userRepo.UpdateNotificationSettings(c, currentIdentity.UserID, req.Provider, req.Triggers)
-	if err != nil {
-		log.Errorf("failed to update notification target: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to update notification target",
-		})
-		return
-	}
-
-	if req.Provider.Provider == models.NotificationProviderNone {
-		err = h.userRepo.DeleteNotificationsForUser(c, currentIdentity.UserID)
-		if err != nil {
-			log.Errorf("failed to delete existing notification: %s", err.Error())
-			c.JSON(http.StatusInternalServerError, gin.H{
-				"error": "Failed to delete existing notification",
-			})
-			return
-		}
-	}
-
-	c.JSON(http.StatusNoContent, gin.H{})
+	status, response := h.userService.UpdateNotificationSettings(c, currentIdentity.UserID, req)
+	c.JSON(status, response)
 }
 
 func (h *UsersAPIHandler) updateUserPasswordLoggedInOnly(c *gin.Context) {

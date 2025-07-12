@@ -89,3 +89,34 @@ func (s *UserService) DeleteAppToken(ctx context.Context, userID int, tokenID in
 
 	return http.StatusNoContent, nil
 }
+
+func (s *UserService) UpdateNotificationSettings(ctx context.Context, userID int, req models.NotificationUpdateRequest) (int, interface{}) {
+	log := logging.FromContext(ctx)
+	err := s.r.UpdateNotificationSettings(ctx, userID, req.Provider, req.Triggers)
+	if err != nil {
+		log.Errorf("failed to update notification target: %s", err.Error())
+		return http.StatusInternalServerError, gin.H{
+			"error": "Failed to update notification target",
+		}
+	}
+
+	if req.Provider.Provider == models.NotificationProviderNone {
+		err = s.r.DeleteNotificationsForUser(ctx, userID)
+		if err != nil {
+			log.Errorf("failed to delete existing notification: %s", err.Error())
+			return http.StatusInternalServerError, gin.H{
+				"error": "Failed to delete existing notification",
+			}
+		}
+	}
+
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "notification_settings_updated",
+		Data: gin.H{
+			"provider": req.Provider,
+			"triggers": req.Triggers,
+		},
+	})
+
+	return http.StatusNoContent, gin.H{}
+}
