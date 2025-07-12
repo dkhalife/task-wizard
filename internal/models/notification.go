@@ -44,3 +44,8 @@ type NotificationSettings struct {
 	Provider NotificationProvider       `json:"provider" gorm:"embedded;embeddedPrefix:notifications_provider_;"`
 	Triggers NotificationTriggerOptions `json:"triggers" gorm:"embedded;embeddedPrefix:notifications_triggers_;"`
 }
+
+type NotificationUpdateRequest struct {
+	Provider NotificationProvider       `json:"provider" binding:"required"`
+	Triggers NotificationTriggerOptions `json:"triggers" binding:"required"`
+}
