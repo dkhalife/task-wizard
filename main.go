@@ -29,6 +29,7 @@ import (
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/housekeeper"
+	lService "dkhalife.com/tasks/core/internal/services/labels"
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
 	"dkhalife.com/tasks/core/internal/services/scheduler"
@@ -82,6 +83,7 @@ func main() {
 		// Labels:
 		fx.Provide(cRepo.NewCalDavRepository),
 		fx.Provide(lRepo.NewLabelRepository),
+		fx.Provide(lService.NewLabelService),
 		fx.Provide(apis.LabelsAPI),
 		fx.Provide(apis.LogsAPI),
 		fx.Provide(apis.CalDAVAPI),
