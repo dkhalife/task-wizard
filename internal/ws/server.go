@@ -44,7 +44,7 @@ type WSServer struct {
 	uRepo           uRepo.IUserRepo
 }
 
-type messageHandler func(ctx context.Context, conn *connection, msg WSMessage) (*WSResponse, error)
+type messageHandler func(ctx context.Context, userID int, msg WSMessage) *WSResponse
 
 // NewWSServer creates a new websocket server instance.
 func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
@@ -254,13 +254,7 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 			return
 		}
 
-		if err := s.handleMessage(ctx, conn, msg); err != nil {
-			resp := WSResponse{Action: msg.Action, Error: err.Error()}
-			if err := conn.safeWriteJSON(resp); err != nil {
-				logging.FromContext(ctx).Errorf("websocket write error: %v", err)
-				return
-			}
-		}
+		s.handleMessage(ctx, conn, msg)
 	}
 }
 
@@ -290,28 +284,28 @@ func Routes(router *gin.Engine, s *WSServer) {
 	router.GET("/ws", s.HandleConnection)
 }
 
-func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) error {
+func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) {
 	s.mu.RLock()
 	handler, ok := s.handlers[msg.Action]
 	s.mu.RUnlock()
 
+	log := logging.FromContext(ctx)
+
 	if !ok {
-		logging.FromContext(ctx).Errorf("no handler registered for action %s", msg.Action)
-		return nil
+		log.Errorf("no handler registered for action %s", msg.Action)
+		return
 	}
 
-	resp, err := handler(ctx, conn, msg)
-	if err != nil {
-		return err
+	resp := handler(ctx, conn.identity.UserID, msg)
+
+	if resp == nil {
+		return
 	}
 
-	if resp != nil {
-		if err := conn.safeWriteJSON(resp); err != nil {
-			return err
-		}
+	if err := conn.safeWriteJSON(resp); err != nil {
+		log.Errorf("failed to write JSON to WebSocket: %v", err)
+		return
 	}
-
-	return nil
 }
 
 func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
