@@ -22,21 +22,6 @@ import (
 	"gorm.io/gorm"
 )
 
-type LabelReq struct {
-	LabelID int `json:"id" binding:"required"`
-}
-
-type TaskReq struct {
-	ID           string                            `json:"id"`
-	Title        string                            `json:"title" binding:"required"`
-	NextDueDate  string                            `json:"next_due_date"`
-	EndDate      string                            `json:"end_date"`
-	IsRolling    bool                              `json:"is_rolling"`
-	Frequency    models.Frequency                  `json:"frequency"`
-	Notification models.NotificationTriggerOptions `json:"notification"`
-	Labels       []int                             `json:"labels"`
-}
-
 type TasksAPIHandler struct {
 	tRepo    *tRepo.TaskRepository
 	notifier *notifications.Notifier
@@ -144,7 +129,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
 	log := logging.FromContext(c)
-	var TaskReq TaskReq
+	var TaskReq models.CreateTaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
@@ -226,7 +211,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 
 	log := logging.FromContext(c)
 
-	var TaskReq TaskReq
+	var TaskReq models.UpdateTaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,

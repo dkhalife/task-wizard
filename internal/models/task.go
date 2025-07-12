@@ -33,3 +33,24 @@ type TaskLabel struct {
 	TaskID  int `json:"task_id"`
 	LabelID int `json:"label_id"`
 }
+
+type CreateTaskReq struct {
+	Title        string                     `json:"title" binding:"required"`
+	NextDueDate  string                     `json:"next_due_date"`
+	EndDate      string                     `json:"end_date"`
+	IsRolling    bool                       `json:"is_rolling"`
+	Frequency    Frequency                  `json:"frequency"`
+	Notification NotificationTriggerOptions `json:"notification"`
+	Labels       []int                      `json:"labels"`
+}
+
+type UpdateTaskReq struct {
+	ID           string                     `json:"id" binding:"required"`
+	Title        string                     `json:"title" binding:"required"`
+	NextDueDate  string                     `json:"next_due_date"`
+	EndDate      string                     `json:"end_date"`
+	IsRolling    bool                       `json:"is_rolling"`
+	Frequency    Frequency                  `json:"frequency"`
+	Notification NotificationTriggerOptions `json:"notification"`
+	Labels       []int                      `json:"labels"`
+}

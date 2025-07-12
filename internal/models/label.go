@@ -25,9 +25,3 @@ type UpdateLabelReq struct {
 	ID int `json:"id" binding:"required"`
 	CreateLabelReq
 }
-
-type LabelNotifier interface {
-	LabelCreated(label *Label) error
-	LabelUpdated(label *Label) error
-	LabelDeleted(userID int, labelID int) error
-}
