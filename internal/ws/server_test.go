@@ -1,6 +1,7 @@
 package ws
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -43,7 +44,7 @@ func (s *WSServerTestSuite) SetupTest() {
 
 func (s *WSServerTestSuite) createTestJWT(userID int) string {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		auth.IdentityKey: "1",
+		auth.IdentityKey: fmt.Sprintf("%d", userID),
 		"exp":            time.Now().Add(time.Hour).Unix(),
 		"type":           "user",
 		"scopes":         []string{"read", "write"},
