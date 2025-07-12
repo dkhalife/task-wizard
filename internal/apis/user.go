@@ -4,6 +4,7 @@ import (
 	"context"
 	"html"
 	"net/http"
+	"strconv"
 
 	"dkhalife.com/tasks/core/config"
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
@@ -11,6 +12,7 @@ import (
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/services/users"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	"dkhalife.com/tasks/core/internal/utils/email"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
@@ -21,18 +23,20 @@ import (
 )
 
 type UsersAPIHandler struct {
-	userRepo uRepo.IUserRepo
-	nRepo    *nRepo.NotificationRepository
-	jwtAuth  *jwt.GinJWTMiddleware
-	email    email.IEmailSender
+	userRepo    uRepo.IUserRepo
+	userService *users.UserService
+	nRepo       *nRepo.NotificationRepository
+	jwtAuth     *jwt.GinJWTMiddleware
+	email       email.IEmailSender
 }
 
-func UsersAPI(ur uRepo.IUserRepo, nRepo *nRepo.NotificationRepository, jwtAuth *jwt.GinJWTMiddleware, email email.IEmailSender, config *config.Config) *UsersAPIHandler {
+func UsersAPI(ur uRepo.IUserRepo, nRepo *nRepo.NotificationRepository, us *users.UserService, jwtAuth *jwt.GinJWTMiddleware, email email.IEmailSender, config *config.Config) *UsersAPIHandler {
 	return &UsersAPIHandler{
-		userRepo: ur,
-		nRepo:    nRepo,
-		jwtAuth:  jwtAuth,
-		email:    email,
+		userRepo:    ur,
+		userService: us,
+		nRepo:       nRepo,
+		jwtAuth:     jwtAuth,
+		email:       email,
 	}
 }
 
@@ -237,13 +241,7 @@ func (h *UsersAPIHandler) updateUserPassword(c *gin.Context) {
 func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	type TokenRequest struct {
-		Name       string                 `json:"name" binding:"required"`
-		Scopes     []models.ApiTokenScope `json:"scopes" binding:"required"`
-		Expiration int                    `json:"expiration" binding:"required"`
-	}
-
-	var req TokenRequest
+	var req models.CreateAppTokenRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err.Error(),
@@ -251,70 +249,37 @@ func (h *UsersAPIHandler) CreateAppToken(c *gin.Context) {
 		return
 	}
 
-	if len(req.Scopes) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Tokens must have at least one scope",
-		})
-		return
-	}
-
-	days := req.Expiration
-	if days < 1 || days > 90 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Expiration can at most be 90 days into the future",
-		})
-		return
-	}
-
-	log := logging.FromContext(c)
-	token, err := h.userRepo.CreateAppToken(c, currentIdentity.UserID, req.Name, req.Scopes, req.Expiration)
-	if err != nil {
-		log.Errorf("failed to create token: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to create token",
-		})
-		return
-	}
-
-	c.JSON(http.StatusCreated, gin.H{
-		"token": token,
-	})
+	status, response := h.userService.CreateAppToken(c, currentIdentity.UserID, req)
+	c.JSON(status, response)
 }
 
 func (h *UsersAPIHandler) GetAllUserToken(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
-	log := logging.FromContext(c)
-
-	tokens, err := h.userRepo.GetAllUserTokens(c, currentIdentity.UserID)
-	if err != nil {
-		log.Errorf("failed to get user tokens: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get user tokens",
-		})
-		return
-	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"tokens": tokens,
-	})
+	status, response := h.userService.GetAllAppTokens(c, currentIdentity.UserID)
+	c.JSON(status, response)
 }
 
 func (h *UsersAPIHandler) DeleteUserToken(c *gin.Context) {
-	log := logging.FromContext(c)
 	currentIdentity := auth.CurrentIdentity(c)
 
-	tokenID := c.Param("id")
-
-	err := h.userRepo.DeleteAppToken(c, currentIdentity.UserID, tokenID)
-	if err != nil {
-		log.Errorf("failed to delete token: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to delete the token",
+	tokenIDRaw := c.Param("id")
+	if tokenIDRaw == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Token ID is required",
 		})
 		return
 	}
 
-	c.JSON(http.StatusNoContent, gin.H{})
+	tokenID, err := strconv.Atoi(tokenIDRaw)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid token ID",
+		})
+		return
+	}
+
+	status, response := h.userService.DeleteAppToken(c, currentIdentity.UserID, tokenID)
+	c.JSON(status, response)
 }
 
 func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
