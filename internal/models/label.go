@@ -1,6 +1,8 @@
 package models
 
-import "time"
+import (
+	"time"
+)
 
 type Label struct {
 	ID        int        `json:"id" gorm:"primary_key"`
@@ -12,4 +14,20 @@ type Label struct {
 
 	User  User   `json:"user" gorm:"foreignKey:CreatedBy"`
 	Tasks []Task `json:"-" gorm:"many2many:task_labels;constraint:OnDelete:CASCADE"`
+}
+
+type CreateLabelReq struct {
+	Name  string `json:"name" binding:"required"`
+	Color string `json:"color"`
+}
+
+type UpdateLabelReq struct {
+	ID int `json:"id" binding:"required"`
+	CreateLabelReq
+}
+
+type LabelNotifier interface {
+	LabelCreated(label *Label) error
+	LabelUpdated(label *Label) error
+	LabelDeleted(userID int, labelID int) error
 }
