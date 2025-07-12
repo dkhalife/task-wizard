@@ -19,10 +19,8 @@ func (n *Notifier) sendNotification(c context.Context, notification *models.Noti
 	switch notification.User.NotificationSettings.Provider.Provider {
 	case models.NotificationProviderWebhook:
 		err = SendNotificationViaWebhook(c, notification.User.NotificationSettings.Provider, notification.Text)
-		break
 	case models.NotificationProviderGotify:
 		err = SendNotificationViaGotify(c, notification.User.NotificationSettings.Provider, notification.Text)
-		break
 	}
 
 	n.ws.BroadcastToUser(notification.UserID, ws.WSResponse{
