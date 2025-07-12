@@ -8,35 +8,43 @@ import (
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/ws"
+	"github.com/gin-gonic/gin"
 
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 )
 
 func (n *Notifier) sendNotification(c context.Context, notification *models.Notification) error {
+	var err error
 	switch notification.User.NotificationSettings.Provider.Provider {
-	case models.NotificationProviderNone:
-		return nil
-
 	case models.NotificationProviderWebhook:
-		return SendNotificationViaWebhook(c, notification.User.NotificationSettings.Provider, notification.Text)
-
+		err = SendNotificationViaWebhook(c, notification.User.NotificationSettings.Provider, notification.Text)
 	case models.NotificationProviderGotify:
-		return SendNotificationViaGotify(c, notification.User.NotificationSettings.Provider, notification.Text)
-
+		err = SendNotificationViaGotify(c, notification.User.NotificationSettings.Provider, notification.Text)
 	}
 
-	return nil
+	n.ws.BroadcastToUser(notification.UserID, ws.WSResponse{
+		Action: "notification",
+		Data: gin.H{
+			"task_id": notification.TaskID,
+			"type":    notification.Type,
+		},
+	})
+
+	return err
 }
 
 type Notifier struct {
 	DueFrequency time.Duration
 	nRepo        *nRepo.NotificationRepository
+	ws           *ws.WSServer
 }
 
-func NewNotifier(cfg *config.Config, nr *nRepo.NotificationRepository) *Notifier {
+func NewNotifier(cfg *config.Config, nr *nRepo.NotificationRepository, ws *ws.WSServer) *Notifier {
 	return &Notifier{
 		DueFrequency: cfg.SchedulerJobs.DueFrequency,
 		nRepo:        nr,
+		ws:           ws,
 	}
 }
 
@@ -137,6 +145,7 @@ func (n *Notifier) GenerateOverdueNotifications(c context.Context) error {
 		overdueNotification := models.Notification{
 			TaskID:       task.ID,
 			UserID:       task.CreatedBy,
+			Type:         models.NotificationTypeOverdue,
 			IsSent:       false,
 			ScheduledFor: startTime,
 			Text:         fmt.Sprintf("🚨 *%s* is overdue", task.Title),

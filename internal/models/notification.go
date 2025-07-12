@@ -5,13 +5,14 @@ import (
 )
 
 type Notification struct {
-	ID           int       `json:"id" gorm:"primaryKey"`
-	TaskID       int       `json:"task_id" gorm:"column:task_id;not null;index:idx_notifications_task_id"`
-	UserID       int       `json:"user_id" gorm:"column:user_id;not null;index:idx_notifications_user_id"`
-	Text         string    `json:"text" gorm:"column:text;not null"`
-	IsSent       bool      `json:"is_sent" gorm:"column:is_sent;index;default:false"`
-	ScheduledFor time.Time `json:"scheduled_for" gorm:"column:scheduled_for;not null;index"`
-	CreatedAt    time.Time `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	ID           int              `json:"id" gorm:"primaryKey"`
+	TaskID       int              `json:"task_id" gorm:"column:task_id;not null;index:idx_notifications_task_id"`
+	UserID       int              `json:"user_id" gorm:"column:user_id;not null;index:idx_notifications_user_id"`
+	Text         string           `json:"text" gorm:"column:text;not null"`
+	Type         NotificationType `json:"type" gorm:"type:varchar(8);column:type;not null"`
+	IsSent       bool             `json:"is_sent" gorm:"column:is_sent;index;default:false"`
+	ScheduledFor time.Time        `json:"scheduled_for" gorm:"column:scheduled_for;not null;index"`
+	CreatedAt    time.Time        `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 
 	Task Task `json:"-" gorm:"foreignKey:TaskID"`
 	User User `json:"-" gorm:"foreignKey:UserID"`
@@ -23,6 +24,14 @@ const (
 	NotificationProviderNone    NotificationProviderType = "none"
 	NotificationProviderWebhook NotificationProviderType = "webhook"
 	NotificationProviderGotify  NotificationProviderType = "gotify"
+)
+
+type NotificationType string
+
+const (
+	NotificationTypeDueDate NotificationType = "due_date"
+	NotificationTypePreDue  NotificationType = "pre_due"
+	NotificationTypeOverdue NotificationType = "overdue"
 )
 
 type NotificationProvider struct {

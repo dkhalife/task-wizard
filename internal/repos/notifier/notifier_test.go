@@ -85,6 +85,7 @@ func (s *NotifierTestSuite) TestBatchInsertNotifications() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       false,
 			ScheduledFor: now,
 			Text:         "Test notification 1",
@@ -92,6 +93,7 @@ func (s *NotifierTestSuite) TestBatchInsertNotifications() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypePreDue,
 			IsSent:       false,
 			ScheduledFor: now.Add(1 * time.Hour),
 			Text:         "Test notification 2",
@@ -138,12 +140,14 @@ func (s *NotifierTestSuite) TestGenerateNotifications() {
 	s.NotNil(dueDateNotification)
 	s.Equal(s.testTask.ID, dueDateNotification.TaskID)
 	s.Equal(s.testUser.ID, dueDateNotification.UserID)
+	s.Equal(models.NotificationTypeDueDate, dueDateNotification.Type)
 	s.Equal(false, dueDateNotification.IsSent)
 
 	// Verify pre-due notification
 	s.NotNil(preDueNotification)
 	s.Equal(s.testTask.ID, preDueNotification.TaskID)
 	s.Equal(s.testUser.ID, preDueNotification.UserID)
+	s.Equal(models.NotificationTypePreDue, preDueNotification.Type)
 	s.Equal(false, preDueNotification.IsSent)
 	s.Equal(s.testTask.NextDueDate.Add(-3*time.Hour).Unix(), preDueNotification.ScheduledFor.Unix())
 }
@@ -155,6 +159,7 @@ func (s *NotifierTestSuite) TestMarkNotificationsAsSent() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       false,
 			ScheduledFor: now,
 			Text:         "Test notification 1",
@@ -162,6 +167,7 @@ func (s *NotifierTestSuite) TestMarkNotificationsAsSent() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypePreDue,
 			IsSent:       false,
 			ScheduledFor: now.Add(1 * time.Hour),
 			Text:         "Test notification 2",
@@ -189,6 +195,7 @@ func (s *NotifierTestSuite) TestGetPendingNotification() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       false,
 			ScheduledFor: now.Add(-1 * time.Hour), // This one is pending (scheduled in the past)
 			Text:         "Pending notification",
@@ -196,6 +203,7 @@ func (s *NotifierTestSuite) TestGetPendingNotification() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypePreDue,
 			IsSent:       true, // Already sent
 			ScheduledFor: now.Add(-2 * time.Hour),
 			Text:         "Already sent notification",
@@ -203,6 +211,7 @@ func (s *NotifierTestSuite) TestGetPendingNotification() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypePreDue,
 			IsSent:       false,
 			ScheduledFor: now.Add(1 * time.Hour), // Future notification
 			Text:         "Future notification",
@@ -216,6 +225,7 @@ func (s *NotifierTestSuite) TestGetPendingNotification() {
 	s.Require().NoError(err)
 	s.Require().Len(pending, 1)
 	s.Equal("Pending notification", pending[0].Text)
+	s.Equal(models.NotificationTypeDueDate, pending[0].Type)
 }
 
 func (s *NotifierTestSuite) TestGetOverdueTasksWithNotifications() {
@@ -301,6 +311,7 @@ func (s *NotifierTestSuite) TestDeleteSentNotifications() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       true,                     // Already sent
 			ScheduledFor: now.Add(-48 * time.Hour), // Old notification
 			Text:         "Old sent notification",
@@ -308,6 +319,7 @@ func (s *NotifierTestSuite) TestDeleteSentNotifications() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       true,                    // Already sent
 			ScheduledFor: now.Add(-1 * time.Hour), // Recent notification
 			Text:         "Recent sent notification",
@@ -315,6 +327,7 @@ func (s *NotifierTestSuite) TestDeleteSentNotifications() {
 		{
 			TaskID:       s.testTask.ID,
 			UserID:       s.testUser.ID,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       false,                    // Not sent
 			ScheduledFor: now.Add(-72 * time.Hour), // Old notification but not sent
 			Text:         "Old unsent notification",
