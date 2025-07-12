@@ -3,7 +3,6 @@ package backend
 import (
 	"net/http"
 
-	"dkhalife.com/tasks/core/config"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/utils/auth"
 	"dkhalife.com/tasks/core/internal/utils/middleware"
@@ -15,7 +14,7 @@ type Handler struct {
 	uRepo uRepo.IUserRepo
 }
 
-func NewHandler(config *config.Config, uRepo uRepo.IUserRepo) *Handler {
+func NewHandler(uRepo uRepo.IUserRepo) *Handler {
 	return &Handler{
 		uRepo,
 	}
