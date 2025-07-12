@@ -16,7 +16,7 @@ func TestSetConfigAndNewLogger(t *testing.T) {
 		Development: true,
 	}
 	SetConfig(cfg)
-	logger := NewLogger(cfg)
+	logger := newLogger(cfg)
 	assert.NotNil(t, logger)
 	logger.Debug("debug message")
 }
