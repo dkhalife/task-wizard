@@ -154,6 +154,11 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 		s.n.GenerateNotifications(ctx, task)
 	}(createdTask, log)
 
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_created",
+		Data:   createdTask,
+	})
+
 	return http.StatusCreated, gin.H{
 		"task": id,
 	}
@@ -242,6 +247,11 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 		s.n.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_updated",
+		Data:   updatedTask,
+	})
+
 	return http.StatusNoContent, nil
 }
 
@@ -260,6 +270,13 @@ func (s *TaskService) DeleteTask(ctx context.Context, userID, taskID int) (int, 
 			"error": "Error deleting task",
 		}
 	}
+
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_deleted",
+		Data: gin.H{
+			"id": taskID,
+		},
+	})
 
 	return http.StatusNoContent, nil
 }
@@ -302,6 +319,11 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 		s.n.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_updated",
+		Data:   updatedTask,
+	})
+
 	return http.StatusOK, gin.H{
 		"task": updatedTask,
 	}
@@ -343,6 +365,11 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 			"error": "Error updating due date",
 		}
 	}
+
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_updated",
+		Data:   task,
+	})
 
 	return http.StatusOK, gin.H{
 		"task": task,
@@ -390,6 +417,11 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int) (int
 		s.n.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
 
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_completed",
+		Data:   updatedTask,
+	})
+
 	return http.StatusOK, gin.H{
 		"task": updatedTask,
 	}
@@ -436,6 +468,11 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 		ctx := logging.ContextWithLogger(context.Background(), logger)
 		s.n.GenerateNotifications(ctx, task)
 	}(updatedTask, log)
+
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "task_updated",
+		Data:   updatedTask,
+	})
 
 	return http.StatusOK, gin.H{
 		"task": updatedTask,
