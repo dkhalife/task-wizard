@@ -21,6 +21,8 @@ func TestLoadConfig_Success(t *testing.T) {
   log_level: debug
   registration: true
   serve_frontend: false
+  allowed_origins:
+    - "http://example.com"
   read_timeout: 10s
   write_timeout: 10s
 database:
@@ -50,6 +52,7 @@ email:
 	assert.Equal(t, "debug", cfg.Server.LogLevel)
 	assert.Equal(t, true, cfg.Server.Registration)
 	assert.Equal(t, false, cfg.Server.ServeFrontend)
+	assert.Equal(t, []string{"http://example.com"}, cfg.Server.AllowedOrigins)
 	assert.Equal(t, 10*time.Second, cfg.Server.ReadTimeout)
 	assert.Equal(t, 10*time.Second, cfg.Server.WriteTimeout)
 
