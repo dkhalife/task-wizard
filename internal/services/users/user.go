@@ -59,6 +59,11 @@ func (s *UserService) CreateAppToken(ctx context.Context, userID int, req models
 		}
 	}
 
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "app_token_created",
+		Data:   token,
+	})
+
 	return http.StatusCreated, gin.H{
 		"token": token,
 	}
@@ -74,6 +79,13 @@ func (s *UserService) DeleteAppToken(ctx context.Context, userID int, tokenID in
 			"error": "Failed to delete the token",
 		}
 	}
+
+	s.ws.BroadcastToUser(userID, ws.WSResponse{
+		Action: "app_token_deleted",
+		Data: gin.H{
+			"id": tokenID,
+		},
+	})
 
 	return http.StatusNoContent, nil
 }
