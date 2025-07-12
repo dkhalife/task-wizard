@@ -320,7 +320,7 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 	}(updatedTask, log)
 
 	s.ws.BroadcastToUser(userID, ws.WSResponse{
-		Action: "task_updated",
+		Action: "task_skipped",
 		Data:   updatedTask,
 	})
 
