@@ -34,7 +34,7 @@ func (h *LabelsMessageHandler) createLabel(ctx context.Context, userID int, msg 
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
-			Data: &gin.H{
+			Data: gin.H{
 				"error": "Invalid request data",
 			},
 		}
@@ -52,7 +52,7 @@ func (h *LabelsMessageHandler) updateLabel(ctx context.Context, userID int, msg 
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
-			Data: &gin.H{
+			Data: gin.H{
 				"error": "Invalid request data",
 			},
 		}
@@ -70,7 +70,7 @@ func (h *LabelsMessageHandler) deleteLabel(ctx context.Context, userID int, msg 
 	if err := json.Unmarshal(msg.Data, &labelID); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
-			Data: &gin.H{
+			Data: gin.H{
 				"error": "Invalid label ID",
 			},
 		}
