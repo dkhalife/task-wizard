@@ -15,6 +15,9 @@ server:
   serve_frontend: false
   registration: true
   log_level: "debug"
+  allowed_origins:
+    - http://localhost:5173
+  allow_cors_credentials: true
 scheduler_jobs:
   due_frequency: 1m
   overdue_frequency: 1m

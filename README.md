@@ -95,6 +95,8 @@ The configuration files are yaml mappings with the following values:
 | `server.serve_frontend`                  | `true`                                              | Indicates if the frontend should be served by the backend server.           |
 | `server.registration`                    | `true`                                              | Indicates whether new accounts can be created on the backend server.        |
 | `server.log_level`                       | `debug` when `server.debug` = `true`, else `warn`   | The min level to log (debug, info, warn, error, dpanic, panic, fatal).      |
+| `server.allowed_origins`                 | `(empty)`                                           | Origins allowed to issue cross-domain requests.                             |
+| `server.allow_credentials`               | `false`                                             | Whether cross-domain requests can include credentials.                      |
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
 | `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
