@@ -117,7 +117,7 @@ func (s *LabelService) DeleteLabel(ctx context.Context, userID int, labelID int)
 		log := logging.FromContext(ctx)
 		log.Errorf("Failed to delete label: %s", err.Error())
 		return http.StatusInternalServerError, gin.H{
-			"error": "Error unassociating label from task",
+			"error": "Failed to delete label",
 		}
 	}
 

@@ -54,8 +54,8 @@ func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 		return
 	}
 
-	status, resconse := h.ls.UpdateLabel(c, currentIdentity.UserID, req)
-	c.JSON(status, resconse)
+	status, response := h.ls.UpdateLabel(c, currentIdentity.UserID, req)
+	c.JSON(status, response)
 }
 
 func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {

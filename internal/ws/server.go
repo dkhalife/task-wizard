@@ -284,8 +284,12 @@ func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
 		conns := s.userConnections[userID]
 		s.mu.Unlock()
 
+		log := logging.FromContext(context.Background())
+
 		for _, c := range conns {
-			_ = c.safeWriteJSON(resp)
+			if err := c.safeWriteJSON(resp); err != nil {
+				log.Errorf("Failed to write JSON to WebSocket: %v", err)
+			}
 		}
 	}()
 }
