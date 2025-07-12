@@ -218,7 +218,9 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 			case <-ticker.C:
 				if err := conn.safeWriteMessage(websocket.PingMessage, nil); err != nil {
 					logging.FromContext(ctx).Errorf("websocket ping error: %v", err)
-					conn.safeClose()
+					if cerr := conn.safeClose(); cerr != nil {
+						logging.FromContext(ctx).Errorf("websocket close error: %v", cerr)
+					}
 					return
 				}
 			case <-done:
@@ -231,7 +233,9 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 		close(done)
 		ticker.Stop()
 		logging.FromContext(ctx).Debugf("cleaning up websocket connection")
-		conn.safeClose()
+		if err := conn.safeClose(); err != nil {
+			logging.FromContext(ctx).Errorf("websocket close error: %v", err)
+		}
 		s.mu.Lock()
 		delete(s.connections, wsConn)
 		if uMap, ok := s.userConnections[conn.identity.UserID]; ok {
