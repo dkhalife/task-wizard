@@ -31,7 +31,7 @@ func (h *UsersMessageHandler) createAppToken(ctx context.Context, userID int, ms
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
-			Data: &gin.H{
+			Data: gin.H{
 				"error": "Invalid request data",
 			},
 		}
@@ -49,7 +49,7 @@ func (h *UsersMessageHandler) deleteAppToken(ctx context.Context, userID int, ms
 	if err := json.Unmarshal(msg.Data, &tokenID); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
-			Data: &gin.H{
+			Data: gin.H{
 				"error": "Invalid token ID",
 			},
 		}
@@ -67,7 +67,7 @@ func (h *UsersMessageHandler) updateNotificationSettings(ctx context.Context, us
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
-			Data: &gin.H{
+			Data: gin.H{
 				"error": "Invalid request data",
 			},
 		}
