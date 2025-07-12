@@ -1,8 +1,7 @@
 package config
 
 import (
-	"log"
-	"time"
+       "time"
 
 	"github.com/spf13/viper"
 )
@@ -77,9 +76,9 @@ func LoadConfig() *Config {
 		panic(err)
 	}
 
-	if config.Jwt.Secret == "secret" {
-		log.Fatal("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
-	}
+       if config.Jwt.Secret == "secret" {
+               panic("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
+       }
 
 	return &config
 }
