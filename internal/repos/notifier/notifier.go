@@ -80,6 +80,7 @@ func (r *NotificationRepository) GenerateNotifications(c context.Context, task *
 		notifications = append(notifications, models.Notification{
 			TaskID:       task.ID,
 			UserID:       task.CreatedBy,
+			Type:         models.NotificationTypeDueDate,
 			IsSent:       false,
 			ScheduledFor: *task.NextDueDate,
 			Text:         fmt.Sprintf("📅 *%s* is due", task.Title),
@@ -90,6 +91,7 @@ func (r *NotificationRepository) GenerateNotifications(c context.Context, task *
 		notifications = append(notifications, models.Notification{
 			TaskID:       task.ID,
 			UserID:       task.CreatedBy,
+			Type:         models.NotificationTypePreDue,
 			IsSent:       false,
 			ScheduledFor: task.NextDueDate.Add(-time.Hour * 3),
 			Text:         fmt.Sprintf("📢 *%s* is coming up on %s", task.Title, task.NextDueDate.Format("January 2nd")),
