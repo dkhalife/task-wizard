@@ -36,6 +36,9 @@ func (s *WSServerTestSuite) SetupTest() {
 			SessionTime: time.Hour,
 			MaxRefresh:  time.Hour,
 		},
+		Server: config.ServerConfig{
+			AllowedOrigins: []string{"http://example.com"},
+		},
 	}
 	s.server = NewWSServer(s.cfg, nil, nil, nil)
 	s.router = gin.New()
@@ -60,6 +63,7 @@ func (s *WSServerTestSuite) dial(ts *httptest.Server) (*websocket.Conn, *http.Re
 	header := http.Header{}
 	jwtToken := s.createTestJWT(1)
 	header.Set("Sec-WebSocket-Protocol", "test-protocol, "+jwtToken)
+	header.Set("Origin", "http://example.com")
 	return websocket.DefaultDialer.Dial(url, header)
 }
 
@@ -100,6 +104,27 @@ func (s *WSServerTestSuite) TestHandleConnection_Authorized() {
 	conn.Close()
 	s.waitForConnections(0)
 	s.Equal(0, len(s.server.userConnections))
+}
+
+func (s *WSServerTestSuite) TestHandleConnection_BadOrigin() {
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
+	header := http.Header{}
+	jwtToken := s.createTestJWT(1)
+	header.Set("Sec-WebSocket-Protocol", "test-protocol, "+jwtToken)
+	header.Set("Origin", "http://malicious.com")
+
+	conn, resp, err := websocket.DefaultDialer.Dial(url, header)
+	if conn != nil {
+		conn.Close()
+	}
+	s.Error(err)
+	if resp != nil {
+		s.Equal(http.StatusForbidden, resp.StatusCode)
+	}
+	s.Equal(0, len(s.server.connections))
 }
 
 func (s *WSServerTestSuite) TestMultipleConnectionsAndCleanup() {

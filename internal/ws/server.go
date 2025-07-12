@@ -49,7 +49,15 @@ func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.L
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-			CheckOrigin:     func(r *http.Request) bool { return true },
+			CheckOrigin: func(r *http.Request) bool {
+				origin := r.Header.Get("Origin")
+				for _, allowed := range cfg.Server.AllowedOrigins {
+					if strings.EqualFold(origin, allowed) {
+						return true
+					}
+				}
+				return false
+			},
 		},
 		connections:     make(map[*websocket.Conn]*connection),
 		userConnections: make(map[int]map[*websocket.Conn]*connection),

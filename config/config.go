@@ -26,15 +26,16 @@ type JwtConfig struct {
 }
 
 type ServerConfig struct {
-	HostName      string        `mapstructure:"host_name" yaml:"host_name"`
-	Port          int           `mapstructure:"port" yaml:"port"`
-	RatePeriod    time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
-	RateLimit     int           `mapstructure:"rate_limit" yaml:"rate_limit"`
-	ReadTimeout   time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
-	WriteTimeout  time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
-	ServeFrontend bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
-	Registration  bool          `mapstructure:"registration" yaml:"registration"`
-	LogLevel      string        `mapstructure:"log_level" yaml:"log_level"`
+	HostName       string        `mapstructure:"host_name" yaml:"host_name"`
+	Port           int           `mapstructure:"port" yaml:"port"`
+	RatePeriod     time.Duration `mapstructure:"rate_period" yaml:"rate_period"`
+	RateLimit      int           `mapstructure:"rate_limit" yaml:"rate_limit"`
+	ReadTimeout    time.Duration `mapstructure:"read_timeout" yaml:"read_timeout"`
+	WriteTimeout   time.Duration `mapstructure:"write_timeout" yaml:"write_timeout"`
+	ServeFrontend  bool          `mapstructure:"serve_frontend" yaml:"serve_frontend"`
+	Registration   bool          `mapstructure:"registration" yaml:"registration"`
+	LogLevel       string        `mapstructure:"log_level" yaml:"log_level"`
+	AllowedOrigins []string      `mapstructure:"allowed_origins" yaml:"allowed_origins"`
 }
 
 type SchedulerConfig struct {
