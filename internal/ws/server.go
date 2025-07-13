@@ -307,6 +307,7 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 	}
 
 	resp.Action = msg.Action
+	resp.RequestID = msg.RequestID
 
 	if err := conn.safeWriteJSON(resp); err != nil {
 		log.Errorf("failed to write JSON to WebSocket: %v", err)

@@ -186,11 +186,12 @@ func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
 
 	s.waitForConnections(1)
 
-	payload := WSMessage{Action: "echo", Data: json.RawMessage(`"hello"`)}
+	payload := WSMessage{RequestID: "1", Action: "echo", Data: json.RawMessage(`"hello"`)}
 	s.NoError(conn.WriteJSON(payload))
 
 	var resp WSResponse
 	s.NoError(conn.ReadJSON(&resp))
+	s.Equal("1", resp.RequestID)
 	s.Equal("echo", resp.Action)
 	s.Equal("hello", resp.Data)
 }
