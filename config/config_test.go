@@ -45,7 +45,7 @@ email:
 	assert.NoError(t, err)
 
 	viper.Reset()
-	cfg := LoadConfig("")
+	cfg := LoadConfig("./config/config.yaml")
 	assert.Equal(t, 1234, cfg.Server.Port)
 	assert.Equal(t, "debug", cfg.Server.LogLevel)
 	assert.Equal(t, true, cfg.Server.Registration)
@@ -95,7 +95,7 @@ func TestLoadConfig_EmailEnvOverride(t *testing.T) {
 server:
   port: 1234
 jwt:
-  secret: secret
+  secret: testsecret
 `)
 	assert.NoError(t, err)
 
@@ -106,7 +106,7 @@ jwt:
 	os.Setenv("TW_JWT_SECRET", "s3cret")
 
 	viper.Reset()
-	cfg := LoadConfig("")
+	cfg := LoadConfig("./config/config.yaml")
 
 	assert.Equal(t, "smtp.override.com", cfg.EmailConfig.Host)
 	assert.Equal(t, 2525, cfg.EmailConfig.Port)
