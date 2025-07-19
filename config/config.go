@@ -1,6 +1,7 @@
 package config
 
 import (
+	"os"
 	"time"
 
 	"github.com/spf13/viper"
@@ -55,10 +56,22 @@ type EmailConfig struct {
 	Password string `mapstructure:"password"`
 }
 
-func LoadConfig() *Config {
-	viper.SetConfigName("config")
-	viper.AddConfigPath("./config")
+func LoadConfig(configFile string) *Config {
 	viper.SetConfigType("yaml")
+
+	if configFile == "" {
+		if envFile := os.Getenv("TW_CONFIG_FILE"); envFile != "" {
+			configFile = envFile
+		}
+	}
+
+	if configFile != "" {
+		viper.SetConfigFile(configFile)
+	} else {
+		viper.SetConfigName("config")
+		viper.AddConfigPath(".")
+		viper.AddConfigPath("./config")
+	}
 
 	// Allow values with secrets to be set via environment variables
 	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")

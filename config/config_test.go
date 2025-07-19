@@ -45,7 +45,7 @@ email:
 	assert.NoError(t, err)
 
 	viper.Reset()
-	cfg := LoadConfig()
+	cfg := LoadConfig("")
 	assert.Equal(t, 1234, cfg.Server.Port)
 	assert.Equal(t, "debug", cfg.Server.LogLevel)
 	assert.Equal(t, true, cfg.Server.Registration)
@@ -76,7 +76,7 @@ func TestLoadConfig_PanicOnMissingFile(t *testing.T) {
 	viper.Reset()
 
 	assert.Panics(t, func() {
-		_ = LoadConfig()
+		_ = LoadConfig("")
 	})
 }
 
@@ -106,7 +106,7 @@ jwt:
 	os.Setenv("TW_JWT_SECRET", "s3cret")
 
 	viper.Reset()
-	cfg := LoadConfig()
+	cfg := LoadConfig("")
 
 	assert.Equal(t, "smtp.override.com", cfg.EmailConfig.Host)
 	assert.Equal(t, 2525, cfg.EmailConfig.Port)
@@ -118,4 +118,42 @@ jwt:
 	os.Unsetenv("TW_EMAIL_SENDER")
 	os.Unsetenv("TW_EMAIL_PASSWORD")
 	os.Unsetenv("TW_JWT_SECRET")
+}
+
+func TestLoadConfig_EnvFile(t *testing.T) {
+	f, err := os.Create("envconfig.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("envconfig.yaml")
+	defer f.Close()
+
+	_, err = f.WriteString("server:\n  port: 4444\n")
+	assert.NoError(t, err)
+
+	os.Setenv("TW_CONFIG_FILE", "envconfig.yaml")
+	viper.Reset()
+	cfg := LoadConfig("")
+	assert.Equal(t, 4444, cfg.Server.Port)
+	os.Unsetenv("TW_CONFIG_FILE")
+}
+
+func TestLoadConfig_CLIOverridesEnv(t *testing.T) {
+	f1, err := os.Create("env.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("env.yaml")
+	defer f1.Close()
+	_, err = f1.WriteString("server:\n  port: 3333\n")
+	assert.NoError(t, err)
+
+	f2, err := os.Create("cli.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("cli.yaml")
+	defer f2.Close()
+	_, err = f2.WriteString("server:\n  port: 2222\n")
+	assert.NoError(t, err)
+
+	os.Setenv("TW_CONFIG_FILE", "env.yaml")
+	viper.Reset()
+	cfg := LoadConfig("cli.yaml")
+	assert.Equal(t, 2222, cfg.Server.Port)
+	os.Unsetenv("TW_CONFIG_FILE")
 }

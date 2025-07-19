@@ -12,8 +12,11 @@
 			"pnpmVersion": "none",
 			"nvmVersion": "latest"
 		}
-	},
-	"customizations": {
+        },
+        "containerEnv": {
+			"TW_CONFIG_FILE": "/workspaces/tasks-backend/config/config.dev.yaml"
+        },
+        "customizations": {
 		"codespaces": {
 			"repositories": {
 				"dkhalife/tasks-frontend": {
