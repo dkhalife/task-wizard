@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"fmt"
 	"log"
 	"net/http"
@@ -39,7 +40,10 @@ import (
 )
 
 func main() {
-	cfg := config.LoadConfig()
+	cfgFile := flag.String("config", "", "path to config file")
+	flag.Parse()
+
+	cfg := config.LoadConfig(*cfgFile)
 	level, err := zapcore.ParseLevel(cfg.Server.LogLevel)
 	if err != nil {
 		level = zapcore.WarnLevel

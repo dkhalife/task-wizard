@@ -2,7 +2,7 @@ database:
   migration: true
   path: task-wizard.db
 jwt:
-  secret: "secret"
+  secret: "s3cret"
   session_time: 168h
   max_refresh: 168h
 server:
