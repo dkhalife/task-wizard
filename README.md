@@ -34,6 +34,14 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 🌐 Authenticated CalDAV endpoint at `/dav/tasks` with app token as the password
 
+## ⌨️ Keyboard Shortcuts
+
+| Context/Screen                | Shortcut                           | Action or Result                                                   |
+|-------------------------------|------------------------------------|-------------------------------------------------------------------|
+| Tasks Overview                | `Ctrl + F`                         | Focuses the search box.                                           |
+| Tasks Overview                | `+` (outside of inputs)            | Opens the “Add Task” screen.                                      |
+| Forgot Password, Task Edit, and Password/Date modals | `Enter` in relevant fields | Submits or saves the form or dialog.                              |
+
 ## 🚀 Installation
 
 ### 🚢 Using Docker Compose (recommended)
