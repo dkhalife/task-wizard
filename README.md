@@ -40,7 +40,7 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 |-------------------------------|------------------------------------|-------------------------------------------------------------------|
 | Tasks Overview                | `Ctrl + F`                         | Focuses the search box.                                           |
 | Tasks Overview                | `+` (outside of inputs)            | Opens the “Add Task” screen.                                      |
-| Forgot Password, Task Edit, and Password/Date modals | `Enter` in relevant fields | Submits or saves the form or dialog.                              |
+| Forgot Password, Task Edit, and Password/Date modals | `Enter` in text input fields, password fields, or date fields | Submits or saves the form or dialog.                              |
 
 ## 🚀 Installation
 
