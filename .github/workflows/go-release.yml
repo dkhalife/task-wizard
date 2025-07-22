@@ -12,8 +12,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    environment: stable
-    name: Build and Push Docker Image
+    name: Build Application
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -59,11 +58,51 @@ jobs:
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@90a3faa9d0182683851fbfa97ca1a2cb983bfca3 #v6.2.1
         with:
-          # either 'goreleaser' (default) or 'goreleaser-pro'
           distribution: goreleaser
-          # 'latest', 'nightly', or a semver
           version: latest
-          args: release --clean --skip=validate
+          args: build --clean --snapshot
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Build Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-artifacts
+          path: |
+            dist/
+            frontend/dist/
+          retention-days: 1
+
+  release-canary:
+    runs-on: ubuntu-latest
+    environment: canary
+    name: Release to Canary
+    needs: build
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Download Build Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: build-artifacts
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: 1.22
+          check-latest: true
+          cache: true
+
+      - name: Run GoReleaser for GitHub Release
+        uses: goreleaser/goreleaser-action@90a3faa9d0182683851fbfa97ca1a2cb983bfca3 #v6.2.1
+        with:
+          distribution: goreleaser
+          version: latest
+          args: release --clean --skip=validate --prerelease
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
@@ -112,10 +151,59 @@ jobs:
       - name: Log in to Azure Container Registry
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Build and push Docker image
+      - name: Push tags
         uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 #v6.13.0
         with:
           context: .
           push: true
-          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:latest, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary-${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
+
+  release-production:
+    runs-on: ubuntu-latest
+    environment: stable
+    name: Promote to Production Release
+    needs: release-canary
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          fetch-tags: true
+
+      - name: Promote GitHub Release to Production
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Get the current tag
+          TAG="${{ github.ref_name }}"
+          echo "Promoting release $TAG to production"
+          
+          # Update the release to remove prerelease flag
+          gh release edit "$TAG" --prerelease=false --latest
+          
+          echo "Successfully promoted $TAG to production release"
+
+      - name: Set up QEMU 
+        uses: docker/setup-qemu-action@4574d27a4764455b42196d70a065bc6853246a25 #v3.4.0
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@f7ce87c1d6bead3e36075b2ce75da1f6cc28aaca #v3.9.0
+
+      - name: Azure Login with OIDC
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Log in to ACR
+        run: az acr login --name ${{ secrets.ACR_NAME }}
+
+      - name: Push tags
+        run: |
+          # Promote multi-platform image manifest from canary to production tags
+          docker buildx imagetools create \
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:latest \
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }} \
+            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary-${{ github.ref_name }}
