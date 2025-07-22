@@ -32,3 +32,6 @@ archives:
   files:
   - src: "config/config.yaml"
     dst: "config/config.yaml"
+
+release:
+  prerelease: true
