@@ -166,7 +166,7 @@ jobs:
         with:
           context: .
           push: true
-          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary-${{ github.ref_name }}
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
 
   release-production:
@@ -214,6 +214,5 @@ jobs:
         run: |
           # Promote multi-platform image manifest from canary to production tags
           docker buildx imagetools create \
-            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:latest \
-            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }} \
-            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary-${{ github.ref_name }}
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:release \
+            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
