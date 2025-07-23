@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"time"
 
 	"dkhalife.com/tasks/core/internal/models"
@@ -195,12 +194,7 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 		endDate = &rawEndDate
 	}
 
-	taskId, err := strconv.Atoi(req.ID)
-	if err != nil {
-		return http.StatusBadRequest, gin.H{
-			"error": "Invalid task ID",
-		}
-	}
+	taskId := req.ID
 	oldTask, err := s.t.GetTask(ctx, taskId)
 
 	if err != nil {
