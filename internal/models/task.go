@@ -45,7 +45,7 @@ type CreateTaskReq struct {
 }
 
 type UpdateTaskReq struct {
-	ID           string                     `json:"id" binding:"required"`
+	ID           int                        `json:"id" binding:"required"`
 	Title        string                     `json:"title" binding:"required"`
 	NextDueDate  string                     `json:"next_due_date"`
 	EndDate      string                     `json:"end_date"`
