@@ -1,12 +1,12 @@
 # Stage 1: Build the application
 FROM alpine:latest AS builder
 
+ARG RELEASE_TAG
+
 WORKDIR /usr/src/app
 
 RUN apk --no-cache add curl jq
-
-RUN latest_release=$(curl --silent "https://api.github.com/repos/dkhalife/tasks-backend/releases/latest" | jq -r .tag_name) && \
-    set -ex; \
+RUN set -ex; \
     apkArch="$(apk --print-arch)"; \
     case "$apkArch" in \
     armhf) arch='armv6' ;; \
@@ -15,7 +15,7 @@ RUN latest_release=$(curl --silent "https://api.github.com/repos/dkhalife/tasks-
     x86_64) arch='x86_64' ;; \
     *) echo >&2 "error: unsupported architecture: $apkArch"; exit 1 ;; \
     esac; \
-    curl -fL "https://github.com/dkhalife/tasks-backend/releases/download/${latest_release}/task-wizard_Linux_$arch.tar.gz" | tar -xz -C .
+    curl -fL "https://github.com/dkhalife/tasks-backend/releases/download/${RELEASE_TAG}/task-wizard_Linux_$arch.tar.gz" | tar -xz -C .
 
 # Stage 2: Create a smaller runtime image
 FROM alpine:latest
