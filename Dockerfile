@@ -5,7 +5,7 @@ ARG RELEASE_TAG
 
 WORKDIR /usr/src/app
 
-RUN apk --no-cache add curl jq
+RUN apk --no-cache add curl
 RUN set -ex; \
     apkArch="$(apk --print-arch)"; \
     case "$apkArch" in \
