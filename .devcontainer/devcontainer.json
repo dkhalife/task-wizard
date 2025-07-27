@@ -12,11 +12,18 @@
 			"pnpmVersion": "none",
 			"nvmVersion": "latest"
 		}
-        },
-        "containerEnv": {
-			"TW_CONFIG_FILE": "/workspaces/tasks-backend/config/config.dev.yaml"
-        },
-        "customizations": {
+	},
+	"containerEnv": {
+		"TW_CONFIG_FILE": "/workspaces/tasks-backend/config/config.dev.yaml"
+	},
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"files.eol": "\r\n",
+				"git.autocrlf": false,
+				"files.trimFinalNewlines": false
+			}
+		},
 		"codespaces": {
 			"repositories": {
 				"dkhalife/tasks-frontend": {
@@ -33,5 +40,13 @@
 				}
 			}
 		}
-	}
+	},
+	"mounts": [
+		{
+			"source": "${localWorkspaceFolder}/../tasks-frontend",
+			"target": "/workspaces/tasks-frontend",
+			"type": "bind"
+		}
+	],
+	"workspaceFolder": "/workspaces"
 }
