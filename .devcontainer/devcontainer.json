@@ -48,5 +48,13 @@
 			"type": "bind"
 		}
 	],
-	"workspaceFolder": "/workspaces"
+	"workspaceFolder": "/workspaces",
+    "runArgs": [
+        "--cpus=4",
+        "--memory=8g"
+    ],
+    "hostRequirements": {
+        "cpus": 4,
+        "memory": "8gb"
+    }
 }
