@@ -148,6 +148,12 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 		}
 	}
 
+	labels := make([]models.Label, len(req.Labels))
+	for i, id := range req.Labels {
+		labels[i] = models.Label{ID: id}
+	}
+	createdTask.Labels = labels
+
 	go func(task *models.Task, logger *zap.SugaredLogger) {
 		ctx := logging.ContextWithLogger(context.Background(), logger)
 		s.n.GenerateNotifications(ctx, task)
@@ -235,6 +241,12 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 			"error": "Error upserting task",
 		}
 	}
+
+	labels := make([]models.Label, len(req.Labels))
+	for i, id := range req.Labels {
+		labels[i] = models.Label{ID: id}
+	}
+	updatedTask.Labels = labels
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
 		ctx := logging.ContextWithLogger(context.Background(), logger)
