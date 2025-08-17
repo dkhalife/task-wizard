@@ -89,6 +89,14 @@ func (s *TaskService) GetTask(ctx context.Context, userID, taskID int) (int, int
 	}
 }
 
+func createShallowLabels(labelIds []int) []models.Label {
+	labels := make([]models.Label, len(labelIds))
+	for i, id := range labelIds {
+		labels[i] = models.Label{ID: id}
+	}
+	return labels
+}
+
 func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.CreateTaskReq) (int, interface{}) {
 	log := logging.FromContext(ctx)
 
@@ -148,11 +156,7 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 		}
 	}
 
-	labels := make([]models.Label, len(req.Labels))
-	for i, id := range req.Labels {
-		labels[i] = models.Label{ID: id}
-	}
-	createdTask.Labels = labels
+	createdTask.Labels = createShallowLabels(req.Labels)
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
 		ctx := logging.ContextWithLogger(context.Background(), logger)
@@ -242,11 +246,7 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 		}
 	}
 
-	labels := make([]models.Label, len(req.Labels))
-	for i, id := range req.Labels {
-		labels[i] = models.Label{ID: id}
-	}
-	updatedTask.Labels = labels
+	updatedTask.Labels = createShallowLabels(req.Labels)
 
 	go func(task *models.Task, logger *zap.SugaredLogger) {
 		ctx := logging.ContextWithLogger(context.Background(), logger)
