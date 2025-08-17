@@ -14,6 +14,7 @@ import { APITokenSettings } from './APITokenSettings'
 import { NotificationSettings } from '../Notifications/NotificationSettings'
 import { ThemeToggle } from './ThemeToggle'
 import { FeatureFlagSettings } from './FeatureFlagSettings'
+import { DesktopNotificationToggle } from './DesktopNotificationToggle'
 import { storeValue } from '@/utils/storage'
 import { getHomeView, HomeView } from '@/utils/navigation'
 import { SelectValue } from '@mui/base'
@@ -120,6 +121,7 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
           </Box>
         </div>
         <NotificationSettings />
+        <DesktopNotificationToggle />
         <APITokenSettings />
         <FeatureFlagSettings />
         <Box

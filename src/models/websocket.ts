@@ -23,6 +23,7 @@ export type WSEvent =
   | 'task_completed'
   | 'task_uncompleted'
   | 'task_skipped'
+  | 'notification'
 
 export interface WSResponse {
   action: WSEvent

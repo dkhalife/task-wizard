@@ -9,6 +9,7 @@ import {
   UpdateDueDate,
 } from '@/api/tasks'
 import { newTask, Task } from '@/models/task'
+import { NotificationTrigger } from '@/models/notifications'
 import { RootState, store } from './store'
 import { SyncState } from '@/models/sync'
 import { getDefaultExpandedState, GROUP_BY, groupTaskBy, groupTasksBy, sortTasksByDueDate, TaskGroups } from '@/utils/grouping'
@@ -433,6 +434,42 @@ const onTaskSkipped = (data: unknown) => {
   }
 }
 
+const onNotification = (data: unknown) => {
+  const enabled = retrieveValue<boolean>('desktop_notifications', false)
+  if (!enabled || Notification.permission !== 'granted') {
+    return
+  }
+
+  const payload = data as { task_id: number; type: NotificationTrigger }
+  const state = store.getState()
+  const task = state.tasks.items.find(t => t.id === payload.task_id)
+  if (!task) {
+    return
+  }
+
+  let body = ''
+  switch (payload.type) {
+    case 'pre_due':
+      body = 'Task is due soon'
+      break
+    case 'overdue':
+      body = 'Task is overdue'
+      break
+    case 'due_date':
+    default:
+      body = 'Task is due'
+      break
+  }
+
+  try {
+    // Sanitize task.title to prevent XSS
+    const safeTitle = task.title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    new Notification(safeTitle, { body })
+  } catch (e) {
+    console.debug('Failed to show notification', e)
+  }
+}
+
 export const registerWebSocketListeners = (ws: WebSocketManager) => {
   ws.on('task_created', onTaskCreated)
   ws.on('task_updated', onTaskUpdated)
@@ -440,6 +477,7 @@ export const registerWebSocketListeners = (ws: WebSocketManager) => {
   ws.on('task_completed', onTaskCompleted)
   ws.on('task_uncompleted', onTaskUncompleted)
   ws.on('task_skipped', onTaskSkipped)
+  ws.on('notification', onNotification)
 }
 
 export const unregisterWebSocketListeners = (ws: WebSocketManager) => {
@@ -449,4 +487,5 @@ export const unregisterWebSocketListeners = (ws: WebSocketManager) => {
   ws.off('task_completed', onTaskCompleted)
   ws.off('task_uncompleted', onTaskUncompleted)
   ws.off('task_skipped', onTaskSkipped)
+  ws.off('notification', onNotification)
 }
