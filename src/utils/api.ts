@@ -35,10 +35,19 @@ export const isTokenValid = (): boolean => {
 
 export const refreshAccessToken = async () => {
   isRefreshingAccessToken = true
-  const data = await RefreshToken()
-  localStorage.setItem('ca_token', data.token)
-  localStorage.setItem('ca_expiration', data.expiration)
-  isRefreshingAccessToken = false
+  try {
+    const data = await RefreshToken()
+    localStorage.setItem('ca_token', data.token)
+    localStorage.setItem('ca_expiration', data.expiration)
+  } catch (error) {
+    localStorage.removeItem('ca_token')
+    localStorage.removeItem('ca_expiration')
+    localStorage.setItem('ca_redirect', window.location.pathname)
+    window.location.href = '/login'
+    console.error('Failed to refresh access token', error)
+  } finally {
+    isRefreshingAccessToken = false
+  }
 }
 
 export async function Request<SuccessfulResponse>(
