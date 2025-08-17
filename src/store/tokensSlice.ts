@@ -1,6 +1,11 @@
-import { CreateLongLivedToken, DeleteLongLivedToken, GetLongLivedTokens } from '@/api/tokens'
+import {
+  CreateLongLivedToken,
+  DeleteLongLivedToken,
+  GetLongLivedTokens,
+} from '@/api/tokens'
 import { SyncState } from '@/models/sync'
 import { APIToken, ApiTokenScope } from '@/models/token'
+import { WSEventPayloads } from '@/models/websocket'
 import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import WebSocketManager from '@/utils/websocket'
 import { store } from './store'
@@ -112,14 +117,12 @@ export const tokensReducer = tokensSlice.reducer
 
 const { tokenUpserted, tokenDeleted } = tokensSlice.actions
 
-const onTokenCreated = (data: unknown) => {
-  const token = data as APIToken
-  store.dispatch(tokenUpserted(token))
+const onTokenCreated = (data: WSEventPayloads['app_token_created']) => {
+  store.dispatch(tokenUpserted(data))
 }
 
-const onTokenDeleted = (data: unknown) => {
-  const tokenId = (data as any).id as string
-  store.dispatch(tokenDeleted(tokenId))
+const onTokenDeleted = (data: WSEventPayloads['app_token_deleted']) => {
+  store.dispatch(tokenDeleted(data.id))
 }
 
 export const registerWebSocketListeners = (ws: WebSocketManager) => {

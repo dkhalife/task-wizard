@@ -2,6 +2,7 @@ import { createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import { Label } from '@/models/label'
 import { CreateLabel, DeleteLabel, GetLabels, UpdateLabel } from '@/api/labels'
 import { SyncState } from '@/models/sync'
+import { WSEventPayloads } from '@/models/websocket'
 import WebSocketManager from '@/utils/websocket'
 import { store } from './store'
 
@@ -137,19 +138,16 @@ export const { enterEditMode, exitEditMode } = labelsSlice.actions
 
 const { labelUpserted, labelDeleted } = labelsSlice.actions
 
-const onLabelCreated = (data: unknown) => {
-  const label = (data as any).label as Label
-  store.dispatch(labelUpserted(label))
+const onLabelCreated = (data: WSEventPayloads['label_created']) => {
+  store.dispatch(labelUpserted(data.label))
 }
 
-const onlabelUpserted = (data: unknown) => {
-  const label = (data as any).label as Label
-  store.dispatch(labelUpserted(label))
+const onlabelUpserted = (data: WSEventPayloads['label_updated']) => {
+  store.dispatch(labelUpserted(data.label))
 }
 
-const onLabelDeleted = (data: unknown) => {
-  const labelId = (data as any).id as number
-  store.dispatch(labelDeleted(labelId))
+const onLabelDeleted = (data: WSEventPayloads['label_deleted']) => {
+  store.dispatch(labelDeleted(data.id))
 }
 
 export const registerWebSocketListeners = (ws: WebSocketManager) => {

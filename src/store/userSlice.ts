@@ -3,6 +3,7 @@ import { GetUserProfile, UpdateNotificationSettings } from '@/api/users'
 import { User } from '@/models/user'
 import { NotificationTriggerOptions, NotificationType } from '@/models/notifications'
 import { SyncState } from '@/models/sync'
+import { WSEventPayloads } from '@/models/websocket'
 import WebSocketManager from '@/utils/websocket'
 import { store } from './store'
 
@@ -99,14 +100,10 @@ export const userReducer = userSlice.reducer
 
 const { notificationSettingsUpdated } = userSlice.actions
 
-const onNotificationSettingsUpdated = (data: unknown) => {
-  const settings = data as any
-  store.dispatch(
-    notificationSettingsUpdated({
-      provider: settings.provider,
-      triggers: settings.triggers,
-    }),
-  )
+const onNotificationSettingsUpdated = (
+  data: WSEventPayloads['notification_settings_updated'],
+) => {
+  store.dispatch(notificationSettingsUpdated(data))
 }
 
 export const registerWebSocketListeners = (ws: WebSocketManager) => {

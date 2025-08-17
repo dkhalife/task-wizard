@@ -1,8 +1,15 @@
-import { WSEvent, WSRequest, WSResponse } from '@/models/websocket'
+import {
+  WSEvent,
+  WSAction,
+  WSEventPayloads,
+  WSRequest,
+} from '@/models/websocket'
 import { store } from '@/store/store'
 import { wsConnecting, wsConnected, wsDisconnected } from '@/store/wsSlice'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
+
+type WebSocketEventListener = (data: WSEventPayloads[WSEvent]) => void
 
 export class WebSocketManager {
   private static instance: WebSocketManager
@@ -10,7 +17,7 @@ export class WebSocketManager {
   private retryCount = 0
   private manualClose = false
   private enabled: boolean = store.getState().featureFlags.useWebsockets
-  private listeners: Map<WSEvent, Set<(data: unknown) => void>> = new Map()
+  private listeners: Map<WSEvent, Set<WebSocketEventListener>> = new Map()
   private dispatch = store.dispatch
 
   private constructor() {
@@ -78,15 +85,11 @@ export class WebSocketManager {
     }
 
     this.socket.onmessage = (event) => {
-      let message: WSResponse | null = null
       try {
-        message = JSON.parse(event.data)
+        const message = JSON.parse(event.data)
+        this.emit(message.action, message.data)
       } catch {
         console.debug('Unexpected WebSocket message type:', event.data)
-      }
-
-      if (message && message.action) {
-        this.emit(message.action, message.data)
       }
     }
  
@@ -102,32 +105,34 @@ export class WebSocketManager {
     }
   }
 
-  on(action: WSEvent, handler: (data: unknown) => void) {
+  on<T extends WSEvent>(action: T, handler: (data: WSEventPayloads[T]) => void) {
     if (!this.listeners.has(action)) {
       this.listeners.set(action, new Set())
     }
 
-    this.listeners.get(action)?.add(handler)
+    this.listeners
+      .get(action)!
+      .add(handler as WebSocketEventListener)
   }
 
-  off(action: WSEvent, handler: (data: unknown) => void) {
+  off<T extends WSEvent>(action: T, handler: (data: WSEventPayloads[T]) => void) {
     const handlers = this.listeners.get(action)
     if (!handlers) {
       return
     }
 
-    handlers.delete(handler)
+    handlers.delete(handler as WebSocketEventListener)
     if (handlers.size === 0) {
       this.listeners.delete(action)
     }
   }
 
-  async waitFor(
-    event: WSEvent,
-    condition: (data: unknown) => boolean,
-  ): Promise<unknown> {
+  async waitFor<T extends WSEvent>(
+    event: T,
+    condition: (data: WSEventPayloads[T]) => boolean,
+  ): Promise<WSEventPayloads[T]> {
     return new Promise((resolve, reject) => {
-      const handler = (data: unknown) => {
+      const handler = (data: WSEventPayloads[T]) => {
         let result = false
         try {
           result = condition(data)
@@ -151,7 +156,7 @@ export class WebSocketManager {
     })
   }
 
-  private emit(event: WSEvent, data: unknown) {
+  private emit<T extends WSEvent>(event: T, data: WSEventPayloads[T]) {
     const handlers = this.listeners.get(event)
     if (!handlers) {
       return
@@ -181,7 +186,7 @@ export class WebSocketManager {
     return this.socket !== null && this.socket.readyState === WebSocket.OPEN
   }
 
-  send(request: WSRequest): void {
+  send<T extends WSAction>(request: WSRequest<T>): void {
     if (!this.isConnected()) {
       throw new Error('WebSocket is not connected')
     }

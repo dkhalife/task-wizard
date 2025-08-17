@@ -9,10 +9,17 @@ import {
   UpdateDueDate,
 } from '@/api/tasks'
 import { newTask, Task } from '@/models/task'
-import { NotificationTrigger } from '@/models/notifications'
 import { RootState, store } from './store'
 import { SyncState } from '@/models/sync'
-import { getDefaultExpandedState, GROUP_BY, groupTaskBy, groupTasksBy, sortTasksByDueDate, TaskGroups } from '@/utils/grouping'
+import { WSEventPayloads } from '@/models/websocket'
+import {
+  getDefaultExpandedState,
+  GROUP_BY,
+  groupTaskBy,
+  groupTasksBy,
+  sortTasksByDueDate,
+  TaskGroups,
+} from '@/utils/grouping'
 import { retrieveValue, storeValue } from '@/utils/storage'
 import WebSocketManager from '@/utils/websocket'
 
@@ -394,61 +401,52 @@ export const tasksReducer = tasksSlice.reducer
 
 const { taskUpserted, taskDeleted } = tasksSlice.actions
 
-const onTaskCreated = (data: unknown) => {
-  const task = data as Task
-  store.dispatch(taskUpserted(task))
+const onTaskCreated = (data: WSEventPayloads['task_created']) => {
+  store.dispatch(taskUpserted(data))
 }
 
-const onTaskUpdated = (data: unknown) => {
-  const task = data as Task
-  store.dispatch(taskUpserted(task))
+const onTaskUpdated = (data: WSEventPayloads['task_updated']) => {
+  store.dispatch(taskUpserted(data))
 }
 
-const onTaskDeletedEvent = (data: unknown) => {
-  const taskId = (data as any).id as number
-  store.dispatch(taskDeleted(taskId))
+const onTaskDeletedEvent = (data: WSEventPayloads['task_deleted']) => {
+  store.dispatch(taskDeleted(data.id))
 }
 
-const onTaskCompleted = (data: unknown) => {
-  const task = data as Task
-
-  if (task.next_due_date) {
-    store.dispatch(taskUpserted(task))
+const onTaskCompleted = (data: WSEventPayloads['task_completed']) => {
+  if (data.next_due_date) {
+    store.dispatch(taskUpserted(data))
   } else {
-    store.dispatch(taskDeleted(task.id))
+    store.dispatch(taskDeleted(data.id))
   }
 }
 
-const onTaskUncompleted = (data: unknown) => {
-  const task = data as Task
-  store.dispatch(taskUpserted(task))
+const onTaskUncompleted = (data: WSEventPayloads['task_uncompleted']) => {
+  store.dispatch(taskUpserted(data))
 }
 
-const onTaskSkipped = (data: unknown) => {
-  const task = data as Task
-
-  if (task.next_due_date) {
-    store.dispatch(taskUpserted(task))
+const onTaskSkipped = (data: WSEventPayloads['task_skipped']) => {
+  if (data.next_due_date) {
+    store.dispatch(taskUpserted(data))
   } else {
-    store.dispatch(taskDeleted(task.id))
+    store.dispatch(taskDeleted(data.id))
   }
 }
 
-const onNotification = (data: unknown) => {
+const onNotification = (data: WSEventPayloads['notification']) => {
   const enabled = retrieveValue<boolean>('desktop_notifications', false)
   if (!enabled || Notification.permission !== 'granted') {
     return
   }
 
-  const payload = data as { task_id: number; type: NotificationTrigger }
   const state = store.getState()
-  const task = state.tasks.items.find(t => t.id === payload.task_id)
+  const task = state.tasks.items.find(t => t.id === data.task_id)
   if (!task) {
     return
   }
 
   let body = ''
-  switch (payload.type) {
+  switch (data.type) {
     case 'pre_due':
       body = 'Task is due soon'
       break
