@@ -19,6 +19,7 @@ export class WebSocketManager {
   private enabled: boolean = store.getState().featureFlags.useWebsockets
   private listeners: Map<WSEvent, Set<WebSocketEventListener>> = new Map()
   private dispatch = store.dispatch
+  private reconnectTimer?: ReturnType<typeof setTimeout>
 
   private constructor() {
     if (this.enabled) {
@@ -179,6 +180,11 @@ export class WebSocketManager {
       this.dispatch(wsDisconnected(null))
     }
 
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+      this.reconnectTimer = undefined
+    }
+
     this.retryCount = 0
   }
 
@@ -201,7 +207,10 @@ export class WebSocketManager {
 
     const delay = Math.min(30000, Math.pow(2, this.retryCount) * 1000)
     this.retryCount += 1
-    setTimeout(() => this.connect(), delay)
+    if (this.reconnectTimer) {
+      clearTimeout(this.reconnectTimer)
+    }
+    this.reconnectTimer = setTimeout(() => this.connect(), delay)
   }
 }
 
