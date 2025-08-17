@@ -71,6 +71,7 @@ export async function Request<SuccessfulResponse>(
 
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
+    'Cache-Control': 'no-store',
   }
 
   if (requiresAuth) {
@@ -80,6 +81,7 @@ export async function Request<SuccessfulResponse>(
   const options: RequestInit = {
     method,
     headers,
+    cache: 'no-store',
   }
 
   if (method !== 'GET') {
