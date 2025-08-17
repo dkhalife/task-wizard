@@ -1,6 +1,7 @@
 import { HistoryEntry } from "@/models/history"
 import { Task } from "@/models/task"
 import { TaskGroup, TaskGroups } from "./grouping";
+import { Label } from "@/models/label";
 
 export type TaskUI = Omit<Task, 'next_due_date' | 'end_date'> & {
   next_due_date: Date | null
@@ -12,21 +13,22 @@ export type HistoryEntryUI = Omit<HistoryEntry, 'due_date' | 'completed_date'> &
   completed_date: Date | null
 };
 
-export const MakeTaskUI = (task: Task): TaskUI => {
+export const MakeTaskUI = (task: Task, labels: Label[]): TaskUI => {
   return {
     ...task,
     next_due_date: MakeDateUI(task.next_due_date),
     end_date: MakeDateUI(task.end_date),
+    labels: MapLabels(task, labels),
   }
 }
 
-export const MakeTaskGroupsUI = (groups: TaskGroups<Task>): TaskGroups<TaskUI> => {
+export const MakeTaskGroupsUI = (groups: TaskGroups<Task>, labels: Label[]): TaskGroups<TaskUI> => {
   return Object.fromEntries<TaskGroup<TaskUI>>(
     Object.entries<TaskGroup<Task>>(groups).map(([key, group]) => [
       key,
       {
         ...group,
-        content: group.content.map(task => MakeTaskUI(task)),
+        content: group.content.map(task => MakeTaskUI(task, labels)),
       },
     ])
   )
@@ -67,4 +69,11 @@ export const MarshallLabels = (task: Task): Omit<Task, 'labels'> & {labels: numb
     ...task,
     labels: task.labels.map(label => label.id),
   }
+}
+
+export const MapLabels = (task: Task, labels: Label[]): Label[] => {
+  return task.labels.map(label => {
+    const found = labels.find(l => l.id === label.id)
+    return found || label
+  })
 }

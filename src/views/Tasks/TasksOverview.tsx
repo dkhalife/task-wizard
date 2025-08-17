@@ -331,7 +331,8 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
 
 const mapStateToProps = (state: RootState) => {
   const search = state.tasks.searchQuery
-  const tasks = state.tasks.filteredItems.map(task => MakeTaskUI(task))
+  const labels = state.labels.items
+  const tasks = state.tasks.filteredItems.map(task => MakeTaskUI(task, labels))
 
   return {
     search,
