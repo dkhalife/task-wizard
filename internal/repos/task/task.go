@@ -71,8 +71,7 @@ func (r *TaskRepository) GetCompletedTasks(c context.Context, userID int, limit 
 }
 
 func (r *TaskRepository) DeleteTask(c context.Context, id int) error {
-	r.db.WithContext(c).Where("task_id = ?", id)
-	return r.db.WithContext(c).Delete(&models.Task{}, id).Error
+	return r.db.WithContext(c).Where("id = ?", id).Delete(&models.Task{}).Error
 }
 
 func (r *TaskRepository) IsTaskOwner(c context.Context, taskID int, userID int) error {
