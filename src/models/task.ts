@@ -137,44 +137,52 @@ export const getRecurrentChipText = (
   nextDueDate: Date | null,
   frequency: Frequency,
 ) => {
-  if (frequency.type === 'once') {
-    return 'Once'
-  } else if (frequency.type === 'daily') {
-    return 'Daily'
-  } else if (frequency.type === 'weekly') {
-    return 'Weekly'
-  } else if (frequency.type === 'monthly') {
-    return 'Monthly'
-  } else if (frequency.type === 'yearly') {
-    return 'Yearly'
-  } else if (frequency.type === 'custom') {
-    if (frequency.on === 'interval') {
-      if (frequency.every == 1) {
-        switch (frequency.unit) {
-          case 'hours':
-            return 'Hourly'
-          case 'days':
-            return 'Daily'
-          case 'weeks':
-            return 'Weekly'
-          case 'months':
-            return 'Monthly'
-          case 'years':
-            return 'Yearly'
+  switch (frequency.type) {
+    case 'once':
+      return 'Once'
+    case 'daily':
+      return 'Daily'
+    case 'weekly':
+      return 'Weekly'
+    case 'monthly':
+      return 'Monthly'
+    case 'yearly':
+      return 'Yearly'
+    case 'custom':
+      switch (frequency.on) {
+        case 'interval':
+          if (frequency.every === 1) {
+            switch (frequency.unit) {
+              case 'hours':
+                return 'Hourly'
+              case 'days':
+                return 'Daily'
+              case 'weeks':
+                return 'Weekly'
+              case 'months':
+                return 'Monthly'
+              case 'years':
+                return 'Yearly'
+              default:
+                return `Every ${frequency.every} ${frequency.unit}`
+            }
+          }
+          return `Every ${frequency.every} ${frequency.unit}`
+        case 'days_of_the_week':
+          return frequency.days
+            .map((d: number) => format(setDay(new Date(), d), 'EEE'))
+            .join(', ')
+        case 'day_of_the_months': {
+          const months = frequency.months.map((m: number) =>
+            format(setMonth(new Date(), m), 'MMM')
+          )
+          const day = nextDueDate ? nextDueDate.getDate() : 0
+          return `${day}${dayOfMonthSuffix(day)} of ${months.join(', ')}`
         }
-      } else {
-        return `Every ${frequency.every} ${frequency.unit}`
+        default:
+          return ''
       }
-    } else if (frequency.on === 'days_of_the_week') {
-      return frequency.days
-        .map((d: number) => format(setDay(new Date(), d), 'EEE'))
-        .join(', ')
-    } else if (frequency.on === 'day_of_the_months') {
-      const months = frequency.months.map((m: number) =>
-        format(setMonth(new Date(), m), 'MMM')
-      )
-      const day = nextDueDate ? nextDueDate.getDate() : 0
-      return `${day}${dayOfMonthSuffix(day)} of ${months.join(', ')}`
-    }
+    default:
+      return ''
   }
 }
