@@ -114,6 +114,9 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
       this.setState({
         lastTaskId: taskId,
       })
+    } else if (taskId === INVALID_TASK_ID) {
+      // Always reset draft when navigating to create page, even if taskId hasn't changed
+      this.updateDraftState(taskId)
     }
   }
 
