@@ -142,8 +142,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
-	if err := http2.ConfigureServer(srv, h2s); err != nil {
-		log.Fatalf("configure http2: %v", err)
+		log.Fatalf("failed to configure HTTP/2 server: %v", err)
 	}
 	if len(cfg.Server.AllowedOrigins) > 0 {
 		corsCfg := cors.DefaultConfig()
