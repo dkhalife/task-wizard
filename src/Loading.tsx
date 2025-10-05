@@ -20,7 +20,7 @@ export class Loading extends React.Component<LoadingProps, LoadingState> {
   }
 
   componentDidMount() {
-    this.timeout = setTimeout(() => {
+    this.timeout = window.setTimeout(() => {
       this.setState({
         subMessage:
           'This is taking longer than usual. There might be an issue.',
