@@ -1,0 +1,16 @@
+{
+	"name": "Tasks",
+	"image": "mcr.microsoft.com/devcontainers/go:1-1.23-bookworm",
+	"features": {
+		"ghcr.io/devcontainers/features/github-cli:1": {
+			"installDirectlyFromGitHubRelease": true,
+			"version": "latest"
+		},
+		"ghcr.io/devcontainers/features/node:1": {
+			"installYarnUsingApt": true,
+			"version": "latest",
+			"pnpmVersion": "none",
+			"nvmVersion": "latest"
+		}
+	},
+}

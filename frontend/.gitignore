@@ -1,0 +1,16 @@
+*.log
+*.local
+
+dist
+node_modules
+
+.yarn/
+.yarnrc.yml
+
+# Test coverage
+coverage
+
+# Playwright
+test-results/
+playwright-report/
+playwright/.cache/
