@@ -40,6 +40,20 @@ GitHub codespaces to jump into a remote development environment without installi
 1. Separately follow instructions from [tasks-backend](https://github.com/dkhalife/tasks-backend)
 1. (optionally) If using a different host for the backend, update `VITE_APP_API_URL` in [.env](./.env)
 
+### 🧪 E2E Testing
+
+End-to-end tests are written using [Playwright](https://playwright.dev/). To run the tests:
+
+1. Ensure dependencies are installed: `yarn install`
+1. Install Playwright browsers: `npx playwright install chromium`
+1. Run tests: `yarn test:e2e`
+
+Additional test commands:
+* `yarn test:e2e:ui` - Run tests in interactive UI mode
+* `yarn test:e2e:headed` - Run tests in headed mode (see the browser)
+
+Tests are located in the `e2e/` directory and automatically run in CI on every pull request.
+
 ## 🤝 Contributing
 
 Contributions are welcome! If you would like to contribute to this repo, feel free to fork the repo and submit pull requests.
