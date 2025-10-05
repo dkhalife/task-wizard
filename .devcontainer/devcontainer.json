@@ -14,7 +14,7 @@
 		}
 	},
 	"containerEnv": {
-		"TW_CONFIG_FILE": "/workspaces/tasks-backend/config/config.dev.yaml"
+		"TW_CONFIG_FILE": "/workspaces/task-wizard/config/config.dev.yaml"
 	},
 	"customizations": {
 		"vscode": {
@@ -32,7 +32,7 @@
 						"pullRequests": "write"
 					}
 				},
-				"dkhalife/tasks-backend": {
+				"dkhalife/task-wizard": {
 					"permissions": {
 						"contents": "write",
 						"pullRequests": "write"

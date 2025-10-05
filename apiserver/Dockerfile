@@ -15,7 +15,7 @@ RUN set -ex; \
     x86_64) arch='x86_64' ;; \
     *) echo >&2 "error: unsupported architecture: $apkArch"; exit 1 ;; \
     esac; \
-    curl -fL "https://github.com/dkhalife/tasks-backend/releases/download/${RELEASE_TAG}/task-wizard_Linux_$arch.tar.gz" | tar -xz -C .
+    curl -fL "https://github.com/dkhalife/task-wizard/releases/download/${RELEASE_TAG}/task-wizard_Linux_$arch.tar.gz" | tar -xz -C .
 
 # Stage 2: Create a smaller runtime image
 FROM alpine:latest
