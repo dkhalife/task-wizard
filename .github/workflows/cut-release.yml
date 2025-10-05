@@ -14,12 +14,15 @@ jobs:
     - uses: actions/checkout@v4
       with:
         token: ${{ secrets.WORKFLOW_TOKEN }}
+    - name: Bump frontend version
+      run: |
+        cd frontend
+        npm version patch --no-git-tag-version
     - name: Get the latest tag
       id: get_latest_tag
       env:
         GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
       run: |
-        gh repo set-default dkhalife/task-wizard
         latest_tag=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
         echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
     - name: Bump version

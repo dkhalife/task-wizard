@@ -1,5 +1,5 @@
 {
-	"name": "Tasks",
+	"name": "Task Wizard",
 	"image": "mcr.microsoft.com/devcontainers/go:1-1.23-bookworm",
 	"features": {
 		"ghcr.io/devcontainers/features/github-cli:1": {
@@ -26,12 +26,6 @@
 		},
 		"codespaces": {
 			"repositories": {
-				"dkhalife/tasks-frontend": {
-					"permissions": {
-						"contents": "write",
-						"pullRequests": "write"
-					}
-				},
 				"dkhalife/task-wizard": {
 					"permissions": {
 						"contents": "write",
@@ -41,13 +35,7 @@
 			}
 		}
 	},
-	"mounts": [
-		{
-			"source": "${localWorkspaceFolder}/../tasks-frontend",
-			"target": "/workspaces/tasks-frontend",
-			"type": "bind"
-		}
-	],
+	"mounts": [],
 	"workspaceFolder": "/workspaces",
     "runArgs": [
         "--cpus=4",

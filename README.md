@@ -1,4 +1,4 @@
-[![Build](https://github.com/dkhalife/task-wizard/actions/workflows/go-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/go-build.yml) [![codecov](https://codecov.io/gh/dkhalife/task-wizard/graph/badge.svg?token=UQ4DTE3WI1)](https://codecov.io/gh/dkhalife/task-wizard) [![CodeQL](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql) [![Dependabot Updates](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates)
+[![api build](https://github.com/dkhalife/task-wizard/actions/workflows/go-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/go-build.yml) [![api codecov](https://codecov.io/gh/dkhalife/task-wizard/graph/badge.svg?token=UQ4DTE3WI1)](https://codecov.io/gh/dkhalife/task-wizard) [![frontend build](https://github.com/dkhalife/task-wizard/actions/workflows/ci.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/ci.yml) [![CodeQL](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql) [![Dependabot Updates](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates)
 
 # Task Wizard
 
@@ -6,7 +6,7 @@
 
 Task Wizard is a free and open-source app designed to help manage tasks effectively. Its primary focus is to give users control over data and allow them to build integrations around it however they choose to.
 
-This repo contains the backend logic for the app. You can find the default frontend implementation that is released with it in the [tasks-frontend](https://github.com/dkhalife/tasks-frontend) repo. This repo started as a fork of [DoneTick](https://github.com/donetick/donetick) but has since diverged from the original source code in order to accomplish different goals. Kudos to the contributors of [DoneTick](https://github.com/donetick/donetick) for helping kickstart this project.
+This repo started as a fork of [DoneTick](https://github.com/donetick/donetick) but has since diverged from the original source code in order to accomplish different goals. Kudos to the contributors of [DoneTick](https://github.com/donetick/donetick) for helping kickstart this project.
 
 ## 🎯 Goals and principles
 
@@ -118,22 +118,14 @@ The configuration files are yaml mappings with the following values:
 
 ## 🛠️ Development
 
-### 🖥️ Devcontainer
-
 A [devcontainer](./.devcontainer/devcontainer.json) configuration is set up in this repo to help jumpstart development with all the required dependencies available for both the frontend and backend. You can use this configuration alongside
 GitHub codespaces to jump into a remote development environment without installing anything on your local machine. For the best experience make sure your codespace has both repos cloned in it. Ports can be forwarded from within the container so that you are able to test changes locally through the VS Code tunnel.
 
 ### 📃 Requirements
 
-* GoLang
-
-### 🔁 Inner loop
-
-1. Navigate to the root of the repo
-1. Ensure you have the latest packages installed with `go mod download`
-1. Run the app `go run .`
-1. (optional) For live reload, install air with
-`go install github.com/cosmtrek/air@latest` then to run the app use `air`
+* [GoLang](https://go.dev)
+* [NodeJS](https://nodejs.org) 20+
+* [yarn](yarnpkg.com)
 
 ## 🤝 Contributing
 
