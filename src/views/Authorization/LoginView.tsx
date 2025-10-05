@@ -42,7 +42,7 @@ export class LoginView extends React.Component<LoginViewProps, LoginViewState> {
 
     try {
       const { email, password } = this.state
-      doLogin(email, password, this.props.navigate)
+      await doLogin(email, password, this.props.navigate)
     } catch (error) {
       this.setState({ error: (error as Error).message })
     }
@@ -131,7 +131,7 @@ export class LoginView extends React.Component<LoginViewProps, LoginViewState> {
               Sign In
             </Button>
             <Button
-              type='submit'
+              type='button'
               fullWidth
               size='lg'
               variant='plain'
