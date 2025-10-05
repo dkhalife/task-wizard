@@ -12,6 +12,10 @@ export interface UserState {
   status: SyncState
   lastFetched: number | null
   error: string | null
+  draftNotificationSettings: {
+    provider: NotificationType
+    triggers: NotificationTriggerOptions
+  }
 }
 
 const initialState: UserState = {
@@ -31,6 +35,16 @@ const initialState: UserState = {
   status: 'loading',
   lastFetched: null,
   error: null,
+  draftNotificationSettings: {
+    provider: {
+      provider: 'none'
+    },
+    triggers: {
+      pre_due: false,
+      due_date: false,
+      overdue: false,
+    },
+  },
 }
 
 export const fetchUser = createAsyncThunk('user/fetchUser', async () => {
@@ -55,6 +69,19 @@ const userSlice = createSlice({
     ) {
       state.profile.notifications.provider = action.payload.provider
       state.profile.notifications.triggers = action.payload.triggers
+      // Keep draft in sync when updated via websocket
+      state.draftNotificationSettings.provider = action.payload.provider
+      state.draftNotificationSettings.triggers = action.payload.triggers
+    },
+    setNotificationSettingsDraft(
+      state,
+      action: PayloadAction<{
+        provider: NotificationType
+        triggers: NotificationTriggerOptions
+      }>,
+    ) {
+      state.draftNotificationSettings.provider = action.payload.provider
+      state.draftNotificationSettings.triggers = action.payload.triggers
     },
   },
   extraReducers: builder => {
@@ -68,6 +95,9 @@ const userSlice = createSlice({
         state.profile = action.payload
         state.lastFetched = Date.now()
         state.error = null
+        // Initialize draft with the fetched profile's notification settings
+        state.draftNotificationSettings.provider = action.payload.notifications.provider
+        state.draftNotificationSettings.triggers = action.payload.notifications.triggers
       })
       .addCase(fetchUser.rejected, (state, action) => {
         state.status = 'failed'
@@ -95,6 +125,8 @@ const userSlice = createSlice({
       })
   },
 })
+
+export const { setNotificationSettingsDraft } = userSlice.actions
 
 export const userReducer = userSlice.reducer
 

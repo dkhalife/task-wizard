@@ -33,6 +33,14 @@ export class NotificationOptions extends React.Component<
     }
   }
 
+  componentDidUpdate(prevProps: NotificationOptionsProps) {
+    if (prevProps.notification !== this.props.notification) {
+      this.setState({
+        notification: this.props.notification,
+      })
+    }
+  }
+
   private onNotificationOptionChange = (item: NotificationTriggerOption) => {
     const { notification } = this.state
 

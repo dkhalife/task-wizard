@@ -22,20 +22,19 @@ import {
 } from '@/models/notifications'
 import { RootState, AppDispatch } from '@/store/store'
 import { connect } from 'react-redux'
-import { updateNotificationSettings } from '@/store/userSlice'
+import { updateNotificationSettings, setNotificationSettingsDraft } from '@/store/userSlice'
 
 type NotificationSettingProps = {
-  initialType: NotificationType
-  initialOptions: NotificationTriggerOptions
+  draftType: NotificationType
+  draftOptions: NotificationTriggerOptions
 
+  setNotificationSettingsDraft: (provider: NotificationType, triggers: NotificationTriggerOptions) => void
   updateNotificationSettings: (type: NotificationType, options: NotificationTriggerOptions) => Promise<any>
 }
 
 interface NotificationSettingState {
   saved: boolean
-  type: NotificationType
   error: string
-  options: NotificationTriggerOptions
 }
 
 class NotificationSettingsImpl extends React.Component<
@@ -48,8 +47,6 @@ class NotificationSettingsImpl extends React.Component<
     this.state = {
       saved: true,
       error: '',
-      type: props.initialType,
-      options: props.initialOptions,
     }
   }
 
@@ -60,9 +57,9 @@ class NotificationSettingsImpl extends React.Component<
     const provider = option as NotificationProvider
     const type = getDefaultTypeForProvider(provider)
 
+    this.props.setNotificationSettingsDraft(type, this.props.draftOptions)
     this.setState({
       saved: false,
-      type,
     })
   }
 
@@ -71,56 +68,65 @@ class NotificationSettingsImpl extends React.Component<
     option: SelectValue<string, false>,
   ) => {
     const method = option as WebhookMethod
-    const type = this.state.type as NotificationTypeWebhook
+    const type = this.props.draftType as NotificationTypeWebhook
 
-    this.setState({
-      saved: false,
-      type: {
+    this.props.setNotificationSettingsDraft(
+      {
         ...type,
         method,
       },
+      this.props.draftOptions
+    )
+    this.setState({
+      saved: false,
     })
   }
 
   private onURLChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
     const url = e.target.value
 
-    const type = this.state.type as
+    const type = this.props.draftType as
       | NotificationTypeWebhook
       | NotificationTypeGotify
 
-    this.setState({
-      saved: false,
-      type: {
+    this.props.setNotificationSettingsDraft(
+      {
         ...type,
         url,
       },
+      this.props.draftOptions
+    )
+    this.setState({
+      saved: false,
     })
   }
 
   private onGotifyTokenChanged = (e: React.ChangeEvent<HTMLInputElement>) => {
     const token = e.target.value
 
-    const type = this.state.type as NotificationTypeGotify
+    const type = this.props.draftType as NotificationTypeGotify
 
-    this.setState({
-      saved: false,
-      type: {
+    this.props.setNotificationSettingsDraft(
+      {
         ...type,
         token,
       },
+      this.props.draftOptions
+    )
+    this.setState({
+      saved: false,
     })
   }
 
   private onTriggersChanged = (options: NotificationTriggerOptions) => {
+    this.props.setNotificationSettingsDraft(this.props.draftType, options)
     this.setState({
       saved: false,
-      options,
     })
   }
 
   private onSaveClicked = async () => {
-    const { type, options } = this.state
+    const { draftType: type, draftOptions: options } = this.props
     if (type.provider === 'webhook') {
       const isValidURL = type.url.match(/^https?:\/\/[^\s/$.?#].[^\s]*$/i)
       if (!isValidURL) {
@@ -152,7 +158,8 @@ class NotificationSettingsImpl extends React.Component<
   }
 
   render(): React.ReactNode {
-    const { error, type, options, saved } = this.state
+    const { error, saved } = this.state
+    const { draftType: type, draftOptions: options } = this.props
 
     const placeholderURL =
       type.provider === 'webhook'
@@ -254,15 +261,15 @@ class NotificationSettingsImpl extends React.Component<
 }
 
 const mapStateToProps = (state: RootState) => {
-  const userNotifications = state.user.profile.notifications
-
   return {
-    initialType: userNotifications.provider,
-    initialOptions: userNotifications.triggers,
+    draftType: state.user.draftNotificationSettings.provider,
+    draftOptions: state.user.draftNotificationSettings.triggers,
   }
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  setNotificationSettingsDraft: (provider: NotificationType, triggers: NotificationTriggerOptions) =>
+    dispatch(setNotificationSettingsDraft({ provider, triggers })),
   updateNotificationSettings: (type: NotificationType, options: NotificationTriggerOptions) =>
     dispatch(updateNotificationSettings({ type, options })),
 })
