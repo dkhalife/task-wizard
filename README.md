@@ -1,4 +1,4 @@
-[![Build](https://github.com/dkhalife/tasks-backend/actions/workflows/go-build.yml/badge.svg)](https://github.com/dkhalife/tasks-backend/actions/workflows/go-build.yml) [![codecov](https://codecov.io/gh/dkhalife/tasks-backend/graph/badge.svg?token=UQ4DTE3WI1)](https://codecov.io/gh/dkhalife/tasks-backend) [![CodeQL](https://github.com/dkhalife/tasks-backend/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/dkhalife/tasks-backend/actions/workflows/github-code-scanning/codeql) [![Dependabot Updates](https://github.com/dkhalife/tasks-backend/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/dkhalife/tasks-backend/actions/workflows/dependabot/dependabot-updates)
+[![Build](https://github.com/dkhalife/task-wizard/actions/workflows/go-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/go-build.yml) [![codecov](https://codecov.io/gh/dkhalife/task-wizard/graph/badge.svg?token=UQ4DTE3WI1)](https://codecov.io/gh/dkhalife/task-wizard) [![CodeQL](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql) [![Dependabot Updates](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates)
 
 # Task Wizard
 
@@ -138,7 +138,7 @@ GitHub codespaces to jump into a remote development environment without installi
 ## 🤝 Contributing
 
 Contributions are welcome! If you would like to contribute to this repo, feel free to fork the repo and submit pull requests.
-If you have ideas but aren't familiar with code, you can also [open issues](https://github.com/dkhalife/tasks-backend/issues).
+If you have ideas but aren't familiar with code, you can also [open issues](https://github.com/dkhalife/task-wizard/issues).
 
 ## 🔒 License
 

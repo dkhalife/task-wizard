@@ -19,7 +19,7 @@ jobs:
       env:
         GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
       run: |
-        gh repo set-default dkhalife/tasks-backend
+        gh repo set-default dkhalife/task-wizard
         latest_tag=$(gh release list --limit 1 --json tagName -q '.[0].tagName')
         echo "latest_tag=$latest_tag" >> $GITHUB_OUTPUT
     - name: Bump version
