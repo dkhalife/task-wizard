@@ -25,16 +25,24 @@ jobs:
         go-version: '1.23'
 
     - name: Build
-      run: go build -v ./...
+      run: |
+        cd apiserver
+        go build -v ./...
 
     - name: Install lint tool
-      run: go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
+      run: |
+        cd apiserver
+        go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest
 
     - name: Lint
-      run: golangci-lint run
+      run: |
+        cd apiserver
+        golangci-lint run
 
     - name: Run Tests and Generate Coverage
-      run: go test -v -coverprofile=coverage.txt ./...
+      run: |
+        cd apiserver
+        go test -v -coverprofile=coverage.txt ./...
 
     - name: Upload coverage reports to Codecov
       uses: codecov/codecov-action@v5
