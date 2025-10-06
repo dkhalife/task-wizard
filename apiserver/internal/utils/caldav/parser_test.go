@@ -97,7 +97,9 @@ END:VCALENDAR`
 	title, due, err := ParseVTODO(vtodo)
 	require.NoError(t, err)
 	require.Equal(t, "Test Task", title)
-	// Invalid date format should result in nil due date (not an error)
+	// The parser gracefully handles invalid date formats by ignoring them
+	// and returning nil for the due date rather than failing the entire parse.
+	// This design allows partial data extraction even when some fields are malformed.
 	require.Nil(t, due)
 }
 
