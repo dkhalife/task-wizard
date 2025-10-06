@@ -15,9 +15,10 @@ import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
 import { AppDispatch } from '@/store/store'
 import { pushStatus } from '@/store/statusSlice'
+import { StatusSeverity } from '@/models/status'
 
 type LoginViewProps = WithNavigate & {
-  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) => void
+  pushStatus: (message: string, severity: StatusSeverity, timeout?: number) => void
 }
 
 interface LoginViewState {
@@ -162,7 +163,7 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) =>
+  pushStatus: (message: string, severity: StatusSeverity, timeout?: number) =>
     dispatch(pushStatus({ message, severity, timeout })),
 })
 
