@@ -32,6 +32,8 @@ class UpdatePasswordViewImpl extends React.Component<
   UpdatePasswordViewProps,
   UpdatePasswordViewState
 > {
+  private navigationTimeout?: NodeJS.Timeout
+
   constructor(props: UpdatePasswordViewProps) {
     super(props)
 
@@ -40,6 +42,12 @@ class UpdatePasswordViewImpl extends React.Component<
       passwordConfirm: '',
       passwordError: null,
       passwordConfirmationError: null,
+    }
+  }
+
+  componentWillUnmount(): void {
+    if (this.navigationTimeout) {
+      clearTimeout(this.navigationTimeout)
     }
   }
 
@@ -89,7 +97,7 @@ class UpdatePasswordViewImpl extends React.Component<
       const verificationCode = getQuery('c')
       await ChangePassword(verificationCode, password)
       this.props.pushStatus('Password updated successfully', 'success', 3000)
-      setTimeout(() => this.props.navigate(NavigationPaths.Login), 3000)
+      this.navigationTimeout = setTimeout(() => this.props.navigate(NavigationPaths.Login), 3000)
     } catch {
       this.props.pushStatus('Password update failed, try again later', 'error', 6000)
     }

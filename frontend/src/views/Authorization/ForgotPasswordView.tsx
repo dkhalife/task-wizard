@@ -80,13 +80,6 @@ class ForgotPasswordViewImpl extends React.Component<
     this.handleSubmit()
   }
 
-  private onSnackbarClose = () => {
-    const { resetStatusOk } = this.state
-    if (resetStatusOk) {
-      this.props.navigate(NavigationPaths.Login)
-    }
-  }
-
   render(): React.ReactNode {
     const { email, emailError, resetStatusOk } = this.state
     const { navigate } = this.props

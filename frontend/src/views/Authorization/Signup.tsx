@@ -37,6 +37,8 @@ class SignupViewImpl extends React.Component<
   SignupViewProps,
   SignupViewState
 > {
+  private navigationTimeout?: NodeJS.Timeout
+
   constructor(props: SignupViewProps) {
     super(props)
 
@@ -53,6 +55,12 @@ class SignupViewImpl extends React.Component<
 
   componentDidMount(): void {
     setTitle('Sign Up')
+  }
+
+  componentWillUnmount(): void {
+    if (this.navigationTimeout) {
+      clearTimeout(this.navigationTimeout)
+    }
   }
 
   private handleSignUpValidation = () => {
@@ -108,7 +116,7 @@ class SignupViewImpl extends React.Component<
         accountCreated: true,
       })
       this.props.pushStatus('Please check your email to verify your account.', 'success', 3000)
-      setTimeout(() => this.props.navigate(NavigationPaths.Login), 3000)
+      this.navigationTimeout = setTimeout(() => this.props.navigate(NavigationPaths.Login), 3000)
     } catch (error) {
       this.props.pushStatus((error as Error).message, 'error', 5000)
     }
