@@ -12,6 +12,7 @@
 
 Code must pass linting rules before it is merged into main.
 
+1. Install `golangci-lint` if you don't have it: `go install github.com/golangci/golangci-lint/cmd/golangci-lint@latest`
 1. Run `go lint`
 
 ## 🧪 Testing

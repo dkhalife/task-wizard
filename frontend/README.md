@@ -4,7 +4,7 @@
 
 1. Ensure you have the latest packages installed with `yarn install`
 1. Run `yarn start`. The output will contain instructions on how to browse the frontend.
-1. Separately follow instructions from [apisserver](../apiserver)
+1. Separately follow instructions from [apiserver](../apiserver)
 1. (optionally) If using a different host for the backend, update `VITE_APP_API_URL` in [.env](./.env)
 
 ## 🧹 Linting

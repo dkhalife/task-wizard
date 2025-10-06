@@ -125,7 +125,7 @@ GitHub codespaces to jump into a remote development environment without installi
 
 * [GoLang](https://go.dev)
 * [NodeJS](https://nodejs.org) 20+
-* [yarn](yarnpkg.com)
+* [yarn](https://yarnpkg.com)
 
 ## 🤝 Contributing
 
