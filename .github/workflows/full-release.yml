@@ -19,15 +19,6 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Checkout Frontend
-        uses: actions/checkout@v4
-        with:
-          repository: '${{ vars.FRONTEND_REPO }}'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ vars.FRONTEND_REF }}
-          path: 'frontend-code'
-          fetch-depth: 0
-          fetch-tags: true
       # build frontend 
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
@@ -35,18 +26,18 @@ jobs:
           node-version: 22.x
       - name: Install Dependencies
         run: |
-          cd frontend-code
+          cd frontend
           yarn install
       - name: Build Frontend
         run: |
           export VITE_BACKEND_VERSION=$(git tag --sort=-creatordate | sed -n '1p' | sed 's/^v//')
-          cd frontend-code
+          cd frontend
           yarn build
 
       - name: Copy Frontend
         run: |
           rm -rf ./frontend/dist
-          cp -r frontend-code/dist ./frontend/dist
+          cp -r frontend/dist ./frontend/dist
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -85,16 +76,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Checkout Frontend
-        uses: actions/checkout@v4
-        with:
-          repository: '${{ vars.FRONTEND_REPO }}'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ vars.FRONTEND_REF }}
-          path: 'frontend-code'
-          fetch-depth: 0
-          fetch-tags: true
-
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -121,18 +102,7 @@ jobs:
           GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
         run: |
           changelog=$(echo -e "## Changelog\n")
-  
-          pushd frontend-code
-          latestTag=$(git tag --sort=-creatordate | sed -n '1p')
-          previousTag=$(git tag --sort=-creatordate | sed -n '2p')
-          echo "Evaluating frontend repo:"
-          echo "Latest tag: $latestTag"
-          echo "Previous tag: $previousTag"
-  
-          url="https://github.com/${{ vars.FRONTEND_REPO }}/compare/$previousTag...$latestTag"
-          changelog+=$(echo -e "\n### Changes in [frontend]($url)\n\n$(git log --no-merges --pretty=format:"* %s" $previousTag...$latestTag)")
-          popd
-  
+    
           latestTag=$(git tag --sort=-creatordate | sed -n '1p')
           previousTag=$(git tag --sort=-creatordate | sed -n '2p')
           echo "Evaluating backend repo:"

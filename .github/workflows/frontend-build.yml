@@ -23,40 +23,26 @@ jobs:
       uses: actions/setup-node@v4
       with:
         node-version: ${{ matrix.node-version }}
-        cache: 'npm'
+        cache: 'yarn'
+        cache-dependency-path: frontend/yarn.lock
     - name: Install dependencies
       run: yarn install --frozen-lockfile
-    - name: Build (TSC)
-      run: yarn tsc
-    - name: Build (Vite)
-      run: yarn build
-  lint:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 22
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: 'npm'
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
-    - run: yarn lint
-  e2e-tests:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Use Node.js 22
-      uses: actions/setup-node@v4
-      with:
-        node-version: 22
-        cache: 'npm'
-    - name: Install dependencies
-      run: yarn install --frozen-lockfile
+      working-directory: frontend
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
+      working-directory: frontend
+    - name: Lint
+      run: yarn lint
+      working-directory: frontend
+    - name: Build (TSC)
+      run: yarn tsc
+      working-directory: frontend
+    - name: Build (Vite)
+      run: yarn build
+      working-directory: frontend
     - name: Run Playwright tests
       run: yarn test:e2e
+      working-directory: frontend
     - uses: actions/upload-artifact@v4
       if: always()
       with:
