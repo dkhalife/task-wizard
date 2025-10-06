@@ -1,15 +1,5 @@
 import { test, expect, Page } from '@playwright/test';
 
-/**
- * Authentication & Onboarding E2E Tests
- * 
- * Test suites covering:
- * 1. Sign up with email/password
- * 2. Login / Logout
- * 3. Password reset flow
- * 4. Session expiry
- */
-
 // Test data
 const testUser = {
   email: `test-${Date.now()}@example.com`,
@@ -246,7 +236,7 @@ test.describe('Authentication & Onboarding', () => {
       // 3. Use the signup flow to create an account first
     });
 
-    test('should persist session after login', async ({ page, context }) => {
+    test('should persist session after login', async ({ page }) => {
       // This test verifies that localStorage tokens are set
       await page.goto('/login');
       
