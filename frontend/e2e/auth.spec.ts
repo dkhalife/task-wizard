@@ -76,10 +76,11 @@ test.describe('Authentication & Onboarding', () => {
     test('should show error for invalid email format', async ({ page }) => {
       await page.goto('/signup');
       
-      // Enter invalid email - use proper selectors
+      // Use specific selectors for each field
       const emailInput = page.locator('input[autocomplete="email"]');
-      const displayNameInput = page.locator('input').nth(2); // Third input is display name
       const passwordInput = page.locator('input[type="password"]');
+      // Display name is after "Display Name:" label - the last regular input
+      const displayNameInput = page.locator('form input:not([type="password"]):not([autocomplete])').last();
       
       await emailInput.fill('invalid-email');
       await displayNameInput.fill('Test User');
@@ -95,10 +96,10 @@ test.describe('Authentication & Onboarding', () => {
     test('should show error for weak password', async ({ page }) => {
       await page.goto('/signup');
       
-      // Use proper selectors
+      // Use specific selectors for each field
       const emailInput = page.locator('input[autocomplete="email"]');
-      const displayNameInput = page.locator('input').nth(2);
       const passwordInput = page.locator('input[type="password"]');
+      const displayNameInput = page.locator('form input:not([type="password"]):not([autocomplete])').last();
       
       // Enter weak password
       await emailInput.fill('test@example.com');
@@ -115,10 +116,10 @@ test.describe('Authentication & Onboarding', () => {
     test('should show error for invalid display name with special characters', async ({ page }) => {
       await page.goto('/signup');
       
-      // Use proper selectors
+      // Use specific selectors for each field
       const emailInput = page.locator('input[autocomplete="email"]');
-      const displayNameInput = page.locator('input').nth(2);
       const passwordInput = page.locator('input[type="password"]');
+      const displayNameInput = page.locator('form input:not([type="password"]):not([autocomplete])').last();
       
       // Enter display name with special characters
       await emailInput.fill('test@example.com');
@@ -135,10 +136,10 @@ test.describe('Authentication & Onboarding', () => {
     test('should successfully sign up with valid inputs and show verification message', async ({ page }) => {
       await page.goto('/signup');
       
-      // Use proper selectors
+      // Use specific selectors for each field
       const emailInput = page.locator('input[autocomplete="email"]');
-      const displayNameInput = page.locator('input').nth(2);
       const passwordInput = page.locator('input[type="password"]');
+      const displayNameInput = page.locator('form input:not([type="password"]):not([autocomplete])').last();
       
       // Fill in valid form data
       await emailInput.fill(testUser.email);
