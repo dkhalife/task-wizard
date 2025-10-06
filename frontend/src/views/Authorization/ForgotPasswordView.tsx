@@ -12,11 +12,15 @@ import {
   Input,
   FormHelperText,
   Button,
-  Snackbar,
 } from '@mui/joy'
 import React, { ChangeEvent } from 'react'
+import { connect } from 'react-redux'
+import { AppDispatch } from '@/store/store'
+import { pushStatus } from '@/store/statusSlice'
 
-type ForgotPasswordViewProps = WithNavigate
+type ForgotPasswordViewProps = WithNavigate & {
+  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) => void
+}
 
 interface ForgotPasswordViewState {
   email: string
@@ -24,7 +28,7 @@ interface ForgotPasswordViewState {
   resetStatusOk: boolean | null
 }
 
-export class ForgotPasswordView extends React.Component<
+class ForgotPasswordViewImpl extends React.Component<
   ForgotPasswordViewProps,
   ForgotPasswordViewState
 > {
@@ -56,8 +60,10 @@ export class ForgotPasswordView extends React.Component<
     try {
       await ResetPassword(this.state.email)
       this.setState({ resetStatusOk: true })
+      this.props.pushStatus('Reset email sent, check your email', 'success', 5000)
     } catch {
       this.setState({ resetStatusOk: false })
+      this.props.pushStatus('Reset email failed, try again later', 'error', 5000)
     }
   }
 
@@ -193,18 +199,16 @@ export class ForgotPasswordView extends React.Component<
                 </Button>
               </>
             )}
-            <Snackbar
-              open={resetStatusOk ? resetStatusOk : resetStatusOk === false}
-              autoHideDuration={5000}
-              onClose={this.onSnackbarClose}
-            >
-              {resetStatusOk
-                ? 'Reset email sent, check your email'
-                : 'Reset email failed, try again later'}
-            </Snackbar>
           </Sheet>
         </Box>
       </Container>
     )
   }
 }
+
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) =>
+    dispatch(pushStatus({ message, severity, timeout })),
+})
+
+export const ForgotPasswordView = connect(null, mapDispatchToProps)(ForgotPasswordViewImpl)

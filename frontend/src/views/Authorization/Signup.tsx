@@ -13,11 +13,15 @@ import {
   Button,
   Sheet,
   Divider,
-  Snackbar,
 } from '@mui/joy'
 import React, { ChangeEvent } from 'react'
+import { connect } from 'react-redux'
+import { AppDispatch } from '@/store/store'
+import { pushStatus } from '@/store/statusSlice'
 
-type SignupViewProps = WithNavigate
+type SignupViewProps = WithNavigate & {
+  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) => void
+}
 
 interface SignupViewState {
   password: string
@@ -26,11 +30,10 @@ interface SignupViewState {
   passwordError: string | null
   emailError: string | null
   displayNameError: string | null
-  error: string | null
   accountCreated: boolean
 }
 
-export class SignupView extends React.Component<
+class SignupViewImpl extends React.Component<
   SignupViewProps,
   SignupViewState
 > {
@@ -44,7 +47,6 @@ export class SignupView extends React.Component<
       passwordError: null,
       emailError: null,
       displayNameError: null,
-      error: null,
       accountCreated: false,
     }
   }
@@ -105,10 +107,10 @@ export class SignupView extends React.Component<
       this.setState({
         accountCreated: true,
       })
+      this.props.pushStatus('Please check your email to verify your account.', 'success', 3000)
+      setTimeout(() => this.props.navigate(NavigationPaths.Login), 3000)
     } catch (error) {
-      this.setState({
-        error: (error as Error).message,
-      })
+      this.props.pushStatus((error as Error).message, 'error', 5000)
     }
   }
 
@@ -135,14 +137,12 @@ export class SignupView extends React.Component<
 
   render(): React.ReactNode {
     const {
-      accountCreated,
       password,
       displayName,
       email,
       passwordError,
       displayNameError,
       emailError,
-      error,
     } = this.state
     const { navigate } = this.props
 
@@ -233,23 +233,14 @@ export class SignupView extends React.Component<
             </Button>
           </Sheet>
         </Box>
-        <Snackbar
-          open={error !== null}
-          onClose={() => this.setState({ error: null })}
-          autoHideDuration={5000}
-        >
-          {error}
-        </Snackbar>
-        <Snackbar
-          color='success'
-          variant='solid'
-          open={accountCreated}
-          onClose={() => navigate(NavigationPaths.Login)}
-          autoHideDuration={3000}
-        >
-          Please check your email to verify your account.
-        </Snackbar>
       </Container>
     )
   }
 }
+
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) =>
+    dispatch(pushStatus({ message, severity, timeout })),
+})
+
+export const SignupView = connect(null, mapDispatchToProps)(SignupViewImpl)

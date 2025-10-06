@@ -7,29 +7,31 @@ import {
   Input,
   Button,
   Divider,
-  Snackbar,
 } from '@mui/joy'
 import React, { ChangeEvent } from 'react'
 import { doLogin } from '@/utils/auth'
 import { setTitle } from '@/utils/dom'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
+import { connect } from 'react-redux'
+import { AppDispatch } from '@/store/store'
+import { pushStatus } from '@/store/statusSlice'
 
-type LoginViewProps = WithNavigate
+type LoginViewProps = WithNavigate & {
+  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) => void
+}
 
 interface LoginViewState {
   email: string
   password: string
-  error: string | null
 }
 
-export class LoginView extends React.Component<LoginViewProps, LoginViewState> {
+class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
   constructor(props: LoginViewProps) {
     super(props)
 
     this.state = {
       email: '',
       password: '',
-      error: null,
     }
   }
 
@@ -44,7 +46,7 @@ export class LoginView extends React.Component<LoginViewProps, LoginViewState> {
       const { email, password } = this.state
       await doLogin(email, password, this.props.navigate)
     } catch (error) {
-      this.setState({ error: (error as Error).message })
+      this.props.pushStatus((error as Error).message, 'error', 5000)
     }
   }
 
@@ -56,12 +58,7 @@ export class LoginView extends React.Component<LoginViewProps, LoginViewState> {
     this.setState({ password: e.target.value })
   }
 
-  private onSnackbarClose = () => {
-    this.setState({ error: null })
-  }
-
   render(): React.ReactNode {
-    const { error } = this.state
     const { navigate } = this.props
 
     return (
@@ -159,14 +156,14 @@ export class LoginView extends React.Component<LoginViewProps, LoginViewState> {
             </Button>
           </Sheet>
         </Box>
-        <Snackbar
-          open={error !== null}
-          onClose={this.onSnackbarClose}
-          autoHideDuration={3000}
-        >
-          {error}
-        </Snackbar>
       </Container>
     )
   }
 }
+
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  pushStatus: (message: string, severity: 'error' | 'success' | 'info' | 'warning', timeout?: number) =>
+    dispatch(pushStatus({ message, severity, timeout })),
+})
+
+export const LoginView = connect(null, mapDispatchToProps)(LoginViewImpl)
