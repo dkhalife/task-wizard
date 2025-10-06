@@ -176,9 +176,9 @@ class ForgotPasswordViewImpl extends React.Component<
               <>
                 <Box mt={-30}>
                   <Typography>
-                    if there is an account associated with the email you
+                    If there is an account associated with the email you
                     entered, you will receive an email with instructions on how
-                    to reset your
+                    to reset your password.
                   </Typography>
                 </Box>
                 <Button
