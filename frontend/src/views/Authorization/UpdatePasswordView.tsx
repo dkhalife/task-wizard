@@ -11,24 +11,47 @@ import {
   Input,
   FormHelperText,
   Button,
-  Snackbar,
 } from '@mui/joy'
 import React, { ChangeEvent } from 'react'
+import { connect } from 'react-redux'
+import { AppDispatch } from '@/store/store'
+import { pushStatus } from '@/store/statusSlice'
+import { StatusSeverity } from '@/models/status'
 
-type UpdatePasswordViewProps = WithNavigate
+type UpdatePasswordViewProps = WithNavigate & {
+  pushStatus: (message: string, severity: StatusSeverity, timeout?: number) => void
+}
 
 interface UpdatePasswordViewState {
   password: string
   passwordConfirm: string
   passwordError: string | null
   passwordConfirmationError: string | null
-  updateStatusOk: boolean | null
 }
 
-export class UpdatePasswordView extends React.Component<
+class UpdatePasswordViewImpl extends React.Component<
   UpdatePasswordViewProps,
   UpdatePasswordViewState
 > {
+  private navigationTimeout?: NodeJS.Timeout
+
+  constructor(props: UpdatePasswordViewProps) {
+    super(props)
+
+    this.state = {
+      password: '',
+      passwordConfirm: '',
+      passwordError: null,
+      passwordConfirmationError: null,
+    }
+  }
+
+  componentWillUnmount(): void {
+    if (this.navigationTimeout) {
+      clearTimeout(this.navigationTimeout)
+    }
+  }
+
   private handlePasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
     const password = e.target.value
 
@@ -45,14 +68,8 @@ export class UpdatePasswordView extends React.Component<
     }
   }
 
-  private onSnackbarClose = () => {
-    this.props.navigate(NavigationPaths.Login)
-  }
-
   private onCancel = () => {
-    this.setState({
-      updateStatusOk: null,
-    })
+    this.props.navigate(NavigationPaths.Login)
   }
 
   private handlePasswordConfirmChange = (e: ChangeEvent<HTMLInputElement>) => {
@@ -80,15 +97,10 @@ export class UpdatePasswordView extends React.Component<
     try {
       const verificationCode = getQuery('c')
       await ChangePassword(verificationCode, password)
-      this.setState({
-        updateStatusOk: true,
-      })
-
-      this.props.navigate(NavigationPaths.Login)
+      this.props.pushStatus('Password updated successfully', 'success', 3000)
+      this.navigationTimeout = setTimeout(() => this.props.navigate(NavigationPaths.Login), 3000)
     } catch {
-      this.setState({
-        updateStatusOk: false,
-      })
+      this.props.pushStatus('Password update failed, try again later', 'error', 6000)
     }
   }
 
@@ -98,7 +110,6 @@ export class UpdatePasswordView extends React.Component<
       passwordConfirm,
       passwordError,
       passwordConfirmationError,
-      updateStatusOk,
     } = this.state
 
     return (
@@ -182,14 +193,14 @@ export class UpdatePasswordView extends React.Component<
             </Button>
           </Sheet>
         </Box>
-        <Snackbar
-          open={updateStatusOk !== true}
-          autoHideDuration={6000}
-          onClose={this.onSnackbarClose}
-        >
-          Password update failed, try again later
-        </Snackbar>
       </Container>
     )
   }
 }
+
+const mapDispatchToProps = (dispatch: AppDispatch) => ({
+  pushStatus: (message: string, severity: StatusSeverity, timeout?: number) =>
+    dispatch(pushStatus({ message, severity, timeout })),
+})
+
+export const UpdatePasswordView = connect(null, mapDispatchToProps)(UpdatePasswordViewImpl)
