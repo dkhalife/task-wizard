@@ -26,25 +26,23 @@ jobs:
         cache: 'yarn'
         cache-dependency-path: frontend/yarn.lock
     - name: Install dependencies
-      run: |
-        cd frontend
-        yarn install --frozen-lockfile
+      run: yarn install --frozen-lockfile
+      working-directory: frontend
     - name: Install Playwright Browsers
       run: npx playwright install --with-deps chromium
+      working-directory: frontend
     - name: Lint
-      run: |
-        cd frontend
-        yarn lint
+      run: yarn lint
+      working-directory: frontend
     - name: Build (TSC)
-      run: |
-        cd frontend
-        yarn tsc
+      run: yarn tsc
+      working-directory: frontend
     - name: Build (Vite)
-      run: |
-        cd frontend
-        yarn build
+      run: yarn build
+      working-directory: frontend
     - name: Run Playwright tests
       run: yarn test:e2e
+      working-directory: frontend
     - uses: actions/upload-artifact@v4
       if: always()
       with:
