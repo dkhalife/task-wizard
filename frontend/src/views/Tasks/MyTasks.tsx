@@ -47,6 +47,7 @@ type MyTasksProps = {
   groups: TaskGroups<TaskUI>
   expandedGroups: Record<keyof TaskGroups<TaskUI>, boolean>
   completedTasks: TaskUI[]
+  completedFetched: boolean
 
   setGroupBy: (groupBy: GROUP_BY) => void
   toggleGroup: (groupKey: keyof TaskGroups<Task>) => void
@@ -233,9 +234,9 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 
   private onToggleCompletedClicked = async () => {
     const { showCompleted } = this.state
-    const { completedTasks } = this.props
+    const { completedFetched } = this.props
     
-    if (!showCompleted && completedTasks.length === 0) {
+    if (!showCompleted && !completedFetched) {
       await this.props.fetchCompletedTasks()
     }
     this.setState({ showCompleted: !showCompleted })
@@ -502,6 +503,7 @@ const mapStateToProps = (state: RootState) => {
     groups: MakeTaskGroupsUI(state.tasks.groupedItems, state.labels.items),
     expandedGroups: state.tasks.expandedGroups,
     completedTasks,
+    completedFetched: state.tasks.completedFetched,
   }
 }
 

@@ -34,6 +34,7 @@ export interface TasksState {
   completedItems: Task[]
   completedSearchQuery: string
   filteredCompletedItems: Task[]
+  completedFetched: boolean
 
   groupBy: GROUP_BY
   groupedItems: TaskGroups<Task>
@@ -60,6 +61,7 @@ const initialState: TasksState = {
   completedItems: [],
   completedSearchQuery: '',
   filteredCompletedItems: [],
+  completedFetched: false,
 
   groupBy: initialGroupBy,
   expandedGroups: initialExpandedGroups,
@@ -260,6 +262,7 @@ const tasksSlice = createSlice({
         state.status = 'succeeded'
         state.completedItems = action.payload
         state.filteredCompletedItems = filterItems(action.payload, state.completedSearchQuery)
+        state.completedFetched = true
         state.error = null
       })
       .addCase(fetchCompletedTasks.rejected, (state, action) => {

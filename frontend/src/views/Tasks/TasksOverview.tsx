@@ -38,6 +38,7 @@ import { Status } from '@/models/status'
 type TasksOverviewProps = {
   tasks: TaskUI[]
   completedTasks: TaskUI[]
+  completedFetched: boolean
 
   search: string
   completedSearch: string
@@ -131,9 +132,9 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
 
   private onToggleCompletedClicked = async () => {
     const { showCompleted } = this.state
-    const { completedTasks } = this.props
+    const { completedFetched } = this.props
     
-    if (!showCompleted && completedTasks.length === 0) {
+    if (!showCompleted && !completedFetched) {
       await this.props.fetchCompletedTasks()
     }
     this.setState({ showCompleted: !showCompleted })
@@ -494,6 +495,7 @@ const mapStateToProps = (state: RootState) => {
     completedSearch,
     tasks,
     completedTasks,
+    completedFetched: state.tasks.completedFetched,
   }
 }
 
