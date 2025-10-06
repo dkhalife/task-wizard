@@ -170,7 +170,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
   private onEditClicked = () =>{
     const { contextMenuTask: task } = this.state
     if (task === null) {
-      throw new Error('Attempted to delete without task reference')
+      throw new Error('Attempted to edit without task reference')
     }
 
     this.dismissMoreMenu()
@@ -233,7 +233,9 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 
   private onToggleCompletedClicked = async () => {
     const { showCompleted } = this.state
-    if (!showCompleted) {
+    const { completedTasks } = this.props
+    
+    if (!showCompleted && completedTasks.length === 0) {
       await this.props.fetchCompletedTasks()
     }
     this.setState({ showCompleted: !showCompleted })

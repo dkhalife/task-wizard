@@ -131,7 +131,9 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
 
   private onToggleCompletedClicked = async () => {
     const { showCompleted } = this.state
-    if (!showCompleted) {
+    const { completedTasks } = this.props
+    
+    if (!showCompleted && completedTasks.length === 0) {
       await this.props.fetchCompletedTasks()
     }
     this.setState({ showCompleted: !showCompleted })
