@@ -45,3 +45,32 @@ func TestGenerateVTODO_TitleBackslash(t *testing.T) {
 
 	require.Contains(t, vtodo, "SUMMARY:Back\\\\slash")
 }
+
+func TestGenerateVTODO_WithDueDate(t *testing.T) {
+	dueDate := time.Date(2024, 3, 15, 12, 0, 0, 0, time.UTC)
+	task := &models.Task{
+		ID:          4,
+		Title:       "Task with due date",
+		CreatedAt:   time.Date(2023, 1, 2, 3, 4, 5, 0, time.UTC),
+		NextDueDate: &dueDate,
+	}
+
+	vtodo := generateVTODO(task)
+
+	require.Contains(t, vtodo, "SUMMARY:Task with due date")
+	require.Contains(t, vtodo, "DUE:20240315T120000Z")
+}
+
+func TestGenerateVTODO_WithoutDueDate(t *testing.T) {
+	task := &models.Task{
+		ID:          5,
+		Title:       "Task without due date",
+		CreatedAt:   time.Date(2023, 1, 2, 3, 4, 5, 0, time.UTC),
+		NextDueDate: nil,
+	}
+
+	vtodo := generateVTODO(task)
+
+	require.Contains(t, vtodo, "SUMMARY:Task without due date")
+	require.NotContains(t, vtodo, "DUE:")
+}
