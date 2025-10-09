@@ -1,4 +1,4 @@
-import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, fetchCompletedTasks } from '@/store/tasksSlice'
+import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, toggleShowCompleted, fetchCompletedTasks } from '@/store/tasksSlice'
 import { Task, TASK_UPDATE_EVENT } from '@/models/task'
 import {
   ExpandCircleDown,
@@ -47,10 +47,11 @@ type MyTasksProps = {
   groups: TaskGroups<TaskUI>
   expandedGroups: Record<keyof TaskGroups<TaskUI>, boolean>
   completedTasks: TaskUI[]
-  completedFetched: boolean
+  showCompleted: boolean
 
   setGroupBy: (groupBy: GROUP_BY) => void
   toggleGroup: (groupKey: keyof TaskGroups<Task>) => void
+  toggleShowCompleted: () => void
   fetchCompletedTasks: () => Promise<any>
 
   deleteTask: (taskId: number) => Promise<any>
@@ -62,7 +63,6 @@ type MyTasksProps = {
 interface MyTasksState {
   isMoreMenuOpen: boolean
   contextMenuTask: TaskUI | null
-  showCompleted: boolean
 }
 
 class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
@@ -83,7 +83,6 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     this.state = {
       isMoreMenuOpen: false,
       contextMenuTask: null,
-      showCompleted: false,
     }
   }
 
@@ -233,18 +232,17 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
   }
 
   private onToggleCompletedClicked = async () => {
-    const { showCompleted } = this.state
-    const { completedFetched } = this.props
+    const { showCompleted, completedTasks } = this.props
     
-    if (!showCompleted && !completedFetched) {
+    if (!showCompleted && completedTasks.length === 0) {
       await this.props.fetchCompletedTasks()
     }
-    this.setState({ showCompleted: !showCompleted })
+    this.props.toggleShowCompleted()
   }
 
   render(): React.ReactNode {
-    const { groupBy, groups, expandedGroups, completedTasks } = this.props
-    const { isMoreMenuOpen, contextMenuTask, showCompleted } = this.state
+    const { groupBy, groups, expandedGroups, completedTasks, showCompleted } = this.props
+    const { isMoreMenuOpen, contextMenuTask } = this.state
 
     const { navigate } = this.props
     const hasTasks = this.hasTasks()
@@ -496,20 +494,21 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 
 const mapStateToProps = (state: RootState) => {
   const labels = state.labels.items
-  const completedTasks = state.tasks.filteredCompletedItems.map(task => MakeTaskUI(task, labels))
+  const completedTasks = state.tasks.completedItems.map(task => MakeTaskUI(task, labels))
 
   return {
     groupBy: state.tasks.groupBy,
     groups: MakeTaskGroupsUI(state.tasks.groupedItems, state.labels.items),
     expandedGroups: state.tasks.expandedGroups,
     completedTasks,
-    completedFetched: state.tasks.completedFetched,
+    showCompleted: state.tasks.showCompleted,
   }
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   setGroupBy: (groupBy: GROUP_BY) => dispatch(setGroupBy(groupBy)),
   toggleGroup: (groupKey: keyof TaskGroups<Task>) => dispatch(toggleGroup(groupKey)),
+  toggleShowCompleted: () => dispatch(toggleShowCompleted()),
   fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
 
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),

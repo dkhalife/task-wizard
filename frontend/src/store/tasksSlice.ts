@@ -32,9 +32,7 @@ export interface TasksState {
   filteredItems: Task[]
 
   completedItems: Task[]
-  completedSearchQuery: string
-  filteredCompletedItems: Task[]
-  completedFetched: boolean
+  showCompleted: boolean
 
   groupBy: GROUP_BY
   groupedItems: TaskGroups<Task>
@@ -50,6 +48,7 @@ const initialExpandedGroups = retrieveValue<Record<keyof TaskGroups<Task>, boole
   'expanded_groups',
   getDefaultExpandedState(initialGroupBy, []),
 )
+const initialShowCompleted = retrieveValue<boolean>('show_completed', false)
 
 const initialState: TasksState = {
   draft: newTask(),
@@ -59,9 +58,7 @@ const initialState: TasksState = {
   filteredItems: [],
 
   completedItems: [],
-  completedSearchQuery: '',
-  filteredCompletedItems: [],
-  completedFetched: false,
+  showCompleted: initialShowCompleted,
 
   groupBy: initialGroupBy,
   expandedGroups: initialExpandedGroups,
@@ -79,8 +76,8 @@ export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async () => {
 
 export const fetchCompletedTasks = createAsyncThunk(
   'tasks/fetchCompletedTasks',
-  async ({ limit = 100, page = 1 }: { limit?: number; page?: number } = {}) => {
-    const data = await GetCompletedTasks(limit, page)
+  async () => {
+    const data = await GetCompletedTasks()
     return data.tasks
   },
 )
@@ -189,9 +186,9 @@ const tasksSlice = createSlice({
       state.searchQuery = action.payload
       state.filteredItems = filterItems(state.items, action.payload)
     },
-    filterCompletedTasks: (state, action: PayloadAction<string>) => {
-      state.completedSearchQuery = action.payload
-      state.filteredCompletedItems = filterItems(state.completedItems, action.payload)
+    toggleShowCompleted: (state) => {
+      state.showCompleted = !state.showCompleted
+      storeValue('show_completed', state.showCompleted)
     },
     toggleGroup: (state, action: PayloadAction<keyof TaskGroups<Task>>) => {
       const groupKey = action.payload
@@ -261,8 +258,6 @@ const tasksSlice = createSlice({
       .addCase(fetchCompletedTasks.fulfilled, (state, action) => {
         state.status = 'succeeded'
         state.completedItems = action.payload
-        state.filteredCompletedItems = filterItems(action.payload, state.completedSearchQuery)
-        state.completedFetched = true
         state.error = null
       })
       .addCase(fetchCompletedTasks.rejected, (state, action) => {
@@ -434,7 +429,7 @@ const tasksSlice = createSlice({
   },
 })
 
-export const { setDraft, filterTasks, filterCompletedTasks, toggleGroup } = tasksSlice.actions
+export const { setDraft, filterTasks, toggleShowCompleted, toggleGroup } = tasksSlice.actions
 
 export const tasksReducer = tasksSlice.reducer
 

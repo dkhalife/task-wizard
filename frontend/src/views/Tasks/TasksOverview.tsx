@@ -1,4 +1,4 @@
-import { deleteTask, completeTask, updateDueDate, filterTasks, filterCompletedTasks, fetchCompletedTasks } from '@/store/tasksSlice'
+import { deleteTask, completeTask, updateDueDate, filterTasks, toggleShowCompleted, fetchCompletedTasks } from '@/store/tasksSlice'
 import { getDueDateChipColor, getDueDateChipText } from '@/models/task'
 import {
   CancelRounded,
@@ -38,12 +38,11 @@ import { Status } from '@/models/status'
 type TasksOverviewProps = {
   tasks: TaskUI[]
   completedTasks: TaskUI[]
-  completedFetched: boolean
+  showCompleted: boolean
 
   search: string
-  completedSearch: string
   filterTasks: (searchQuery: string) => void
-  filterCompletedTasks: (searchQuery: string) => void
+  toggleShowCompleted: () => void
   fetchCompletedTasks: () => Promise<any>
   completeTask: (taskId: number) => Promise<any>
   deleteTask: (taskId: number) => Promise<any>
@@ -51,22 +50,10 @@ type TasksOverviewProps = {
   pushStatus: (status: Status) => void
 } & WithNavigate
 
-interface TasksOverviewState {
-  showCompleted: boolean
-}
-
-class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOverviewState> {
+class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
   private dateModalRef = React.createRef<DateModal>()
   private confirmationModalRef = React.createRef<ConfirmationModal>()
   private searchInputRef = React.createRef<HTMLInputElement>()
-  private completedSearchInputRef = React.createRef<HTMLInputElement>()
-
-  constructor(props: TasksOverviewProps) {
-    super(props)
-    this.state = {
-      showCompleted: false,
-    }
-  }
 
   componentDidMount(): void {
     setTitle('Tasks Overview')
@@ -118,26 +105,17 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
     this.props.filterTasks(e.target.value)
   }
 
-  private onCompletedSearchTermsChanged = (e: ChangeEvent<HTMLInputElement>) => {
-    this.props.filterCompletedTasks(e.target.value)
-  }
-
   private onClearSearchClicked = () => {
     this.props.filterTasks('')
   }
 
-  private onClearCompletedSearchClicked = () => {
-    this.props.filterCompletedTasks('')
-  }
-
   private onToggleCompletedClicked = async () => {
-    const { showCompleted } = this.state
-    const { completedFetched } = this.props
+    const { showCompleted, completedTasks } = this.props
     
-    if (!showCompleted && !completedFetched) {
+    if (!showCompleted && completedTasks.length === 0) {
       await this.props.fetchCompletedTasks()
     }
-    this.setState({ showCompleted: !showCompleted })
+    this.props.toggleShowCompleted()
   }
 
   private onRescheduleClicked = async (task: TaskUI) => {
@@ -179,8 +157,7 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
   }
 
   render(): React.ReactNode {
-    const { search, completedSearch, tasks, completedTasks, navigate } = this.props
-    const { showCompleted } = this.state
+    const { search, tasks, completedTasks, showCompleted, navigate } = this.props
 
     return (
       <Container>
@@ -359,39 +336,7 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
         </Table>
 
         {showCompleted && (
-          <>
-            <Grid
-              container
-              sx={{ mt: 4, mb: 2 }}
-            >
-              <Grid
-                sm={6}
-                alignSelf={'flex-start'}
-                minWidth={100}
-                display='flex'
-                gap={2}
-              >
-                <Input
-                  ref={this.completedSearchInputRef}
-                  placeholder='Search Completed Tasks'
-                  value={completedSearch}
-                  onChange={this.onCompletedSearchTermsChanged}
-                  endDecorator={
-                    completedSearch !== '' ? (
-                      <Button onClick={this.onClearCompletedSearchClicked}>
-                        <CancelRounded />
-                      </Button>
-                    ) : (
-                      <Button>
-                        <SearchRounded />
-                      </Button>
-                    )
-                  }
-                />
-              </Grid>
-            </Grid>
-
-            <Table
+          <Table
               sx={{
                 '& tbody tr:hover': {
                   backgroundColor: 'var(--joy-palette-background-level2)',
@@ -465,7 +410,6 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
                 ))}
               </tbody>
             </Table>
-          </>
         )}
         <DateModal
           ref={this.dateModalRef}
@@ -485,23 +429,21 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps, TasksOvervie
 
 const mapStateToProps = (state: RootState) => {
   const search = state.tasks.searchQuery
-  const completedSearch = state.tasks.completedSearchQuery
   const labels = state.labels.items
   const tasks = state.tasks.filteredItems.map(task => MakeTaskUI(task, labels))
-  const completedTasks = state.tasks.filteredCompletedItems.map(task => MakeTaskUI(task, labels))
+  const completedTasks = state.tasks.completedItems.map(task => MakeTaskUI(task, labels))
 
   return {
     search,
-    completedSearch,
     tasks,
     completedTasks,
-    completedFetched: state.tasks.completedFetched,
+    showCompleted: state.tasks.showCompleted,
   }
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   filterTasks: (searchQuery: string) => dispatch(filterTasks(searchQuery)),
-  filterCompletedTasks: (searchQuery: string) => dispatch(filterCompletedTasks(searchQuery)),
+  toggleShowCompleted: () => dispatch(toggleShowCompleted()),
   fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
   completeTask: (taskId: number) => dispatch(completeTask(taskId)),
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),

@@ -22,8 +22,8 @@ type TaskHistoryResponse = {
 export const GetTasks = async (): Promise<TasksResponse> =>
   await Request<TasksResponse>(`/tasks/`)
 
-export const GetCompletedTasks = async (limit: number = 10, page: number = 1): Promise<TasksResponse> =>
-  await Request<TasksResponse>(`/tasks/completed?limit=${limit}&page=${page}`)
+export const GetCompletedTasks = async (): Promise<TasksResponse> =>
+  await Request<TasksResponse>(`/tasks/completed`)
 
 export const MarkTaskComplete = async (id: number): Promise<SingleTaskResponse> =>
     await Request<SingleTaskResponse>(`/tasks/${id}/do`, 'POST')
