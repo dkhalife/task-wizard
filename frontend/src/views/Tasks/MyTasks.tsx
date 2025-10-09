@@ -1,4 +1,4 @@
-import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup } from '@/store/tasksSlice'
+import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, toggleShowCompleted, fetchCompletedTasks } from '@/store/tasksSlice'
 import { Task, TASK_UPDATE_EVENT } from '@/models/task'
 import {
   ExpandCircleDown,
@@ -10,6 +10,8 @@ import {
   Edit,
   MoreTime,
   SwitchAccessShortcut,
+  Visibility,
+  VisibilityOff,
 } from '@mui/icons-material'
 import {
   Container,
@@ -36,7 +38,7 @@ import { ConfirmationModal } from '../Modals/Inputs/ConfirmationModal'
 import { DateModal } from '../Modals/Inputs/DateModal'
 import { AppDispatch, RootState } from '@/store/store'
 import { connect } from 'react-redux'
-import { TaskUI, MarshallDate, MakeTaskGroupsUI } from '@/utils/marshalling'
+import { TaskUI, MarshallDate, MakeTaskGroupsUI, MakeTaskUI } from '@/utils/marshalling'
 import { pushStatus } from '@/store/statusSlice'
 import { Status } from '@/models/status'
 
@@ -44,9 +46,13 @@ type MyTasksProps = {
   groupBy: GROUP_BY
   groups: TaskGroups<TaskUI>
   expandedGroups: Record<keyof TaskGroups<TaskUI>, boolean>
+  completedTasks: TaskUI[]
+  showCompleted: boolean
 
   setGroupBy: (groupBy: GROUP_BY) => void
   toggleGroup: (groupKey: keyof TaskGroups<Task>) => void
+  toggleShowCompleted: () => void
+  fetchCompletedTasks: () => Promise<any>
 
   deleteTask: (taskId: number) => Promise<any>
   skipTask: (taskId: number) => Promise<any>
@@ -164,7 +170,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
   private onEditClicked = () =>{
     const { contextMenuTask: task } = this.state
     if (task === null) {
-      throw new Error('Attempted to delete without task reference')
+      throw new Error('Attempted to edit without task reference')
     }
 
     this.dismissMoreMenu()
@@ -225,8 +231,17 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     })
   }
 
+  private onToggleCompletedClicked = async () => {
+    const { showCompleted, completedTasks } = this.props
+    
+    if (!showCompleted && completedTasks.length === 0) {
+      await this.props.fetchCompletedTasks()
+    }
+    this.props.toggleShowCompleted()
+  }
+
   render(): React.ReactNode {
-    const { groupBy, groups, expandedGroups } = this.props
+    const { groupBy, groups, expandedGroups, completedTasks, showCompleted } = this.props
     const { isMoreMenuOpen, contextMenuTask } = this.state
 
     const { navigate } = this.props
@@ -236,26 +251,39 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
       <Container maxWidth='md'>
         <Box
           sx={{
-            textAlign: 'right',
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
           }}
         >
-          <Typography
-            sx={{
-              display: 'inline-block',
-              fontWeight: 600,
-              lineHeight: '25px',
-              verticalAlign: 'top',
-              mt: '5px',
-              mr: 2,
-            }}
-          >
-            Group by :
-          </Typography>
+          <Box>
+            <IconButton
+              color='primary'
+              variant='solid'
+              sx={{
+                borderRadius: '50%',
+                width: '35px',
+                height: '35px',
+              }}
+              onClick={this.onToggleCompletedClicked}
+            >
+              {showCompleted ? <VisibilityOff /> : <Visibility />}
+            </IconButton>
+          </Box>
           <Box
             sx={{
-              display: 'inline-block',
+              display: 'flex',
+              alignItems: 'center',
             }}
           >
+            <Typography
+              sx={{
+                fontWeight: 600,
+                mr: 2,
+              }}
+            >
+              Group by :
+            </Typography>
             <IconButton
               color='primary'
               variant='solid'
@@ -384,6 +412,34 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
           </MenuItem>
         </Menu>
 
+        {showCompleted && completedTasks.length > 0 && (
+          <>
+            <Typography
+              level='h4'
+              sx={{ mt: 3, mb: 2 }}
+            >
+              Completed Tasks
+            </Typography>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 1,
+              }}
+            >
+              {completedTasks.map(task => (
+                <TaskCard
+                  key={task.id}
+                  task={task}
+                  onTaskUpdate={this.onEvent}
+                  onContextMenu={this.showContextMenu}
+                  navigate={navigate}
+                />
+              ))}
+            </Box>
+          </>
+        )}
+
         {!hasTasks && (
           <Typography
             textAlign='center'
@@ -437,16 +493,23 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 }
 
 const mapStateToProps = (state: RootState) => {
+  const labels = state.labels.items
+  const completedTasks = state.tasks.completedItems.map(task => MakeTaskUI(task, labels))
+
   return {
     groupBy: state.tasks.groupBy,
     groups: MakeTaskGroupsUI(state.tasks.groupedItems, state.labels.items),
     expandedGroups: state.tasks.expandedGroups,
+    completedTasks,
+    showCompleted: state.tasks.showCompleted,
   }
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   setGroupBy: (groupBy: GROUP_BY) => dispatch(setGroupBy(groupBy)),
   toggleGroup: (groupKey: keyof TaskGroups<Task>) => dispatch(toggleGroup(groupKey)),
+  toggleShowCompleted: () => dispatch(toggleShowCompleted()),
+  fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
 
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),
   skipTask: (taskId: number) => dispatch(skipTask(taskId)),

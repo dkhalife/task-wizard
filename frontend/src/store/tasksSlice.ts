@@ -1,6 +1,7 @@
 import { PayloadAction, createAsyncThunk, createSlice } from '@reduxjs/toolkit'
 import {
   GetTasks,
+  GetCompletedTasks,
   MarkTaskComplete,
   DeleteTask,
   SkipTask,
@@ -30,6 +31,9 @@ export interface TasksState {
   searchQuery: string
   filteredItems: Task[]
 
+  completedItems: Task[]
+  showCompleted: boolean
+
   groupBy: GROUP_BY
   groupedItems: TaskGroups<Task>
   expandedGroups: Record<keyof TaskGroups<Task>, boolean>
@@ -44,6 +48,7 @@ const initialExpandedGroups = retrieveValue<Record<keyof TaskGroups<Task>, boole
   'expanded_groups',
   getDefaultExpandedState(initialGroupBy, []),
 )
+const initialShowCompleted = retrieveValue<boolean>('show_completed', false)
 
 const initialState: TasksState = {
   draft: newTask(),
@@ -51,6 +56,9 @@ const initialState: TasksState = {
 
   searchQuery: '',
   filteredItems: [],
+
+  completedItems: [],
+  showCompleted: initialShowCompleted,
 
   groupBy: initialGroupBy,
   expandedGroups: initialExpandedGroups,
@@ -65,6 +73,14 @@ export const fetchTasks = createAsyncThunk('tasks/fetchTasks', async () => {
   const data = await GetTasks()
   return data.tasks
 })
+
+export const fetchCompletedTasks = createAsyncThunk(
+  'tasks/fetchCompletedTasks',
+  async () => {
+    const data = await GetCompletedTasks()
+    return data.tasks
+  },
+)
 
 export const completeTask = createAsyncThunk(
   'tasks/completeTask',
@@ -170,6 +186,10 @@ const tasksSlice = createSlice({
       state.searchQuery = action.payload
       state.filteredItems = filterItems(state.items, action.payload)
     },
+    toggleShowCompleted: (state) => {
+      state.showCompleted = !state.showCompleted
+      storeValue('show_completed', state.showCompleted)
+    },
     toggleGroup: (state, action: PayloadAction<keyof TaskGroups<Task>>) => {
       const groupKey = action.payload
       const isExpanded = state.expandedGroups[groupKey]
@@ -227,6 +247,20 @@ const tasksSlice = createSlice({
         state.error = null
       })
       .addCase(fetchTasks.rejected, (state, action) => {
+        state.status = 'failed'
+        state.error = action.error.message ?? null
+      })
+      // Fetch completed tasks
+      .addCase(fetchCompletedTasks.pending, state => {
+        state.status = 'loading'
+        state.error = null
+      })
+      .addCase(fetchCompletedTasks.fulfilled, (state, action) => {
+        state.status = 'succeeded'
+        state.completedItems = action.payload
+        state.error = null
+      })
+      .addCase(fetchCompletedTasks.rejected, (state, action) => {
         state.status = 'failed'
         state.error = action.error.message ?? null
       })
@@ -395,7 +429,7 @@ const tasksSlice = createSlice({
   },
 })
 
-export const { setDraft, filterTasks, toggleGroup } = tasksSlice.actions
+export const { setDraft, filterTasks, toggleShowCompleted, toggleGroup } = tasksSlice.actions
 
 export const tasksReducer = tasksSlice.reducer
 
