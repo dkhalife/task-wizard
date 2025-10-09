@@ -1,6 +1,6 @@
-using TaskWizardMcpServer.Models;
+using TaskWizard.McpServer.Models;
 
-namespace TaskWizardMcpServer.Services;
+namespace TaskWizard.McpServer.Services;
 
 public class StubDataService
 {

@@ -1,4 +1,4 @@
-namespace TaskWizardMcpServer.Models;
+namespace TaskWizard.McpServer.Models;
 
 public class Task
 {
