@@ -43,14 +43,14 @@ The server provides 10 CRUD tools for interacting with tasks and labels using mo
 ## Building
 
 ```bash
-cd mcpserver/TaskWizardMcpServer
+cd mcpserver
 dotnet build
 ```
 
 ## Running
 
 ```bash
-cd mcpserver/TaskWizardMcpServer
+cd mcpserver
 dotnet run
 ```
 
@@ -60,17 +60,16 @@ The server will start and listen on `http://localhost:3001` using HTTP transport
 
 ```
 mcpserver/
-└── TaskWizardMcpServer/
-    ├── Models/
-    │   ├── Label.cs        # Label model and request types
-    │   └── Task.cs         # Task model and request types
-    ├── Services/
-    │   └── StubDataService.cs  # In-memory stub data service
-    ├── Tools/
-    │   ├── TaskTools.cs    # Task CRUD tools with attributes
-    │   └── LabelTools.cs   # Label CRUD tools with attributes
-    ├── Program.cs          # MCP server setup with HTTP transport
-    └── TaskWizardMcpServer.csproj
+├── Models/
+│   ├── Label.cs        # Label model and request types
+│   └── Task.cs         # Task model and request types
+├── Services/
+│   └── StubDataService.cs  # In-memory stub data service
+├── Tools/
+│   ├── TaskTools.cs    # Task CRUD tools with attributes
+│   └── LabelTools.cs   # Label CRUD tools with attributes
+├── Program.cs          # MCP server setup with HTTP transport
+└── TaskWizardMcpServer.csproj
 ```
 
 ## Implementation Details

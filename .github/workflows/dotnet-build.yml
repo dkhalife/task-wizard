@@ -23,10 +23,10 @@ jobs:
 
     - name: Restore dependencies
       run: |
-        cd mcpserver/TaskWizardMcpServer
+        cd mcpserver
         dotnet restore
 
     - name: Build
       run: |
-        cd mcpserver/TaskWizardMcpServer
+        cd mcpserver
         dotnet build --no-restore --configuration Release
