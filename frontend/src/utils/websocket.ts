@@ -211,7 +211,7 @@ export class WebSocketManager {
     }
 
     // Generate a unique request ID using crypto API if available, fallback to timestamp-based ID
-    const requestId = typeof crypto !== 'undefined' && crypto.randomUUID
+    const requestId = typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function'
       ? crypto.randomUUID()
       : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
     
