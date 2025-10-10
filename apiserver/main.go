@@ -27,11 +27,13 @@ import (
 
 	apis "dkhalife.com/tasks/core/internal/apis"
 	cRepo "dkhalife.com/tasks/core/internal/repos/caldav"
+	kRepo "dkhalife.com/tasks/core/internal/repos/kubeconfig"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/housekeeper"
+	kService "dkhalife.com/tasks/core/internal/services/kubeconfig"
 	lService "dkhalife.com/tasks/core/internal/services/labels"
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
@@ -101,6 +103,11 @@ func main() {
 		fx.Provide(apis.LogsAPI),
 		fx.Provide(apis.CalDAVAPI),
 
+		// Kubeconfig:
+		fx.Provide(kRepo.NewKubeconfigRepository),
+		fx.Provide(kService.NewKubeconfigService),
+		fx.Provide(apis.KubeconfigAPI),
+
 		fx.Provide(frontend.NewHandler),
 		fx.Provide(backend.NewHandler),
 
@@ -110,6 +117,7 @@ func main() {
 			apis.LabelRoutes,
 			apis.CalDAVRoutes,
 			apis.LogRoutes,
+			apis.KubeconfigRoutes,
 			ws.Routes,
 			tService.TaskMessages,
 			lService.LabelMessages,

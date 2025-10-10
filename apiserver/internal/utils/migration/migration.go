@@ -15,5 +15,6 @@ func Migration(db *gorm.DB) error {
 		models.TaskHistory{},
 		models.NotificationSettings{},
 		models.Notification{},
+		models.KubeContext{},
 	)
 }
