@@ -3,6 +3,7 @@ import {
   WSAction,
   WSEventPayloads,
   WSRequest,
+  WSActionPayloads,
 } from '@/models/websocket'
 import { store } from '@/store/store'
 import { wsConnecting, wsConnected, wsDisconnected } from '@/store/wsSlice'
@@ -198,6 +199,57 @@ export class WebSocketManager {
     }
 
     this.socket!.send(JSON.stringify(request))
+  }
+
+  async sendRequest<T extends WSAction>(
+    action: T,
+    data?: WSActionPayloads[T],
+    timeout: number = 5000
+  ): Promise<{ status: number; data: any }> {
+    if (!this.isConnected()) {
+      throw new Error('WebSocket is not connected')
+    }
+
+    const requestId = Math.random().toString(36).substring(2, 15)
+    const request: WSRequest<T> = {
+      requestId,
+      action,
+      data,
+    }
+
+    return new Promise((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        cleanup()
+        reject(new Error('Request timed out'))
+      }, timeout)
+
+      const handleMessage = (event: MessageEvent) => {
+        try {
+          const response = JSON.parse(event.data)
+          if (response.requestId === requestId) {
+            cleanup()
+            resolve({ status: response.status, data: response.data })
+          }
+        } catch {
+          // Ignore parsing errors for messages not meant for us
+        }
+      }
+
+      const cleanup = () => {
+        clearTimeout(timeoutId)
+        if (this.socket) {
+          this.socket.removeEventListener('message', handleMessage)
+        }
+      }
+
+      if (this.socket) {
+        this.socket.addEventListener('message', handleMessage)
+        this.socket.send(JSON.stringify(request))
+      } else {
+        cleanup()
+        reject(new Error('WebSocket is not connected'))
+      }
+    })
   }
 
   private scheduleReconnect() {
