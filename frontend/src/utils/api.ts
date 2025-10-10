@@ -5,6 +5,7 @@ import { store } from '@/store/store'
 import { WSAction } from '@/models/websocket'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
+const HTTP_STATUS_NO_CONTENT = 204
 
 type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
@@ -165,13 +166,12 @@ export async function Request<SuccessfulResponse>(
           const wsData = wsMapping.getData(url, body)
           const response = await wsManager.sendRequest(wsMapping.action, wsData)
           
-          const HTTP_STATUS_NO_CONTENT = 204
           if (response.status === HTTP_STATUS_NO_CONTENT) {
             return {} as SuccessfulResponse
           }
 
           if (response.status >= 400) {
-            const errorData = response.data as any
+            const errorData = response.data as FailureResponse
             throw new Error(errorData.error || 'Request failed')
           }
 
@@ -207,7 +207,6 @@ export async function Request<SuccessfulResponse>(
   }
 
   const response: Response = await fetch(fullURL, options)
-  const HTTP_STATUS_NO_CONTENT = 204
   if (response.status === HTTP_STATUS_NO_CONTENT) {
     return {} as SuccessfulResponse
   }

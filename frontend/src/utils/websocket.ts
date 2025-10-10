@@ -210,7 +210,11 @@ export class WebSocketManager {
       throw new Error('WebSocket is not connected')
     }
 
-    const requestId = Math.random().toString(36).substring(2, 15)
+    // Generate a unique request ID using crypto API if available, fallback to timestamp-based ID
+    const requestId = typeof crypto !== 'undefined' && crypto.randomUUID
+      ? crypto.randomUUID()
+      : `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`
+    
     const request: WSRequest<T> = {
       requestId,
       action,
@@ -226,7 +230,15 @@ export class WebSocketManager {
       const handleMessage = (event: MessageEvent) => {
         try {
           const response = JSON.parse(event.data)
-          if (response.requestId === requestId) {
+          // Validate response structure before accessing properties
+          if (
+            response &&
+            typeof response === 'object' &&
+            'requestId' in response &&
+            'status' in response &&
+            'data' in response &&
+            response.requestId === requestId
+          ) {
             cleanup()
             resolve({ status: response.status, data: response.data })
           }
