@@ -17,6 +17,7 @@ import (
 	"dkhalife.com/tasks/core/internal/utils/auth"
 	"dkhalife.com/tasks/core/internal/utils/caldav"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
+	"dkhalife.com/tasks/core/internal/ws"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
@@ -24,12 +25,14 @@ import (
 type CalDAVAPIHandler struct {
 	tRepo *tRepo.TaskRepository
 	cRepo *cRepo.CalDavRepository
+	ws    *ws.WSServer
 }
 
-func CalDAVAPI(tRepo *tRepo.TaskRepository, cRepo *cRepo.CalDavRepository) *CalDAVAPIHandler {
+func CalDAVAPI(tRepo *tRepo.TaskRepository, cRepo *cRepo.CalDavRepository, wsServer *ws.WSServer) *CalDAVAPIHandler {
 	return &CalDAVAPIHandler{
 		tRepo: tRepo,
 		cRepo: cRepo,
+		ws:    wsServer,
 	}
 }
 
@@ -261,6 +264,19 @@ func (h *CalDAVAPIHandler) handlePut(c *gin.Context) {
 		log.Errorf("Error updating task: %s", err.Error())
 		c.AbortWithStatus(http.StatusInternalServerError)
 		return
+	}
+
+	// Get the updated task to broadcast via WebSocket
+	updatedTask, err := h.tRepo.GetTask(c, taskID)
+	if err != nil {
+		log.Errorf("Error getting updated task: %s", err.Error())
+		// Don't fail the request if we can't broadcast
+	} else {
+		// Broadcast the update to all connected clients for this user
+		h.ws.BroadcastToUser(currentIdentity.UserID, ws.WSResponse{
+			Action: "task_updated",
+			Data:   updatedTask,
+		})
 	}
 
 	c.Status(http.StatusNoContent)
