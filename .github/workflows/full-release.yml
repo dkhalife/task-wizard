@@ -145,7 +145,7 @@ jobs:
       - name: Build and push MCP image
         uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 #v6.13.0
         with:
-          context: .
+          context: ./mcpserver
           file: ./mcpserver/Dockerfile
           push: true
           tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
