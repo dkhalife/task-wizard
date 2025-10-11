@@ -61,7 +61,7 @@ jobs:
           name: build-artifacts
           path: |
             dist/
-            frontend/dist/
+            apiserver/frontend/dist/
           retention-days: 1
 
   release-canary:
