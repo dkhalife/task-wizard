@@ -3,7 +3,8 @@ version: 2
 project_name: task-wizard
 
 builds:
-- env:
+- dir: apiserver
+  env:
   - CGO_ENABLED=0
   goos:
   - linux
