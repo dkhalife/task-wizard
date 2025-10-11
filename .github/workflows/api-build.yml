@@ -6,8 +6,12 @@ permissions:
 on:
   push:
     branches: [ "main" ]
+    paths:
+      - 'apiserver/**'
   pull_request:
     branches: [ "main" ]
+    paths:
+      - 'apiserver/**'
 
 jobs:
 
