@@ -1,0 +1,55 @@
+name: Frontend Build
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'frontend/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'frontend/**'
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+
+    steps:
+    - uses: actions/checkout@v4
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'yarn'
+        cache-dependency-path: frontend/yarn.lock
+    - name: Install dependencies
+      run: yarn install --frozen-lockfile
+      working-directory: frontend
+    - name: Install Playwright Browsers
+      run: npx playwright install --with-deps chromium
+      working-directory: frontend
+    - name: Lint
+      run: yarn lint
+      working-directory: frontend
+    - name: Build (TSC)
+      run: yarn tsc
+      working-directory: frontend
+    - name: Build (Vite)
+      run: yarn build
+      working-directory: frontend
+    - name: Run Playwright tests
+      run: yarn test:e2e
+      working-directory: frontend
+    - uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: playwright-report
+        path: playwright-report/
+        retention-days: 30

@@ -1,0 +1,36 @@
+name: .NET Build
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [ "main" ]
+    paths:
+      - 'mcpserver/**'
+  pull_request:
+    branches: [ "main" ]
+    paths:
+      - 'mcpserver/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: |
+        cd mcpserver
+        dotnet restore
+
+    - name: Build
+      run: |
+        cd mcpserver
+        dotnet build --no-restore --configuration Release

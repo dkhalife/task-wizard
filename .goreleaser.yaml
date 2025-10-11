@@ -3,7 +3,8 @@ version: 2
 project_name: task-wizard
 
 builds:
-- env:
+- dir: apiserver
+  env:
   - CGO_ENABLED=0
   goos:
   - linux
@@ -30,7 +31,7 @@ archives:
   - goos: windows
     format: zip
   files:
-  - src: "config/config.yaml"
+  - src: "apiserver/config/config.yaml"
     dst: "config/config.yaml"
 
 release:

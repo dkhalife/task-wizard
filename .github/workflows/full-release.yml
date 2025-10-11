@@ -1,4 +1,4 @@
-name: Go Release
+name: Full Release
 
 permissions:
   contents: write
@@ -19,15 +19,6 @@ jobs:
         with:
           fetch-depth: 0
           fetch-tags: true
-      - name: Checkout Frontend
-        uses: actions/checkout@v4
-        with:
-          repository: '${{ vars.FRONTEND_REPO }}'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ vars.FRONTEND_REF }}
-          path: 'frontend-code'
-          fetch-depth: 0
-          fetch-tags: true
       # build frontend 
       - name: Use Node.js 22.x
         uses: actions/setup-node@v4
@@ -35,18 +26,18 @@ jobs:
           node-version: 22.x
       - name: Install Dependencies
         run: |
-          cd frontend-code
+          cd frontend
           yarn install
       - name: Build Frontend
         run: |
           export VITE_BACKEND_VERSION=$(git tag --sort=-creatordate | sed -n '1p' | sed 's/^v//')
-          cd frontend-code
+          cd frontend
           yarn build
 
       - name: Copy Frontend
         run: |
-          rm -rf ./frontend/dist
-          cp -r frontend-code/dist ./frontend/dist
+          rm -rf apiserver/frontend/dist
+          cp -r frontend/dist apiserver/frontend/dist
 
       - name: Set up Go
         uses: actions/setup-go@v5
@@ -85,16 +76,6 @@ jobs:
           fetch-depth: 0
           fetch-tags: true
 
-      - name: Checkout Frontend
-        uses: actions/checkout@v4
-        with:
-          repository: '${{ vars.FRONTEND_REPO }}'
-          token: ${{ secrets.GITHUB_TOKEN }}
-          ref: ${{ vars.FRONTEND_REF }}
-          path: 'frontend-code'
-          fetch-depth: 0
-          fetch-tags: true
-
       - name: Download Build Artifacts
         uses: actions/download-artifact@v4
         with:
@@ -121,18 +102,7 @@ jobs:
           GH_TOKEN: ${{ secrets.WORKFLOW_TOKEN }}
         run: |
           changelog=$(echo -e "## Changelog\n")
-  
-          pushd frontend-code
-          latestTag=$(git tag --sort=-creatordate | sed -n '1p')
-          previousTag=$(git tag --sort=-creatordate | sed -n '2p')
-          echo "Evaluating frontend repo:"
-          echo "Latest tag: $latestTag"
-          echo "Previous tag: $previousTag"
-  
-          url="https://github.com/${{ vars.FRONTEND_REPO }}/compare/$previousTag...$latestTag"
-          changelog+=$(echo -e "\n### Changes in [frontend]($url)\n\n$(git log --no-merges --pretty=format:"* %s" $previousTag...$latestTag)")
-          popd
-  
+    
           latestTag=$(git tag --sort=-creatordate | sed -n '1p')
           previousTag=$(git tag --sort=-creatordate | sed -n '2p')
           echo "Evaluating backend repo:"
@@ -161,15 +131,25 @@ jobs:
       - name: Log in to Azure Container Registry
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Build and push tags
+      - name: Build and push API image
         uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 #v6.13.0
         with:
-          context: .
+          context: ./apiserver
+          file: ./apiserver/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           build-args: |
             RELEASE_TAG=${{github.ref_name}}
+
+      - name: Build and push MCP image
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 #v6.13.0
+        with:
+          context: ./mcpserver
+          file: ./mcpserver/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
 
   release-production:
     runs-on: ubuntu-latest
@@ -212,9 +192,16 @@ jobs:
       - name: Log in to ACR
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Push tags
+      - name: Push API image tags
         run: |
           # Promote multi-platform image manifest from canary to production tags
           docker buildx imagetools create \
-            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:release \
-            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:release \
+            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:${{ github.ref_name }}
+
+      - name: Push MCP image tags
+        run: |
+          # Promote multi-platform image manifest from canary to production tags
+          docker buildx imagetools create \
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:release \
+            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}

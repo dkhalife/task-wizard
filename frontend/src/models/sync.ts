@@ -1,0 +1,1 @@
+export type SyncState = 'loading' | 'succeeded' | 'failed'
