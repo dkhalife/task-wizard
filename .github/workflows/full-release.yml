@@ -36,8 +36,8 @@ jobs:
 
       - name: Copy Frontend
         run: |
-          rm -rf ./frontend/dist
-          cp -r frontend/dist ./frontend/dist
+          rm -rf apiserver/frontend/dist
+          cp -r frontend/dist apiserver/frontend/dist
 
       - name: Set up Go
         uses: actions/setup-go@v5
