@@ -24,6 +24,4 @@ ENV ASPNETCORE_URLS="http://+:3001"
 
 EXPOSE 3001
 
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 CMD curl -sf http://localhost:3001/ -o /dev/null || exit 1
-
 ENTRYPOINT ["dotnet", "TaskWizardMcpServer.dll"]
