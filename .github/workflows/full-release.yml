@@ -131,15 +131,25 @@ jobs:
       - name: Log in to Azure Container Registry
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Build and push tags
+      - name: Build and push API image
         uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 #v6.13.0
         with:
-          context: .
+          context: ./apiserver
+          file: ./apiserver/Dockerfile
           push: true
-          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:${{ github.ref_name }}
           platforms: linux/amd64,linux/arm64,linux/arm/v7
           build-args: |
             RELEASE_TAG=${{github.ref_name}}
+
+      - name: Build and push MCP image
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 #v6.13.0
+        with:
+          context: ./mcpserver
+          file: ./mcpserver/Dockerfile
+          push: true
+          tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
+          platforms: linux/amd64,linux/arm64,linux/arm/v7
 
   release-production:
     runs-on: ubuntu-latest
@@ -182,9 +192,16 @@ jobs:
       - name: Log in to ACR
         run: az acr login --name ${{ secrets.ACR_NAME }}
 
-      - name: Push tags
+      - name: Push API image tags
         run: |
           # Promote multi-platform image manifest from canary to production tags
           docker buildx imagetools create \
-            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:release \
-            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard:${{ github.ref_name }}
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:release \
+            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-api:${{ github.ref_name }}
+
+      - name: Push MCP image tags
+        run: |
+          # Promote multi-platform image manifest from canary to production tags
+          docker buildx imagetools create \
+            --tag ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:release \
+            ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
