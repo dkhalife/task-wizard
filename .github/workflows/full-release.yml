@@ -149,7 +149,7 @@ jobs:
           file: ./mcpserver/Dockerfile
           push: true
           tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
-          platforms: linux/amd64,linux/arm64,linux/arm/v7
+          platforms: linux/amd64
 
   release-production:
     runs-on: ubuntu-latest
