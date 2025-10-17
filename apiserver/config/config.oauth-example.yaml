@@ -6,7 +6,7 @@ database:
   path: /config/task-wizard.db
 
 jwt:
-  secret: "your-secure-jwt-secret-here"  # Change this! Or set TW_JWT_SECRET env var
+  secret: "CHANGEME-REPLACE-WITH-SECURE-SECRET"  # IMPORTANT: Change this! Or set TW_JWT_SECRET env var
   session_time: 168h  # 7 days
   max_refresh: 168h   # 7 days
 
@@ -37,7 +37,7 @@ server:
   rate_period: 60s
   rate_limit: 300
   serve_frontend: true
-  registration: false  # Typically false when using OAuth
+  registration: false  # Typically false when using OAuth - users are managed through the OAuth provider
   log_level: "info"
   allowed_origins:
     - "https://your-domain.com"

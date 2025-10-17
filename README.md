@@ -183,6 +183,14 @@ VITE_OAUTH_REDIRECT_URI=https://your-domain.com/oauth/callback
 
 **Note:** OAuth authentication and traditional username/password authentication can coexist. The feature flag controls which method is displayed to users.
 
+#### Security Considerations
+
+- **HTTPS Required**: OAuth must be used over HTTPS in production to protect tokens in transit
+- **Token Storage**: JWT tokens are stored in browser localStorage for session management. This is standard practice for SPA authentication, but means tokens are accessible to JavaScript code. Ensure your application is protected from XSS attacks.
+- **State Parameter**: OAuth state parameter is validated to prevent CSRF attacks
+- **Token Expiration**: Configure appropriate token expiration times in your OAuth provider
+- **Scope Restrictions**: Use minimal required scopes (e.g., `Tasks.ReadWrite`) to follow principle of least privilege
+
 ## 🛠️ Development
 
 A [devcontainer](./.devcontainer/devcontainer.json) configuration is set up in this repo to help jumpstart development with all the required dependencies available for both the frontend and backend. You can use this configuration alongside
