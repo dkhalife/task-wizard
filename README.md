@@ -82,7 +82,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 In the [config](./config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password` and `jwt.secret` using environment variables `TW_EMAIL_HOST`, `TW_EMAIL_PORT`, `TW_EMAIL_SENDER`, `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
+**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `jwt.secret`, and OAuth configuration using environment variables for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
 
 The configuration files are yaml mappings with the following values:
 
@@ -94,6 +94,15 @@ The configuration files are yaml mappings with the following values:
 | `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that or set `TW_JWT_SECRET`.**   |
 | `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
 | `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
+| `oauth.enabled`                          | `false`                                             | Enable OAuth2 authentication. Can be set via `TW_OAUTH_ENABLED`.           |
+| `oauth.client_id`                        | (empty)                                             | OAuth2 client ID. Can be set via `TW_OAUTH_CLIENT_ID`.                     |
+| `oauth.client_secret`                    | (empty)                                             | OAuth2 client secret. Can be set via `TW_OAUTH_CLIENT_SECRET`.             |
+| `oauth.tenant_id`                        | (empty)                                             | OAuth2 tenant ID (for Azure Entra). Can be set via `TW_OAUTH_TENANT_ID`.   |
+| `oauth.authorize_url`                    | (empty)                                             | OAuth2 authorization endpoint URL. Can be set via `TW_OAUTH_AUTHORIZE_URL`.|
+| `oauth.token_url`                        | (empty)                                             | OAuth2 token endpoint URL. Can be set via `TW_OAUTH_TOKEN_URL`.            |
+| `oauth.redirect_url`                     | (empty)                                             | OAuth2 redirect URI. Can be set via `TW_OAUTH_REDIRECT_URL`.               |
+| `oauth.scope`                            | (empty)                                             | OAuth2 scope (e.g., `Tasks.ReadWrite`). Can be set via `TW_OAUTH_SCOPE`.   |
+| `oauth.jwks_url`                         | (empty)                                             | OAuth2 JWKS URL for token validation. Can be set via `TW_OAUTH_JWKS_URL`.  |
 | `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
 | `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
 | `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |
@@ -115,6 +124,64 @@ The configuration files are yaml mappings with the following values:
 | `email.port`                             | (empty)                                             | The email server port.                                                      |
 | `email.email`                            | (empty)                                             | The email address used for sending emails.                                  |
 | `email.password`                         | (empty)                                             | The password for authenticating with the email server.                      |
+
+### 🔐 OAuth2 Configuration (Azure Entra ID Example)
+
+Task Wizard supports OAuth2 authentication as an alternative to username/password authentication. This is particularly useful when integrating with identity providers like Azure Entra ID (formerly Azure AD).
+
+#### Backend Configuration
+
+1. Register two applications in your identity provider:
+   - **Backend API App**: This will validate tokens and define scopes (e.g., `Tasks.ReadWrite`)
+   - **Frontend Client App**: This will initiate the OAuth flow
+
+2. Configure the backend via `config.yaml` or environment variables:
+
+```yaml
+oauth:
+  enabled: true
+  client_id: "your-backend-api-client-id"
+  client_secret: "your-backend-api-client-secret"
+  tenant_id: "your-tenant-id"  # For Azure Entra ID
+  authorize_url: "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize"
+  token_url: "https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token"
+  redirect_url: "https://your-domain.com/oauth/callback"
+  scope: "api://your-backend-api-client-id/Tasks.ReadWrite"
+  jwks_url: "https://login.microsoftonline.com/{tenant-id}/discovery/v2.0/keys"
+```
+
+Or via environment variables:
+```bash
+TW_OAUTH_ENABLED=true
+TW_OAUTH_CLIENT_ID=your-backend-api-client-id
+TW_OAUTH_CLIENT_SECRET=your-backend-api-client-secret
+TW_OAUTH_TENANT_ID=your-tenant-id
+TW_OAUTH_AUTHORIZE_URL=https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize
+TW_OAUTH_TOKEN_URL=https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/token
+TW_OAUTH_REDIRECT_URL=https://your-domain.com/oauth/callback
+TW_OAUTH_SCOPE=api://your-backend-api-client-id/Tasks.ReadWrite
+TW_OAUTH_JWKS_URL=https://login.microsoftonline.com/{tenant-id}/discovery/v2.0/keys
+```
+
+#### Frontend Configuration
+
+Configure the frontend by setting environment variables during the build:
+
+```bash
+VITE_OAUTH_ENABLED=true
+VITE_OAUTH_CLIENT_ID=your-frontend-client-id
+VITE_OAUTH_AUTHORITY=https://login.microsoftonline.com/{tenant-id}/oauth2/v2.0/authorize
+VITE_OAUTH_SCOPE=api://your-backend-api-client-id/Tasks.ReadWrite
+VITE_OAUTH_REDIRECT_URI=https://your-domain.com/oauth/callback
+```
+
+#### Enabling OAuth in the UI
+
+1. Navigate to Settings > Feature Flags
+2. Enable the "Use OAuth 2.0 authentication" feature flag
+3. The login page will now show an "Sign in with OAuth" button
+
+**Note:** OAuth authentication and traditional username/password authentication can coexist. The feature flag controls which method is displayed to users.
 
 ## 🛠️ Development
 
