@@ -1,6 +1,6 @@
 import { retrieveValue, storeValue } from '@/utils/storage'
 
-export type FeatureFlag = 'useWebsockets' | 'refreshStaleData'
+export type FeatureFlag = 'useWebsockets' | 'refreshStaleData' | 'useOAuth'
 
 export interface FeatureFlagDefinition {
   name: FeatureFlag
@@ -17,6 +17,11 @@ export const featureFlagDefinitions: FeatureFlagDefinition[] = [
   {
     name: 'refreshStaleData',
     description: 'Refresh stale data when tab becomes visible',
+    defaultValue: false,
+  },
+  {
+    name: 'useOAuth',
+    description: 'Use OAuth 2.0 authentication',
     defaultValue: false,
   },
 ]

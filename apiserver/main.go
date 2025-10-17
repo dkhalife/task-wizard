@@ -100,6 +100,7 @@ func main() {
 		fx.Provide(apis.LabelsAPI),
 		fx.Provide(apis.LogsAPI),
 		fx.Provide(apis.CalDAVAPI),
+		fx.Provide(apis.OAuthAPI),
 
 		fx.Provide(frontend.NewHandler),
 		fx.Provide(backend.NewHandler),
@@ -110,6 +111,7 @@ func main() {
 			apis.LabelRoutes,
 			apis.CalDAVRoutes,
 			apis.LogRoutes,
+			apis.OAuthRoutes,
 			ws.Routes,
 			tService.TaskMessages,
 			lService.LabelMessages,
