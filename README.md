@@ -33,8 +33,6 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 🗝️ Fine-grained access tokens for endless integration possibilities
 
 🌐 Authenticated CalDAV endpoint at `/dav/tasks` with app token as the password
-   - Full support for task synchronization including title, due dates, and labels
-   - Real-time WebSocket notifications when tasks are updated via CalDAV
 
 ## ⌨️ Keyboard Shortcuts
 
