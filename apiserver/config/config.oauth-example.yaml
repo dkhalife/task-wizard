@@ -1,0 +1,58 @@
+# Example OAuth configuration for Azure Entra ID (formerly Azure AD)
+# Copy this file to config.yaml and update the values
+
+database:
+  migration: true
+  path: /config/task-wizard.db
+
+jwt:
+  secret: "your-secure-jwt-secret-here"  # Change this! Or set TW_JWT_SECRET env var
+  session_time: 168h  # 7 days
+  max_refresh: 168h   # 7 days
+
+oauth:
+  enabled: true
+  # Backend API application client ID (the one with exposed scopes)
+  client_id: "your-backend-api-client-id"
+  # Backend API application client secret
+  client_secret: "your-backend-api-client-secret"
+  # Azure tenant ID
+  tenant_id: "your-tenant-id"
+  # Azure OAuth2 authorization endpoint
+  authorize_url: "https://login.microsoftonline.com/your-tenant-id/oauth2/v2.0/authorize"
+  # Azure OAuth2 token endpoint
+  token_url: "https://login.microsoftonline.com/your-tenant-id/oauth2/v2.0/token"
+  # Redirect URL - must match what's configured in Azure app registration
+  redirect_url: "https://your-domain.com/oauth/callback"
+  # Scope - format is api://backend-client-id/scope-name
+  scope: "api://your-backend-api-client-id/Tasks.ReadWrite"
+  # JWKS URL for token validation
+  jwks_url: "https://login.microsoftonline.com/your-tenant-id/discovery/v2.0/keys"
+
+server:
+  host_name: your-domain.com
+  port: 2021
+  read_timeout: 2s
+  write_timeout: 1s
+  rate_period: 60s
+  rate_limit: 300
+  serve_frontend: true
+  registration: false  # Typically false when using OAuth
+  log_level: "info"
+  allowed_origins:
+    - "https://your-domain.com"
+  allow_cors_credentials: true
+
+scheduler_jobs:
+  due_frequency: 5m
+  overdue_frequency: 24h
+  password_reset_validity: 24h
+  token_expiration_reminder: 72h
+  notification_cleanup: 10m
+  token_expiration_cleanup: 24h
+
+email:
+  host: ""
+  port: 0
+  email: ""
+  password: ""
