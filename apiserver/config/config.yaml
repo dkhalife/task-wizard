@@ -5,6 +5,16 @@ jwt:
   secret: "secret"
   session_time: 168h
   max_refresh: 168h
+oauth:
+  enabled: false
+  client_id: ""
+  client_secret: ""
+  tenant_id: ""
+  authorize_url: ""
+  token_url: ""
+  redirect_url: ""
+  scope: ""
+  jwks_url: ""
 server:
   host_name: example.com
   port: 2021

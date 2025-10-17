@@ -13,17 +13,27 @@ import { doLogin } from '@/utils/auth'
 import { setTitle } from '@/utils/dom'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
-import { AppDispatch } from '@/store/store'
+import { AppDispatch, RootState } from '@/store/store'
 import { pushStatus } from '@/store/statusSlice'
 import { StatusSeverity } from '@/models/status'
+import {
+  getOAuthConfig,
+  getOAuthConfigFromEnv,
+  initiateOAuth,
+  isOAuthConfiguredViaEnv,
+  storeOAuthState,
+} from '@/utils/oauth'
 
 type LoginViewProps = WithNavigate & {
   pushStatus: (message: string, severity: StatusSeverity, timeout?: number) => void
+  useOAuth: boolean
 }
 
 interface LoginViewState {
   email: string
   password: string
+  oauthAvailable: boolean
+  oauthLoading: boolean
 }
 
 class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
@@ -33,11 +43,31 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
     this.state = {
       email: '',
       password: '',
+      oauthAvailable: false,
+      oauthLoading: false,
     }
   }
 
-  componentDidMount(): void {
+  async componentDidMount(): Promise<void> {
     setTitle('Login')
+
+    // Check if OAuth is enabled via feature flag
+    if (this.props.useOAuth) {
+      // First check if OAuth is configured via environment variables
+      if (isOAuthConfiguredViaEnv()) {
+        this.setState({ oauthAvailable: true })
+      } else {
+        // Otherwise, check with the backend
+        try {
+          const config = await getOAuthConfig()
+          if (config && config.enabled) {
+            this.setState({ oauthAvailable: true })
+          }
+        } catch (error) {
+          console.error('Failed to check OAuth configuration:', error)
+        }
+      }
+    }
   }
 
   private handleSubmit = async (e: React.MouseEvent<HTMLAnchorElement> | React.FormEvent) => {
@@ -59,8 +89,33 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
     this.setState({ password: e.target.value })
   }
 
+  private handleOAuthLogin = async () => {
+    this.setState({ oauthLoading: true })
+    try {
+      // Check if OAuth is configured via environment variables
+      const envConfig = getOAuthConfigFromEnv()
+      if (envConfig) {
+        // Use environment variable configuration
+        const state = crypto.getRandomValues(new Uint8Array(32)).reduce((acc, val) => acc + val.toString(16).padStart(2, '0'), '')
+        storeOAuthState(state)
+        
+        const authUrl = `${envConfig.authorize_url}?client_id=${encodeURIComponent(envConfig.client_id)}&redirect_uri=${encodeURIComponent(envConfig.redirect_url)}&response_type=code&scope=${encodeURIComponent(envConfig.scope)}&state=${state}`
+        window.location.href = authUrl
+      } else {
+        // Use backend-provided configuration
+        const response = await initiateOAuth()
+        storeOAuthState(response.state)
+        window.location.href = response.authorization_url
+      }
+    } catch (error) {
+      this.setState({ oauthLoading: false })
+      this.props.pushStatus((error as Error).message, 'error', 5000)
+    }
+  }
+
   render(): React.ReactNode {
-    const { navigate } = this.props
+    const { navigate, useOAuth } = this.props
+    const { oauthAvailable, oauthLoading } = this.state
 
     return (
       <Container
@@ -92,9 +147,32 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
             <Logo />
 
             <Typography>Sign in to your account to continue</Typography>
+
+            {useOAuth && oauthAvailable ? (
+              <>
+                <Button
+                  type='button'
+                  fullWidth
+                  size='lg'
+                  variant='solid'
+                  loading={oauthLoading}
+                  sx={{
+                    width: '100%',
+                    mt: 4,
+                    border: 'moccasin',
+                    borderRadius: '8px',
+                  }}
+                  onClick={this.handleOAuthLogin}
+                >
+                  Sign in with OAuth
+                </Button>
+                <Divider sx={{ my: 2 }}> or </Divider>
+              </>
+            ) : null}
+
             <Typography
               alignSelf={'start'}
-              mt={4}
+              mt={useOAuth && oauthAvailable ? 0 : 4}
             >
               Email
             </Typography>
@@ -162,9 +240,16 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
   }
 }
 
+const mapStateToProps = (state: RootState) => ({
+  useOAuth: state.featureFlags.useOAuth,
+})
+
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   pushStatus: (message: string, severity: StatusSeverity, timeout?: number) =>
     dispatch(pushStatus({ message, severity, timeout })),
 })
 
-export const LoginView = connect(null, mapDispatchToProps)(LoginViewImpl)
+export const LoginView = connect(
+  mapStateToProps,
+  mapDispatchToProps,
+)(LoginViewImpl)

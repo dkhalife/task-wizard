@@ -7,6 +7,7 @@ import { ForgotPasswordView } from '@/views/Authorization/ForgotPasswordView'
 import { LoginView } from '@/views/Authorization/LoginView'
 import { SignupView } from '@/views/Authorization/Signup'
 import { UpdatePasswordView } from '@/views/Authorization/UpdatePasswordView'
+import { OAuthCallbackView } from '@/views/OAuth/OAuthCallbackView'
 import { TaskHistory } from '@/views/History/TaskHistory'
 import { LabelView } from '@/views/Labels/LabelView'
 import { NotFound } from '@/views/NotFound'
@@ -182,6 +183,10 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
             <Route
               path='/password/update'
               element={<UpdatePasswordView navigate={this.navigate} />}
+            />
+            <Route
+              path='/oauth/callback'
+              element={<OAuthCallbackView navigate={this.navigate} />}
             />
             <Route
               path='/labels/'

@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
 	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
+	OAuth         OAuthConfig     `mapstructure:"oauth" yaml:"oauth"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
 	EmailConfig   EmailConfig     `mapstructure:"email" yaml:"email"`
@@ -24,6 +25,18 @@ type JwtConfig struct {
 	Secret      string        `mapstructure:"secret" yaml:"secret"`
 	SessionTime time.Duration `mapstructure:"session_time" yaml:"session_time"`
 	MaxRefresh  time.Duration `mapstructure:"max_refresh" yaml:"max_refresh"`
+}
+
+type OAuthConfig struct {
+	Enabled      bool   `mapstructure:"enabled" yaml:"enabled"`
+	ClientID     string `mapstructure:"client_id" yaml:"client_id"`
+	ClientSecret string `mapstructure:"client_secret" yaml:"client_secret"`
+	TenantID     string `mapstructure:"tenant_id" yaml:"tenant_id"`
+	AuthorizeURL string `mapstructure:"authorize_url" yaml:"authorize_url"`
+	TokenURL     string `mapstructure:"token_url" yaml:"token_url"`
+	RedirectURL  string `mapstructure:"redirect_url" yaml:"redirect_url"`
+	Scope        string `mapstructure:"scope" yaml:"scope"`
+	JwksURL      string `mapstructure:"jwks_url" yaml:"jwks_url"`
 }
 
 type ServerConfig struct {
@@ -75,6 +88,15 @@ func LoadConfig(configFile string) *Config {
 
 	// Allow values with secrets to be set via environment variables
 	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
+	_ = viper.BindEnv("oauth.enabled", "TW_OAUTH_ENABLED")
+	_ = viper.BindEnv("oauth.client_id", "TW_OAUTH_CLIENT_ID")
+	_ = viper.BindEnv("oauth.client_secret", "TW_OAUTH_CLIENT_SECRET")
+	_ = viper.BindEnv("oauth.tenant_id", "TW_OAUTH_TENANT_ID")
+	_ = viper.BindEnv("oauth.authorize_url", "TW_OAUTH_AUTHORIZE_URL")
+	_ = viper.BindEnv("oauth.token_url", "TW_OAUTH_TOKEN_URL")
+	_ = viper.BindEnv("oauth.redirect_url", "TW_OAUTH_REDIRECT_URL")
+	_ = viper.BindEnv("oauth.scope", "TW_OAUTH_SCOPE")
+	_ = viper.BindEnv("oauth.jwks_url", "TW_OAUTH_JWKS_URL")
 	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
 	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
 	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
