@@ -1,0 +1,4 @@
+migrate
+*.db
+*.db-shm
+*.db-wal
