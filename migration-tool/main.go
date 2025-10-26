@@ -97,6 +97,22 @@ func openMariaDB(host string, port int, database, username, password string) (*g
 		return nil, fmt.Errorf("failed to open MariaDB database: %w", err)
 	}
 
+	err = db.AutoMigrate(
+		models.User{},
+		models.UserPasswordReset{},
+		models.AppToken{},
+		models.Label{},
+		models.Task{},
+		models.TaskLabel{},
+		models.TaskHistory{},
+		models.NotificationSettings{},
+		models.Notification{},
+	)
+
+	if err != nil {
+		return nil, fmt.Errorf("failed to run migrations on MariaDB: %w", err)
+	}
+
 	return db, nil
 }
 
@@ -104,6 +120,20 @@ func openMariaDB(host string, port int, database, username, password string) (*g
 func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 	// Start a transaction on the MariaDB connection
 	return mariaDB.Transaction(func(tx *gorm.DB) error {
+		// Disable foreign key checks during migration
+		log.Println("Disabling foreign key checks...")
+		if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 0").Error; err != nil {
+			return fmt.Errorf("failed to disable foreign key checks: %w", err)
+		}
+
+		// Ensure foreign key checks are re-enabled even if migration fails
+		defer func() {
+			log.Println("Re-enabling foreign key checks...")
+			if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 1").Error; err != nil {
+				log.Printf("Warning: failed to re-enable foreign key checks: %v", err)
+			}
+		}()
+
 		// Migration order based on foreign key dependencies:
 		// 1. Users (no dependencies)
 		// 2. Labels (depends on Users via created_by)
