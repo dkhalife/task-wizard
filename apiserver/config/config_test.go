@@ -24,6 +24,7 @@ func TestLoadConfig_Success(t *testing.T) {
   read_timeout: 10s
   write_timeout: 10s
 database:
+  type: sqlite
   path: test.db
   migration: true
 jwt:
@@ -53,6 +54,7 @@ email:
 	assert.Equal(t, 10*time.Second, cfg.Server.ReadTimeout)
 	assert.Equal(t, 10*time.Second, cfg.Server.WriteTimeout)
 
+	assert.Equal(t, "sqlite", cfg.Database.Type)
 	assert.Equal(t, "test.db", cfg.Database.FilePath)
 	assert.Equal(t, true, cfg.Database.Migration)
 
@@ -156,4 +158,80 @@ func TestLoadConfig_CLIOverridesEnv(t *testing.T) {
 	cfg := LoadConfig("cli.yaml")
 	assert.Equal(t, 2222, cfg.Server.Port)
 	os.Unsetenv("TW_CONFIG_FILE")
+}
+
+func TestLoadConfig_DatabaseEnvOverride(t *testing.T) {
+	_ = os.MkdirAll("./config", 0755)
+	f, err := os.Create("./config/config.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("./config/config.yaml")
+	defer f.Close()
+
+	_, err = f.WriteString(`database:
+  type: sqlite
+  path: /config/task-wizard.db
+server:
+  port: 1234
+jwt:
+  secret: testsecret
+`)
+	assert.NoError(t, err)
+
+	os.Setenv("TW_DATABASE_TYPE", "mysql")
+	os.Setenv("TW_DATABASE_HOST", "localhost")
+	os.Setenv("TW_DATABASE_PORT", "3307")
+	os.Setenv("TW_DATABASE_NAME", "taskwizard")
+	os.Setenv("TW_DATABASE_USERNAME", "dbuser")
+	os.Setenv("TW_DATABASE_PASSWORD", "dbpass")
+
+	viper.Reset()
+	cfg := LoadConfig("./config/config.yaml")
+
+	assert.Equal(t, "mysql", cfg.Database.Type)
+	assert.Equal(t, "localhost", cfg.Database.Host)
+	assert.Equal(t, 3307, cfg.Database.Port)
+	assert.Equal(t, "taskwizard", cfg.Database.Database)
+	assert.Equal(t, "dbuser", cfg.Database.Username)
+	assert.Equal(t, "dbpass", cfg.Database.Password)
+
+	os.Unsetenv("TW_DATABASE_TYPE")
+	os.Unsetenv("TW_DATABASE_HOST")
+	os.Unsetenv("TW_DATABASE_PORT")
+	os.Unsetenv("TW_DATABASE_NAME")
+	os.Unsetenv("TW_DATABASE_USERNAME")
+	os.Unsetenv("TW_DATABASE_PASSWORD")
+}
+
+func TestLoadConfig_MySQLConfig(t *testing.T) {
+	_ = os.MkdirAll("./config", 0755)
+	f, err := os.Create("./config/config.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("./config/config.yaml")
+	defer f.Close()
+
+	_, err = f.WriteString(`database:
+  type: mysql
+  host: mysql.example.com
+  port: 3306
+  database: taskwizard
+  username: testuser
+  password: testpass
+  migration: true
+server:
+  port: 1234
+jwt:
+  secret: testsecret
+`)
+	assert.NoError(t, err)
+
+	viper.Reset()
+	cfg := LoadConfig("./config/config.yaml")
+
+	assert.Equal(t, "mysql", cfg.Database.Type)
+	assert.Equal(t, "mysql.example.com", cfg.Database.Host)
+	assert.Equal(t, 3306, cfg.Database.Port)
+	assert.Equal(t, "taskwizard", cfg.Database.Database)
+	assert.Equal(t, "testuser", cfg.Database.Username)
+	assert.Equal(t, "testpass", cfg.Database.Password)
+	assert.Equal(t, true, cfg.Database.Migration)
 }

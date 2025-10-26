@@ -16,7 +16,13 @@ type Config struct {
 }
 
 type DatabaseConfig struct {
+	Type      string `mapstructure:"type" yaml:"type" default:"sqlite"`
 	FilePath  string `mapstructure:"path" yaml:"path" default:"/config/task-wizard.db"`
+	Host      string `mapstructure:"host" yaml:"host"`
+	Port      int    `mapstructure:"port" yaml:"port" default:"3306"`
+	Database  string `mapstructure:"database" yaml:"database"`
+	Username  string `mapstructure:"username" yaml:"username"`
+	Password  string `mapstructure:"password" yaml:"password"`
 	Migration bool   `mapstructure:"migration" yaml:"migration"`
 }
 
@@ -79,6 +85,12 @@ func LoadConfig(configFile string) *Config {
 	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
 	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
 	_ = viper.BindEnv("email.password", "TW_EMAIL_PASSWORD")
+	_ = viper.BindEnv("database.type", "TW_DATABASE_TYPE")
+	_ = viper.BindEnv("database.host", "TW_DATABASE_HOST")
+	_ = viper.BindEnv("database.port", "TW_DATABASE_PORT")
+	_ = viper.BindEnv("database.database", "TW_DATABASE_NAME")
+	_ = viper.BindEnv("database.username", "TW_DATABASE_USERNAME")
+	_ = viper.BindEnv("database.password", "TW_DATABASE_PASSWORD")
 
 	err := viper.ReadInConfig()
 	if err != nil {
