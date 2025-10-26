@@ -80,17 +80,64 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 ## ⚙️ Configuration
 
-In the [config](./config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
+In the [config](./apiserver/config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password` and `jwt.secret` using environment variables `TW_EMAIL_HOST`, `TW_EMAIL_PORT`, `TW_EMAIL_SENDER`, `TW_EMAIL_PASSWORD` and `TW_JWT_SECRET` for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
+**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `jwt.secret`, and database credentials using environment variables for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
+
+### Database Configuration
+
+Task Wizard supports both SQLite and MySQL databases. By default, it uses SQLite.
+
+#### SQLite (default)
+
+To use SQLite, set `database.type` to `sqlite` (or leave it unset) in your `config.yaml`:
+
+```yaml
+database:
+  type: sqlite
+  path: /config/task-wizard.db
+  migration: true
+```
+
+#### MySQL
+
+To use MySQL, configure the database section:
+
+```yaml
+database:
+  type: mysql
+  host: localhost
+  port: 3306
+  database: taskwizard
+  username: taskuser
+  password: taskpass
+  migration: true
+```
+
+You can also use environment variables for database configuration:
+
+- `TW_DATABASE_TYPE` - Database type (sqlite or mysql)
+- `TW_DATABASE_HOST` - Database host
+- `TW_DATABASE_PORT` - Database port
+- `TW_DATABASE_NAME` - Database name
+- `TW_DATABASE_USERNAME` - Database username
+- `TW_DATABASE_PASSWORD` - Database password
+
+### Configuration Reference
 
 The configuration files are yaml mappings with the following values:
 
 | Configuration Entry                      | Default Value                                       | Description                                                                 |
 |------------------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------|
 | `name`                                   | `"prod"`                                            | The name of the environment configuration.                                  |
+| `database.type`                          | `sqlite`                                            | Database type: `sqlite` or `mysql`.                                         |
 | `database.migration`                     | `true`                                              | Indicates if database migration should be performed.                        |
-| `database.path`                          | `/config/task-wizard.db`                            | The path at which to store the SQLite database.                             |
+| `database.path`                          | `/config/task-wizard.db`                            | The path at which to store the SQLite database (SQLite only).               |
+| `database.host`                          | (empty)                                             | Database host (MySQL only).                                                 |
+| `database.port`                          | `3306`                                              | Database port (MySQL only).                                                 |
+| `database.database`                      | (empty)                                             | Database name (MySQL only).                                                 |
+| `database.username`                      | (empty)                                             | Database username (MySQL only).                                             |
+| `database.password`                      | (empty)                                             | Database password (MySQL only).                                             |
 | `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that or set `TW_JWT_SECRET`.**   |
 | `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
 | `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |

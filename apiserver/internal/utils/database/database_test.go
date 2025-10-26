@@ -46,3 +46,57 @@ func (s *DatabaseTestSuite) TestNewDatabaseConnection() {
 	s.Require().NoError(err)
 	s.NoError(sqlDB.Ping())
 }
+
+func (s *DatabaseTestSuite) TestNewDatabase_MySQLMissingHost() {
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Type:     "mysql",
+			Database: "testdb",
+			Username: "testuser",
+		},
+	}
+
+	_, err := NewDatabase(cfg)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "database.host is required")
+}
+
+func (s *DatabaseTestSuite) TestNewDatabase_MySQLMissingDatabase() {
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Type:     "mysql",
+			Host:     "localhost",
+			Username: "testuser",
+		},
+	}
+
+	_, err := NewDatabase(cfg)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "database.database is required")
+}
+
+func (s *DatabaseTestSuite) TestNewDatabase_MySQLMissingUsername() {
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Type:     "mysql",
+			Host:     "localhost",
+			Database: "testdb",
+		},
+	}
+
+	_, err := NewDatabase(cfg)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "database.username is required")
+}
+
+func (s *DatabaseTestSuite) TestNewDatabase_UnsupportedType() {
+	cfg := &config.Config{
+		Database: config.DatabaseConfig{
+			Type: "postgresql",
+		},
+	}
+
+	_, err := NewDatabase(cfg)
+	s.Require().Error(err)
+	s.Contains(err.Error(), "unsupported database type")
+}

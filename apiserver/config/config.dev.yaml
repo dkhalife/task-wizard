@@ -1,4 +1,5 @@
 database:
+  type: sqlite
   migration: true
   path: task-wizard.db
 jwt:

@@ -1,4 +1,5 @@
 database:
+  type: sqlite
   migration: true
   path: /config/task-wizard.db
 jwt:
