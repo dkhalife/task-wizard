@@ -8,7 +8,6 @@ import (
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/utils/test"
-	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 )
 
@@ -318,7 +317,7 @@ func (s *UserTestSuite) TestGetAllUserTokens() {
 		Name:      "Token 1",
 		Token:     "token1",
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-		Scopes:    pq.StringArray{"task:read"},
+		Scopes:    []string{"task:read"},
 	}
 
 	token2 := &models.AppToken{
@@ -326,7 +325,7 @@ func (s *UserTestSuite) TestGetAllUserTokens() {
 		Name:      "Token 2",
 		Token:     "token2",
 		ExpiresAt: time.Now().Add(48 * time.Hour),
-		Scopes:    pq.StringArray{"task:write"},
+		Scopes:    []string{"task:write"},
 	}
 
 	err = s.DB.Create(token1).Error
@@ -362,7 +361,7 @@ func (s *UserTestSuite) TestDeleteAppToken() {
 		Name:      "Test Token",
 		Token:     "token123",
 		ExpiresAt: time.Now().Add(24 * time.Hour),
-		Scopes:    pq.StringArray{"task:read"},
+		Scopes:    []string{"task:read"},
 	}
 
 	err = s.DB.Create(token).Error

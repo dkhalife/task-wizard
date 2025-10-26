@@ -9,7 +9,6 @@ import (
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/golang-jwt/jwt/v4"
-	"github.com/lib/pq"
 	"gorm.io/gorm"
 )
 
@@ -157,7 +156,7 @@ func convertScopesToStringArray(scopes []models.ApiTokenScope) []string {
 		strScopes[i] = string(scope)
 	}
 
-	return pq.StringArray(strScopes)
+	return strScopes
 }
 
 func (r *UserRepository) CreateAppToken(c context.Context, userID int, name string, scopes []models.ApiTokenScope, days int) (*models.AppToken, error) {
