@@ -123,21 +123,6 @@ You can also use environment variables for database configuration:
 - `TW_DATABASE_USERNAME` - Database username
 - `TW_DATABASE_PASSWORD` - Database password
 
-Example using environment variables:
-
-```bash
-docker run \
-  -e TW_DATABASE_TYPE=mysql \
-  -e TW_DATABASE_HOST=mysql.example.com \
-  -e TW_DATABASE_PORT=3306 \
-  -e TW_DATABASE_NAME=taskwizard \
-  -e TW_DATABASE_USERNAME=taskuser \
-  -e TW_DATABASE_PASSWORD=taskpass \
-  -e TW_JWT_SECRET=your-secret-key \
-  -p 2021:2021 \
-  dkhalife/task-wizard
-```
-
 ### Configuration Reference
 
 The configuration files are yaml mappings with the following values:

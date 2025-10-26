@@ -1,13 +1,7 @@
 database:
-  type: sqlite  # Options: sqlite, mysql
+  type: sqlite
   migration: true
   path: task-wizard.db
-  # MySQL configuration (use when type is mysql):
-  # host: localhost
-  # port: 3306
-  # database: taskwizard
-  # username: taskuser
-  # password: taskpass
 jwt:
   secret: "s3cret"
   session_time: 168h
