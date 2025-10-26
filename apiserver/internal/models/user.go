@@ -2,8 +2,6 @@ package models
 
 import (
 	"time"
-
-	"github.com/lib/pq"
 )
 
 type User struct {
@@ -58,14 +56,14 @@ const (
 )
 
 type AppToken struct {
-	ID        int            `json:"id" gorm:"primary_key"`
-	UserID    int            `json:"user_id" gorm:"column:user_id;not null"`
-	Name      string         `json:"name" gorm:"column:name;not null"`
-	Token     string         `json:"token" gorm:"column:token;index;not null"`
-	Scopes    pq.StringArray `json:"scopes" gorm:"column:scopes;type:text[]"`
-	CreatedAt time.Time      `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
-	ExpiresAt time.Time      `json:"expires_at" gorm:"column:expires_at;default:CURRENT_TIMESTAMP"`
-	User      User           `json:"-" gorm:"foreignKey:UserID"`
+	ID        int       `json:"id" gorm:"primary_key"`
+	UserID    int       `json:"user_id" gorm:"column:user_id;not null"`
+	Name      string    `json:"name" gorm:"column:name;not null"`
+	Token     string    `json:"token" gorm:"column:token;index;not null"`
+	Scopes    []string  `json:"scopes" gorm:"column:scopes;serializer:json;type:json"`
+	CreatedAt time.Time `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	ExpiresAt time.Time `json:"expires_at" gorm:"column:expires_at;default:CURRENT_TIMESTAMP"`
+	User      User      `json:"-" gorm:"foreignKey:UserID"`
 }
 
 type CreateAppTokenRequest struct {
