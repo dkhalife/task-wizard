@@ -10,6 +10,7 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 	gormLogger "gorm.io/gorm/logger"
 )
 
@@ -120,17 +121,22 @@ func openMariaDB(host string, port int, database, username, password string) (*g
 func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 	// Start a transaction on the MariaDB connection
 	return mariaDB.Transaction(func(tx *gorm.DB) error {
-		// Disable foreign key checks during migration
+		// Try to disable foreign key checks (MySQL/MariaDB only, will fail silently on SQLite)
 		log.Println("Disabling foreign key checks...")
-		if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 0").Error; err != nil {
-			return fmt.Errorf("failed to disable foreign key checks: %w", err)
+		dbName := tx.Dialector.Name()
+		if dbName == "mysql" {
+			if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 0").Error; err != nil {
+				return fmt.Errorf("failed to disable foreign key checks: %w", err)
+			}
 		}
 
 		// Ensure foreign key checks are re-enabled even if migration fails
 		defer func() {
-			log.Println("Re-enabling foreign key checks...")
-			if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 1").Error; err != nil {
-				log.Printf("Warning: failed to re-enable foreign key checks: %v", err)
+			if dbName == "mysql" {
+				log.Println("Re-enabling foreign key checks...")
+				if err := tx.Exec("SET FOREIGN_KEY_CHECKS = 1").Error; err != nil {
+					log.Printf("Warning: failed to re-enable foreign key checks: %v", err)
+				}
 			}
 		}()
 
@@ -182,7 +188,9 @@ func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 			return fmt.Errorf("failed to read tasks from SQLite: %w", err)
 		}
 		if len(tasks) > 0 {
-			if err := tx.Create(&tasks).Error; err != nil {
+			// Use Clauses to insert with all values explicitly, preventing GORM from applying defaults
+			// The UpdateAll: true option forces GORM to update all fields including zero values
+			if err := tx.Clauses(clause.Insert{Modifier: ""}).Create(&tasks).Error; err != nil {
 				return fmt.Errorf("failed to insert tasks into MariaDB: %w", err)
 			}
 			log.Printf("  ✓ Migrated %d tasks", len(tasks))

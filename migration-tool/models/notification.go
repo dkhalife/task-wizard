@@ -10,7 +10,7 @@ type Notification struct {
 	UserID       int              `json:"user_id" gorm:"column:user_id;not null;index:idx_notifications_user_id"`
 	Text         string           `json:"text" gorm:"column:text;not null"`
 	Type         NotificationType `json:"type" gorm:"type:varchar(8);column:type;not null"`
-	IsSent       bool             `json:"is_sent" gorm:"column:is_sent;index;default:false"`
+	IsSent       bool             `json:"is_sent" gorm:"column:is_sent;index"`
 	ScheduledFor time.Time        `json:"scheduled_for" gorm:"column:scheduled_for;not null;index"`
 	CreatedAt    time.Time        `json:"created_at" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 }
@@ -40,9 +40,9 @@ type NotificationProvider struct {
 
 type NotificationTriggerOptions struct {
 	Enabled bool `json:"enabled"`
-	DueDate bool `json:"due_date" validate:"required_if=Enabled true" gorm:"column:due_date;default:false"`
-	PreDue  bool `json:"pre_due" validate:"required_if=Enabled true" gorm:"column:pre_due;default:false"`
-	Overdue bool `json:"overdue" validate:"required_if=Enabled true" gorm:"column:overdue;default:false"`
+	DueDate bool `json:"due_date" validate:"required_if=Enabled true" gorm:"column:due_date"`
+	PreDue  bool `json:"pre_due" validate:"required_if=Enabled true" gorm:"column:pre_due"`
+	Overdue bool `json:"overdue" validate:"required_if=Enabled true" gorm:"column:overdue"`
 }
 
 type NotificationSettings struct {

@@ -11,7 +11,7 @@ type User struct {
 	Password    string    `json:"-" gorm:"column:password;not null"`
 	CreatedAt   time.Time `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
 	UpdatedAt   time.Time `json:"-" gorm:"column:updated_at;default:NULL;autoUpdateTime"`
-	Disabled    bool      `json:"-" gorm:"column:disabled;default:false"`
+	Disabled    bool      `json:"-" gorm:"column:disabled"`
 }
 
 type UserPasswordReset struct {
