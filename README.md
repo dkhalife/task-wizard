@@ -86,7 +86,7 @@ In the [config](./apiserver/config/) directory are a couple of starter configura
 
 ### Database Configuration
 
-Task Wizard supports both SQLite and MySQL/MariaDB databases. By default, it uses SQLite.
+Task Wizard supports both SQLite and MySQL databases. By default, it uses SQLite.
 
 #### SQLite (default)
 
@@ -99,13 +99,13 @@ database:
   migration: true
 ```
 
-#### MySQL/MariaDB
+#### MySQL
 
-To use MySQL or MariaDB, configure the database section:
+To use MySQL, configure the database section:
 
 ```yaml
 database:
-  type: mysql  # or mariadb
+  type: mysql
   host: localhost
   port: 3306
   database: taskwizard
@@ -116,7 +116,7 @@ database:
 
 You can also use environment variables for database configuration:
 
-- `TW_DATABASE_TYPE` - Database type (sqlite, mysql, or mariadb)
+- `TW_DATABASE_TYPE` - Database type (sqlite or mysql)
 - `TW_DATABASE_HOST` - Database host
 - `TW_DATABASE_PORT` - Database port
 - `TW_DATABASE_NAME` - Database name
@@ -145,14 +145,14 @@ The configuration files are yaml mappings with the following values:
 | Configuration Entry                      | Default Value                                       | Description                                                                 |
 |------------------------------------------|-----------------------------------------------------|-----------------------------------------------------------------------------|
 | `name`                                   | `"prod"`                                            | The name of the environment configuration.                                  |
-| `database.type`                          | `sqlite`                                            | Database type: `sqlite`, `mysql`, or `mariadb`.                             |
+| `database.type`                          | `sqlite`                                            | Database type: `sqlite` or `mysql`.                                         |
 | `database.migration`                     | `true`                                              | Indicates if database migration should be performed.                        |
 | `database.path`                          | `/config/task-wizard.db`                            | The path at which to store the SQLite database (SQLite only).               |
-| `database.host`                          | (empty)                                             | Database host (MySQL/MariaDB only).                                         |
-| `database.port`                          | `3306`                                              | Database port (MySQL/MariaDB only).                                         |
-| `database.database`                      | (empty)                                             | Database name (MySQL/MariaDB only).                                         |
-| `database.username`                      | (empty)                                             | Database username (MySQL/MariaDB only).                                     |
-| `database.password`                      | (empty)                                             | Database password (MySQL/MariaDB only).                                     |
+| `database.host`                          | (empty)                                             | Database host (MySQL only).                                                 |
+| `database.port`                          | `3306`                                              | Database port (MySQL only).                                                 |
+| `database.database`                      | (empty)                                             | Database name (MySQL only).                                                 |
+| `database.username`                      | (empty)                                             | Database username (MySQL only).                                             |
+| `database.password`                      | (empty)                                             | Database password (MySQL only).                                             |
 | `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that or set `TW_JWT_SECRET`.**   |
 | `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
 | `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |

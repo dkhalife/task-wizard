@@ -44,8 +44,8 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 	dbType := strings.ToLower(cfg.Database.Type)
 	
 	switch dbType {
-	case "mysql", "mariadb":
-		// Validate required fields for MySQL/MariaDB
+	case "mysql":
+		// Validate required fields for MySQL
 		if cfg.Database.Host == "" {
 			return nil, fmt.Errorf("database.host is required for %s", dbType)
 		}
@@ -67,7 +67,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 	case "sqlite", "":
 		dialector = sqlite.Open(cfg.Database.FilePath)
 	default:
-		return nil, fmt.Errorf("unsupported database type: %s (supported: sqlite, mysql, mariadb)", cfg.Database.Type)
+		return nil, fmt.Errorf("unsupported database type: %s (supported: sqlite, mysql)", cfg.Database.Type)
 	}
 
 	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger})

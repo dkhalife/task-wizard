@@ -1,8 +1,8 @@
 database:
-  type: sqlite  # Options: sqlite, mysql, mariadb
+  type: sqlite  # Options: sqlite, mysql
   migration: true
   path: /config/task-wizard.db
-  # MySQL/MariaDB configuration (use when type is mysql or mariadb):
+  # MySQL configuration (use when type is mysql):
   # host: localhost
   # port: 3306
   # database: taskwizard
