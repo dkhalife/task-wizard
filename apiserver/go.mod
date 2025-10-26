@@ -19,6 +19,7 @@ require (
 require (
 	github.com/stretchr/testify v1.10.0
 	github.com/wneessen/go-mail v0.7.1
+	gorm.io/driver/mysql v1.6.0
 	gorm.io/driver/sqlite v1.5.7
 )
 
@@ -29,7 +30,6 @@ require (
 	github.com/google/go-cmp v0.6.0 // indirect
 	github.com/mattn/go-sqlite3 v1.14.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	gorm.io/driver/mysql v1.6.0 // indirect
 )
 
 require (

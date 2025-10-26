@@ -45,6 +45,17 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 	
 	switch dbType {
 	case "mysql", "mariadb":
+		// Validate required fields for MySQL/MariaDB
+		if cfg.Database.Host == "" {
+			return nil, fmt.Errorf("database.host is required for %s", dbType)
+		}
+		if cfg.Database.Database == "" {
+			return nil, fmt.Errorf("database.database is required for %s", dbType)
+		}
+		if cfg.Database.Username == "" {
+			return nil, fmt.Errorf("database.username is required for %s", dbType)
+		}
+		
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			cfg.Database.Username,
 			cfg.Database.Password,
