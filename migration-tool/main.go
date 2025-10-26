@@ -21,7 +21,7 @@ func main() {
 	mariaDB := flag.String("maria-db", "", "MariaDB database name")
 	mariaUser := flag.String("maria-user", "", "MariaDB username")
 	mariaPass := flag.String("maria-pass", "", "MariaDB password")
-	
+
 	flag.Parse()
 
 	// Validate required flags
@@ -70,9 +70,9 @@ func main() {
 func openSQLiteReadOnly(path string) (*gorm.DB, error) {
 	// Open SQLite with read-only mode and immutable flag
 	dsn := fmt.Sprintf("file:%s?mode=ro&immutable=1", path)
-	
+
 	logger := gormLogger.Default.LogMode(gormLogger.Warn)
-	
+
 	db, err := gorm.Open(sqlite.Open(dsn), &gorm.Config{
 		Logger: logger,
 	})
@@ -87,9 +87,9 @@ func openSQLiteReadOnly(path string) (*gorm.DB, error) {
 func openMariaDB(host string, port int, database, username, password string) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 		username, password, host, port, database)
-	
+
 	logger := gormLogger.Default.LogMode(gormLogger.Warn)
-	
+
 	db, err := gorm.Open(mysql.Open(dsn), &gorm.Config{
 		Logger: logger,
 	})
