@@ -10,7 +10,6 @@ import (
 	"gorm.io/driver/mysql"
 	"gorm.io/driver/sqlite"
 	"gorm.io/gorm"
-	"gorm.io/gorm/clause"
 	gormLogger "gorm.io/gorm/logger"
 )
 
@@ -158,7 +157,9 @@ func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 			return fmt.Errorf("failed to read users from SQLite: %w", err)
 		}
 		if len(users) > 0 {
-			if err := tx.Create(&users).Error; err != nil {
+			// Use Select("*").Omit("UpdatedAt") to force GORM to insert all fields including zero-value booleans
+			// UpdatedAt is omitted because it's auto-managed and can cause issues with nil pointer values
+			if err := tx.Select("*").Omit("UpdatedAt").Create(&users).Error; err != nil {
 				return fmt.Errorf("failed to insert users into MariaDB: %w", err)
 			}
 			log.Printf("  ✓ Migrated %d users", len(users))
@@ -188,9 +189,9 @@ func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 			return fmt.Errorf("failed to read tasks from SQLite: %w", err)
 		}
 		if len(tasks) > 0 {
-			// Use Clauses to insert with all values explicitly, preventing GORM from applying defaults
-			// The UpdateAll: true option forces GORM to update all fields including zero values
-			if err := tx.Clauses(clause.Insert{Modifier: ""}).Create(&tasks).Error; err != nil {
+			// Use Select("*").Omit("UpdatedAt") to force GORM to insert all fields including zero-value booleans
+			// UpdatedAt is omitted because it's auto-managed and can cause issues with nil pointer values
+			if err := tx.Select("*").Omit("UpdatedAt").Create(&tasks).Error; err != nil {
 				return fmt.Errorf("failed to insert tasks into MariaDB: %w", err)
 			}
 			log.Printf("  ✓ Migrated %d tasks", len(tasks))
@@ -220,7 +221,8 @@ func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 			return fmt.Errorf("failed to read notifications from SQLite: %w", err)
 		}
 		if len(notifications) > 0 {
-			if err := tx.Create(&notifications).Error; err != nil {
+			// Use Select("*") to force GORM to insert all fields including zero-value booleans
+			if err := tx.Select("*").Create(&notifications).Error; err != nil {
 				return fmt.Errorf("failed to insert notifications into MariaDB: %w", err)
 			}
 			log.Printf("  ✓ Migrated %d notifications", len(notifications))
@@ -265,7 +267,8 @@ func migrateData(sqliteDB, mariaDB *gorm.DB) error {
 			return fmt.Errorf("failed to read notification settings from SQLite: %w", err)
 		}
 		if len(notificationSettings) > 0 {
-			if err := tx.Create(&notificationSettings).Error; err != nil {
+			// Use Select("*") to force GORM to insert all fields including zero-value booleans
+			if err := tx.Select("*").Create(&notificationSettings).Error; err != nil {
 				return fmt.Errorf("failed to insert notification settings into MariaDB: %w", err)
 			}
 			log.Printf("  ✓ Migrated %d notification settings", len(notificationSettings))
