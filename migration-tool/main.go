@@ -69,7 +69,7 @@ func main() {
 // openSQLiteReadOnly opens a SQLite database in read-only mode
 func openSQLiteReadOnly(path string) (*gorm.DB, error) {
 	// Open SQLite with read-only mode and immutable flag
-	dsn := fmt.Sprintf("file:%s?mode=ro&immutable=1", path)
+	dsn := fmt.Sprintf("file:%s?mode=ro", path)
 
 	logger := gormLogger.Default.LogMode(gormLogger.Warn)
 
