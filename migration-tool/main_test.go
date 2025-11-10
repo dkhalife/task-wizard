@@ -333,3 +333,294 @@ func TestTaskHistoryPreservation(t *testing.T) {
 		}
 	}
 }
+
+// TestBooleanFieldMigration tests that boolean fields are correctly migrated from SQLite to target DB
+func TestBooleanFieldMigration(t *testing.T) {
+	// Create source SQLite database
+	sourceDB := "testdata/test_booleans_source.db"
+	defer os.Remove(sourceDB)
+	defer os.Remove(sourceDB + "-shm")
+	defer os.Remove(sourceDB + "-wal")
+
+	db, err := gorm.Open(sqlite.Open(sourceDB), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("Failed to open source database: %v", err)
+	}
+
+	err = db.AutoMigrate(
+		&models.User{},
+		&models.Task{},
+		&models.Notification{},
+		&models.NotificationSettings{},
+	)
+	if err != nil {
+		t.Fatalf("Failed to migrate: %v", err)
+	}
+
+	now := time.Now()
+
+	// Create users with different Disabled states
+	activeUser := models.User{
+		DisplayName: "Active User",
+		Email:       "active@example.com",
+		Password:    "password",
+		Disabled:    false,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	db.Create(&activeUser)
+
+	disabledUser := models.User{
+		DisplayName: "Disabled User",
+		Email:       "disabled@example.com",
+		Password:    "password",
+		Disabled:    true,
+		CreatedAt:   now,
+		UpdatedAt:   now,
+	}
+	db.Create(&disabledUser)
+
+	// Create tasks with different boolean combinations
+	task1 := models.Task{
+		Title:     "Task 1 - Active, Rolling",
+		IsActive:  true,
+		IsRolling: true,
+		CreatedBy: activeUser.ID,
+		CreatedAt: now,
+	}
+	db.Create(&task1)
+
+	task2 := models.Task{
+		Title:     "Task 2 - Active, Not Rolling",
+		IsActive:  true,
+		IsRolling: false,
+		CreatedBy: activeUser.ID,
+		CreatedAt: now,
+	}
+	db.Create(&task2)
+
+	task3 := models.Task{
+		Title:     "Task 3 - Inactive, Not Rolling",
+		CreatedBy: activeUser.ID,
+		CreatedAt: now,
+	}
+	db.Create(&task3)
+	// Explicitly set both to false
+	db.Model(&task3).Updates(map[string]interface{}{"is_active": false, "is_rolling": false})
+
+	task4 := models.Task{
+		Title:     "Task 4 - Inactive, Rolling",
+		IsRolling: true,
+		CreatedBy: activeUser.ID,
+		CreatedAt: now,
+	}
+	db.Create(&task4)
+	db.Model(&task4).Update("is_active", false)
+
+	// Create notifications with different IsSent states
+	notif1 := models.Notification{
+		TaskID:       task1.ID,
+		UserID:       activeUser.ID,
+		Text:         "Notification 1 - Sent",
+		Type:         models.NotificationTypeDueDate,
+		IsSent:       true,
+		ScheduledFor: now,
+		CreatedAt:    now,
+	}
+	db.Create(&notif1)
+
+	notif2 := models.Notification{
+		TaskID:       task1.ID,
+		UserID:       activeUser.ID,
+		Text:         "Notification 2 - Not Sent",
+		Type:         models.NotificationTypeDueDate,
+		IsSent:       false,
+		ScheduledFor: now,
+		CreatedAt:    now,
+	}
+	db.Create(&notif2)
+
+	// Create notification settings with different trigger booleans
+	settings1 := models.NotificationSettings{
+		UserID: activeUser.ID,
+		Triggers: models.NotificationTriggerOptions{
+			Enabled: true,
+			DueDate: true,
+			PreDue:  true,
+			Overdue: false,
+		},
+	}
+	db.Create(&settings1)
+
+	settings2 := models.NotificationSettings{
+		UserID: disabledUser.ID,
+		Triggers: models.NotificationTriggerOptions{
+			Enabled: false,
+			DueDate: false,
+			PreDue:  false,
+			Overdue: false,
+		},
+	}
+	db.Create(&settings2)
+
+	// Create target SQLite database (simulating MariaDB for test)
+	targetDB := "testdata/test_booleans_target.db"
+	defer os.Remove(targetDB)
+	defer os.Remove(targetDB + "-shm")
+	defer os.Remove(targetDB + "-wal")
+
+	// Perform migration
+	sourceConn, err := openSQLiteReadOnly(sourceDB)
+	if err != nil {
+		t.Fatalf("Failed to open source: %v", err)
+	}
+
+	targetConn, err := gorm.Open(sqlite.Open(targetDB), &gorm.Config{})
+	if err != nil {
+		t.Fatalf("Failed to open target: %v", err)
+	}
+
+	err = targetConn.AutoMigrate(
+		&models.User{},
+		&models.Task{},
+		&models.Notification{},
+		&models.NotificationSettings{},
+	)
+	if err != nil {
+		t.Fatalf("Failed to migrate target: %v", err)
+	}
+
+	// Perform migration using a simplified version without foreign key checks
+	err = targetConn.Transaction(func(tx *gorm.DB) error {
+		// Migrate Users
+		var users []models.User
+		if err := sourceConn.Find(&users).Error; err != nil {
+			return err
+		}
+		if len(users) > 0 {
+			if err := tx.Select("*").Omit("UpdatedAt").Create(&users).Error; err != nil {
+				return err
+			}
+		}
+
+		// Migrate Tasks
+		var tasks []models.Task
+		if err := sourceConn.Find(&tasks).Error; err != nil {
+			return err
+		}
+		if len(tasks) > 0 {
+			if err := tx.Select("*").Omit("UpdatedAt").Create(&tasks).Error; err != nil {
+				return err
+			}
+		}
+
+		// Migrate Notifications
+		var notifications []models.Notification
+		if err := sourceConn.Find(&notifications).Error; err != nil {
+			return err
+		}
+		if len(notifications) > 0 {
+			if err := tx.Select("*").Create(&notifications).Error; err != nil {
+				return err
+			}
+		}
+
+		// Migrate NotificationSettings
+		var notificationSettings []models.NotificationSettings
+		if err := sourceConn.Find(&notificationSettings).Error; err != nil {
+			return err
+		}
+		if len(notificationSettings) > 0 {
+			if err := tx.Select("*").Create(&notificationSettings).Error; err != nil {
+				return err
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		t.Fatalf("Migration failed: %v", err)
+	}
+
+	// Verify Users
+	var users []models.User
+	targetConn.Order("id").Find(&users)
+	if len(users) != 2 {
+		t.Errorf("Expected 2 users, got %d", len(users))
+	}
+	if users[0].Disabled != false {
+		t.Errorf("User 1 should not be disabled, got Disabled=%v", users[0].Disabled)
+	}
+	if users[1].Disabled != true {
+		t.Errorf("User 2 should be disabled, got Disabled=%v", users[1].Disabled)
+	}
+
+	// Verify Tasks
+	var tasks []models.Task
+	targetConn.Order("id").Find(&tasks)
+	if len(tasks) != 4 {
+		t.Errorf("Expected 4 tasks, got %d", len(tasks))
+	}
+
+	// Task 1: IsActive=true, IsRolling=true
+	if tasks[0].IsActive != true || tasks[0].IsRolling != true {
+		t.Errorf("Task 1 should be IsActive=true, IsRolling=true, got IsActive=%v, IsRolling=%v",
+			tasks[0].IsActive, tasks[0].IsRolling)
+	}
+
+	// Task 2: IsActive=true, IsRolling=false
+	if tasks[1].IsActive != true || tasks[1].IsRolling != false {
+		t.Errorf("Task 2 should be IsActive=true, IsRolling=false, got IsActive=%v, IsRolling=%v",
+			tasks[1].IsActive, tasks[1].IsRolling)
+	}
+
+	// Task 3: IsActive=false, IsRolling=false
+	if tasks[2].IsActive != false || tasks[2].IsRolling != false {
+		t.Errorf("Task 3 should be IsActive=false, IsRolling=false, got IsActive=%v, IsRolling=%v",
+			tasks[2].IsActive, tasks[2].IsRolling)
+	}
+
+	// Task 4: IsActive=false, IsRolling=true
+	if tasks[3].IsActive != false || tasks[3].IsRolling != true {
+		t.Errorf("Task 4 should be IsActive=false, IsRolling=true, got IsActive=%v, IsRolling=%v",
+			tasks[3].IsActive, tasks[3].IsRolling)
+	}
+
+	// Verify Notifications
+	var notifications []models.Notification
+	targetConn.Order("id").Find(&notifications)
+	if len(notifications) != 2 {
+		t.Errorf("Expected 2 notifications, got %d", len(notifications))
+	}
+	if notifications[0].IsSent != true {
+		t.Errorf("Notification 1 should be sent, got IsSent=%v", notifications[0].IsSent)
+	}
+	if notifications[1].IsSent != false {
+		t.Errorf("Notification 2 should not be sent, got IsSent=%v", notifications[1].IsSent)
+	}
+
+	// Verify NotificationSettings
+	var settings []models.NotificationSettings
+	targetConn.Order("user_id").Find(&settings)
+	if len(settings) != 2 {
+		t.Errorf("Expected 2 notification settings, got %d", len(settings))
+	}
+
+	// Settings 1: All enabled except Overdue
+	if settings[0].Triggers.Enabled != true || settings[0].Triggers.DueDate != true ||
+		settings[0].Triggers.PreDue != true || settings[0].Triggers.Overdue != false {
+		t.Errorf("Settings 1 incorrect: Enabled=%v, DueDate=%v, PreDue=%v, Overdue=%v",
+			settings[0].Triggers.Enabled, settings[0].Triggers.DueDate,
+			settings[0].Triggers.PreDue, settings[0].Triggers.Overdue)
+	}
+
+	// Settings 2: All disabled
+	if settings[1].Triggers.Enabled != false || settings[1].Triggers.DueDate != false ||
+		settings[1].Triggers.PreDue != false || settings[1].Triggers.Overdue != false {
+		t.Errorf("Settings 2 incorrect: Enabled=%v, DueDate=%v, PreDue=%v, Overdue=%v",
+			settings[1].Triggers.Enabled, settings[1].Triggers.DueDate,
+			settings[1].Triggers.PreDue, settings[1].Triggers.Overdue)
+	}
+
+	t.Log("All boolean fields migrated correctly!")
+}
