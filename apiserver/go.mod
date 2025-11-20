@@ -12,7 +12,7 @@ require (
 	github.com/ulule/limiter/v3 v3.11.2
 	go.uber.org/fx v1.22.0
 	go.uber.org/zap v1.26.0
-	golang.org/x/crypto v0.41.0
+	golang.org/x/crypto v0.45.0
 	gorm.io/gorm v1.30.0
 )
 
@@ -78,9 +78,9 @@ require (
 	go.uber.org/multierr v1.10.0 // indirect
 	golang.org/x/arch v0.8.0 // indirect
 	golang.org/x/exp v0.0.0-20231108232855-2478ac86f678 // indirect
-	golang.org/x/net v0.43.0
-	golang.org/x/sys v0.35.0 // indirect
-	golang.org/x/text v0.29.0 // indirect
+	golang.org/x/net v0.47.0
+	golang.org/x/sys v0.38.0 // indirect
+	golang.org/x/text v0.31.0 // indirect
 	google.golang.org/protobuf v1.34.2 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
