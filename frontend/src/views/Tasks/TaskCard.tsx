@@ -30,7 +30,7 @@ import { TaskUI } from '@/utils/marshalling'
 type TaskCardProps = WithNavigate & {
   task: TaskUI
 
-  completeTask: (taskId: number) => Promise<any>
+  completeTask: (taskId: number, endRecurrence: boolean) => Promise<any>
   onTaskUpdate: (event: TASK_UPDATE_EVENT) => void
   onContextMenu: (event: React.MouseEvent<HTMLDivElement>, task: TaskUI) => void
 }
@@ -46,7 +46,7 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
 
   private handleTaskCompletion = async () => {
     const { task, onTaskUpdate } = this.props
-    await this.props.completeTask(task.id)
+    await this.props.completeTask(task.id, false)
 
     // Play the task completion sound
     playSound(SoundEffect.TaskComplete)
@@ -234,7 +234,7 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
-  completeTask: (taskId: number) => dispatch(completeTask(taskId)),
+  completeTask: (taskId: number, endRecurrence: boolean) => dispatch(completeTask({ taskId, endRecurrence })),
 })
 
 export const TaskCard = connect(

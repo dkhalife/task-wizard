@@ -157,16 +157,19 @@ func (h *TasksMessageHandler) updateDueDate(ctx context.Context, userID int, msg
 }
 
 func (h *TasksMessageHandler) completeTask(ctx context.Context, userID int, msg ws.WSMessage) *ws.WSResponse {
-	var id int
-	if err := json.Unmarshal(msg.Data, &id); err != nil {
+	var req struct {
+		ID            int  `json:"id"`
+		EndRecurrence bool `json:"endRecurrence"`
+	}
+	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
 			Data: gin.H{
-				"error": "Invalid task ID",
+				"error": "Invalid request data",
 			},
 		}
 	}
-	status, response := h.ts.CompleteTask(ctx, userID, id)
+	status, response := h.ts.CompleteTask(ctx, userID, req.ID, req.EndRecurrence)
 	return &ws.WSResponse{
 		Status: status,
 		Data:   response,

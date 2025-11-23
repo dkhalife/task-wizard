@@ -84,8 +84,8 @@ export const fetchCompletedTasks = createAsyncThunk(
 
 export const completeTask = createAsyncThunk(
   'tasks/completeTask',
-  async (taskId: number) => {
-    const response = await MarkTaskComplete(taskId)
+  async (req: { taskId: number, endRecurrence: boolean }) => {
+    const response = await MarkTaskComplete(req.taskId, req.endRecurrence)
     return response.task
   },
 )

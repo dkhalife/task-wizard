@@ -1,4 +1,4 @@
-import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, toggleShowCompleted, fetchCompletedTasks } from '@/store/tasksSlice'
+import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, toggleShowCompleted, fetchCompletedTasks, completeTask } from '@/store/tasksSlice'
 import { Task, TASK_UPDATE_EVENT } from '@/models/task'
 import {
   ExpandCircleDown,
@@ -12,6 +12,7 @@ import {
   SwitchAccessShortcut,
   Visibility,
   VisibilityOff,
+  PublishedWithChanges,
 } from '@mui/icons-material'
 import {
   Container,
@@ -54,6 +55,7 @@ type MyTasksProps = {
   toggleShowCompleted: () => void
   fetchCompletedTasks: () => Promise<any>
 
+  completeTask: (taskId: number, endRecurrence: boolean) => Promise<any>
   deleteTask: (taskId: number) => Promise<any>
   skipTask: (taskId: number) => Promise<any>
   updateDueDate: (taskId: number, dueDate: string) => Promise<any>
@@ -185,6 +187,18 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 
     this.dismissMoreMenu()
     this.props.navigate(NavigationPaths.TaskHistory(task.id))
+  }
+
+  private onCompleteAndStopRecurrenceClicked = async () => {
+    const { contextMenuTask: task } = this.state
+    if (task === null) {
+      throw new Error('Attempted to complete and stop recurrence without a reference')
+    }
+
+    await this.props.completeTask(task.id, true)
+
+    this.dismissMoreMenu()
+    this.onEvent('completed')
   }
 
   private onSkipTaskClicked = async () => {
@@ -384,10 +398,16 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
           ref={this.menuRef}
         >
           {contextMenuTask && contextMenuTask.frequency.type !== 'once' && (
-            <MenuItem onClick={this.onSkipTaskClicked}>
-              <SwitchAccessShortcut />
-              Skip to next due date
-            </MenuItem>
+            <>
+              <MenuItem onClick={this.onCompleteAndStopRecurrenceClicked}>
+                <PublishedWithChanges />
+                Complete and end recurrence
+              </MenuItem>
+              <MenuItem onClick={this.onSkipTaskClicked}>
+                <SwitchAccessShortcut />
+                Skip to next due date
+              </MenuItem>
+            </>
           )}
           <MenuItem onClick={this.onChangeDueDateClicked}>
             <MoreTime />
@@ -511,6 +531,7 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   toggleShowCompleted: () => dispatch(toggleShowCompleted()),
   fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
 
+  completeTask: (taskId: number, endRecurrence: boolean) => dispatch(completeTask({ taskId, endRecurrence })),
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),
   skipTask: (taskId: number) => dispatch(skipTask(taskId)),
   updateDueDate: (taskId: number, dueDate: string) => dispatch(updateDueDate({ taskId, dueDate })),
