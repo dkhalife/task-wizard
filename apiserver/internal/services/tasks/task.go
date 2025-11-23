@@ -382,7 +382,7 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 	}
 }
 
-func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int) (int, interface{}) {
+func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endRecurrence bool) (int, interface{}) {
 	log := logging.FromContext(ctx)
 
 	task, err := s.t.GetTask(ctx, taskID)
@@ -394,12 +394,15 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int) (int
 	}
 
 	var completedDate time.Time = time.Now().UTC()
-	var nextDueDate *time.Time
-	nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
-	if err != nil {
-		log.Errorf("error scheduling next due date: %s", err.Error())
-		return http.StatusInternalServerError, gin.H{
-			"error": fmt.Sprintf("Error scheduling next due date: %s", err),
+	var nextDueDate *time.Time = nil
+
+	if !endRecurrence {
+		nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
+		if err != nil {
+			log.Errorf("error scheduling next due date: %s", err.Error())
+			return http.StatusInternalServerError, gin.H{
+				"error": fmt.Sprintf("Error scheduling next due date: %s", err),
+			}
 		}
 	}
 

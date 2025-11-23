@@ -166,7 +166,16 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 		return
 	}
 
-	status, response := h.tService.CompleteTask(c, currentIdentity.UserID, id)
+	endRecurrenceStr := c.DefaultQuery("endRecurrence", "false")
+	endRecurrence, err := strconv.ParseBool(endRecurrenceStr)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid endRecurrence value",
+		})
+		return
+	}
+
+	status, response := h.tService.CompleteTask(c, currentIdentity.UserID, id, endRecurrence)
 	c.JSON(status, response)
 }
 

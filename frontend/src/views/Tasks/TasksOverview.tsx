@@ -44,7 +44,7 @@ type TasksOverviewProps = {
   filterTasks: (searchQuery: string) => void
   toggleShowCompleted: () => void
   fetchCompletedTasks: () => Promise<any>
-  completeTask: (taskId: number) => Promise<any>
+  completeTask: (taskId: number, endRecurrence: boolean) => Promise<any>
   deleteTask: (taskId: number) => Promise<any>
   updateDueDate: (taskId: number, dueDate: string) => Promise<any>
   pushStatus: (status: Status) => void
@@ -91,7 +91,7 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
   }
 
   private onCompleteTaskClicked = (task: TaskUI) => async () => {
-    await this.props.completeTask(task.id)
+    await this.props.completeTask(task.id, false)
 
     playSound(SoundEffect.TaskComplete)
     this.props.pushStatus({
@@ -445,7 +445,7 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   filterTasks: (searchQuery: string) => dispatch(filterTasks(searchQuery)),
   toggleShowCompleted: () => dispatch(toggleShowCompleted()),
   fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
-  completeTask: (taskId: number) => dispatch(completeTask(taskId)),
+  completeTask: (taskId: number, endRecurrence: boolean) => dispatch(completeTask({ taskId, endRecurrence })),
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),
   updateDueDate: (taskId: number, dueDate: string) => dispatch(updateDueDate({ taskId, dueDate })),
   pushStatus: (status: Status) => dispatch(pushStatus(status)),
