@@ -3,10 +3,7 @@ import { INVALID_TASK_ID, newTask, Task } from '@/models/task'
 import { AppDispatch, RootState } from '@/store/store'
 import { setDraft } from '@/store/tasksSlice'
 import { getHomeView, getPathName, NavigationPaths } from '@/utils/navigation'
-import { ForgotPasswordView } from '@/views/Authorization/ForgotPasswordView'
 import { LoginView } from '@/views/Authorization/LoginView'
-import { SignupView } from '@/views/Authorization/Signup'
-import { UpdatePasswordView } from '@/views/Authorization/UpdatePasswordView'
 import { TaskHistory } from '@/views/History/TaskHistory'
 import { LabelView } from '@/views/Labels/LabelView'
 import { NotFound } from '@/views/NotFound'
@@ -121,7 +118,7 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
   }
 
   render() {
-    const { navigateTo } = this.state
+    const { navigateTo } = this.state 
 
     return (
       <BrowserRouter>
@@ -170,18 +167,6 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
             <Route
               path='/login'
               element={<LoginView navigate={this.navigate} />}
-            />
-            <Route
-              path='/signup'
-              element={<SignupView navigate={this.navigate} />}
-            />
-            <Route
-              path='/forgot-password'
-              element={<ForgotPasswordView navigate={this.navigate} />}
-            />
-            <Route
-              path='/password/update'
-              element={<UpdatePasswordView navigate={this.navigate} />}
             />
             <Route
               path='/labels/'

@@ -6,6 +6,7 @@ import {
 } from '@/models/websocket'
 import { store } from '@/store/store'
 import { wsConnecting, wsConnected, wsDisconnected } from '@/store/wsSlice'
+import { getAccessToken } from './msal'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -51,7 +52,7 @@ export class WebSocketManager {
   }
 
   connect() {
-    const token = localStorage.getItem('ca_token')
+    const token = getAccessToken()
     if (!token) {
       this.dispatch(wsDisconnected("User is not signed in"))
       return

@@ -9,7 +9,7 @@ import (
 
 type Config struct {
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
-	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
+	Entra         EntraConfig     `mapstructure:"entra" yaml:"entra"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
 	EmailConfig   EmailConfig     `mapstructure:"email" yaml:"email"`
@@ -26,10 +26,9 @@ type DatabaseConfig struct {
 	Migration bool   `mapstructure:"migration" yaml:"migration"`
 }
 
-type JwtConfig struct {
-	Secret      string        `mapstructure:"secret" yaml:"secret"`
-	SessionTime time.Duration `mapstructure:"session_time" yaml:"session_time"`
-	MaxRefresh  time.Duration `mapstructure:"max_refresh" yaml:"max_refresh"`
+type EntraConfig struct {
+	TenantID string `mapstructure:"tenant_id" yaml:"tenant_id"`
+	Audience string `mapstructure:"audience" yaml:"audience"`
 }
 
 type ServerConfig struct {
@@ -49,7 +48,6 @@ type ServerConfig struct {
 type SchedulerConfig struct {
 	DueFrequency            time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
 	OverdueFrequency        time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
-	PasswordResetValidity   time.Duration `mapstructure:"password_reset_validity" yaml:"password_reset_validity" default:"24h"`
 	TokenExpirationReminder time.Duration `mapstructure:"token_expiration_reminder" yaml:"token_expiration_reminder" default:"72h"`
 	NotificationCleanup     time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
 	TokenExpirationCleanup  time.Duration `mapstructure:"token_expiration_cleanup" yaml:"token_expiration_cleanup" default:"24h"`
@@ -80,7 +78,6 @@ func LoadConfig(configFile string) *Config {
 	}
 
 	// Allow values with secrets to be set via environment variables
-	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
 	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
 	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
 	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
@@ -101,10 +98,6 @@ func LoadConfig(configFile string) *Config {
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		panic(err)
-	}
-
-	if config.Jwt.Secret == "secret" {
-		panic("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
 	}
 
 	return &config

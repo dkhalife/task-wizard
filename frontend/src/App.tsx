@@ -1,8 +1,8 @@
 import { NavBar } from './views/Navigation/NavBar'
 import { Outlet } from 'react-router-dom'
-import { isTokenValid } from './utils/api'
+import { isTokenValid } from './utils/msal'
 import React from 'react'
-import { WithNavigate } from './utils/navigation'
+import { getPathName, NavigationPaths, WithNavigate } from './utils/navigation'
 import { CssBaseline, CssVarsProvider } from '@mui/joy'
 import { preloadSounds } from './utils/sound'
 import WebSocketManager from './utils/websocket'
@@ -79,6 +79,8 @@ class AppImpl extends React.Component<AppProps> {
       await this.props.fetchTasks()
       await this.props.fetchTokens()
       await this.props.initGroups()
+    } else if (getPathName() !== NavigationPaths.Login) {
+      this.props.navigate(NavigationPaths.Login)
     }
 
     document.addEventListener('visibilitychange', this.onVisibilityChange)

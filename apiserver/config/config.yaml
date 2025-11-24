@@ -2,10 +2,9 @@ database:
   type: sqlite
   migration: true
   path: /config/task-wizard.db
-jwt:
-  secret: "secret"
-  session_time: 168h
-  max_refresh: 168h
+entra:
+  tenant_id: your-tenant-id
+  audience: your-audience
 server:
   host_name: example.com
   port: 2021
@@ -19,7 +18,6 @@ server:
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h
-  password_reset_validity: 24h
   token_expiration_reminder: 72h
   notification_cleanup: 10m
   token_expiration_cleanup: 24h

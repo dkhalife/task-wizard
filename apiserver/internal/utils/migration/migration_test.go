@@ -41,7 +41,6 @@ func (s *MigrationTestSuite) TestMigration() {
 	// Verify that tables were created
 	for _, model := range []interface{}{
 		&models.User{},
-		&models.UserPasswordReset{},
 		&models.AppToken{},
 		&models.Label{},
 		&models.Task{},

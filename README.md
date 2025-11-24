@@ -40,7 +40,7 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 |-------------------------------|------------------------------------|-------------------------------------------------------------------|
 | Tasks Overview                | `Ctrl + F`                         | Focuses the search box.                                           |
 | Tasks Overview                | `+` (outside of inputs)            | Opens the “Add Task” screen.                                      |
-| Forgot Password, Task Edit, and Password/Date modals | `Enter` in text input fields, password fields, or date fields | Submits or saves the form or dialog.                              |
+| Task Edit, and Date modals | `Enter` in text input fields or date fields | Submits or saves the form or dialog.                              |
 
 ## 🚀 Installation
 
@@ -154,7 +154,6 @@ The configuration files are yaml mappings with the following values:
 | `server.allow_credentials`               | `false`                                             | Whether cross-domain requests can include credentials.                      |
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
-| `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
 | `scheduler_jobs.notification_cleanup`    | `10m`                                               | The interval for cleaning up sent notifications.                            |
 | `scheduler_jobs.token_expiration_cleanup`| `24h`                                               | The interval for cleaning up expired tokens.                                |
 |`scheduler_jobs.token_expiration_reminder`| `72h`                                               | How long before an app token expiration to send a reminder for it.          |

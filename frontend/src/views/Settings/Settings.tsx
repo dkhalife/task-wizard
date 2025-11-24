@@ -1,15 +1,12 @@
-import { UpdatePassword } from '@/api/users'
 import {
   Container,
   Typography,
   Divider,
   Box,
-  Button,
   Select,
   Option,
 } from '@mui/joy'
 import React from 'react'
-import { PassowrdChangeModal } from '../Modals/Inputs/PasswordChangeModal'
 import { APITokenSettings } from './APITokenSettings'
 import { NotificationSettings } from '../Notifications/NotificationSettings'
 import { ThemeToggle } from './ThemeToggle'
@@ -32,20 +29,6 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
     this.state = {
       homeView: getHomeView(),
     }
-  }
-
-  private changePasswordModal = React.createRef<PassowrdChangeModal>()
-
-  private onPasswordChanged = async (password: string | null) => {
-    if (!password) {
-      return
-    }
-
-    await UpdatePassword(password)
-  }
-
-  private onChangePassword = () => {
-    this.changePasswordModal.current?.open()
   }
 
   private onHomeViewChange = async (
@@ -94,31 +77,6 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
               </Select>
             </>
           )}
-          <Typography
-            level='h3'
-            sx={{
-              mt: 2,
-            }}
-          >
-            Password
-          </Typography>
-          <Divider />
-          <Box
-            sx={{
-              mt: 1,
-            }}
-          >
-            <Button
-              variant='soft'
-              onClick={this.onChangePassword}
-            >
-              Change Password
-            </Button>
-            <PassowrdChangeModal
-              ref={this.changePasswordModal}
-              onClose={this.onPasswordChanged}
-            />
-          </Box>
         </div>
         <NotificationSettings />
         <DesktopNotificationToggle />

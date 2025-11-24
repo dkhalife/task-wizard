@@ -2,10 +2,9 @@ database:
   type: sqlite
   migration: true
   path: task-wizard.db
-jwt:
-  secret: "s3cret"
-  session_time: 168h
-  max_refresh: 168h
+entra:
+  tenant_id: a8292176-9d5a-4891-8ee2-a5db434dac1c
+  audience: 28ea7654-5dea-4997-aa57-cf0d01b3d8d7
 server:
   host_name: localhost
   port: 2021
@@ -22,7 +21,6 @@ server:
 scheduler_jobs:
   due_frequency: 1m
   overdue_frequency: 1m
-  password_reset_validity: 1m
   token_expiration_reminder: 1m
   notification_cleanup: 10s
   token_expiration_cleanup: 1h

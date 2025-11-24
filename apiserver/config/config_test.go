@@ -27,14 +27,12 @@ database:
   type: sqlite
   path: test.db
   migration: true
-jwt:
-  secret: testsecret
-  session_time: 1h
-  max_refresh: 1h
+entra:
+  tenant_id: your-tenant-id
+  audience: your-audience
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h
-  password_reset_validity: 24h
   token_expiration_reminder: 72h
 email:
   host: smtp.example.com
@@ -58,13 +56,11 @@ email:
 	assert.Equal(t, "test.db", cfg.Database.FilePath)
 	assert.Equal(t, true, cfg.Database.Migration)
 
-	assert.Equal(t, "testsecret", cfg.Jwt.Secret)
-	assert.Equal(t, 1*time.Hour, cfg.Jwt.SessionTime)
-	assert.Equal(t, 1*time.Hour, cfg.Jwt.MaxRefresh)
+	assert.Equal(t, "your-tenant-id", cfg.Entra.TenantID)
+	assert.Equal(t, "your-audience", cfg.Entra.Audience)
 
 	assert.Equal(t, 5*time.Minute, cfg.SchedulerJobs.DueFrequency)
 	assert.Equal(t, 24*time.Hour, cfg.SchedulerJobs.OverdueFrequency)
-	assert.Equal(t, 24*time.Hour, cfg.SchedulerJobs.PasswordResetValidity)
 	assert.Equal(t, 72*time.Hour, cfg.SchedulerJobs.TokenExpirationReminder)
 
 	assert.Equal(t, "smtp.example.com", cfg.EmailConfig.Host)
@@ -96,8 +92,6 @@ func TestLoadConfig_EmailEnvOverride(t *testing.T) {
   password: testpass
 server:
   port: 1234
-jwt:
-  secret: testsecret
 `)
 	assert.NoError(t, err)
 
@@ -105,7 +99,6 @@ jwt:
 	os.Setenv("TW_EMAIL_PORT", "2525")
 	os.Setenv("TW_EMAIL_SENDER", "override@example.com")
 	os.Setenv("TW_EMAIL_PASSWORD", "overridepass")
-	os.Setenv("TW_JWT_SECRET", "s3cret")
 
 	viper.Reset()
 	cfg := LoadConfig("./config/config.yaml")
@@ -119,7 +112,6 @@ jwt:
 	os.Unsetenv("TW_EMAIL_PORT")
 	os.Unsetenv("TW_EMAIL_SENDER")
 	os.Unsetenv("TW_EMAIL_PASSWORD")
-	os.Unsetenv("TW_JWT_SECRET")
 }
 
 func TestLoadConfig_EnvFile(t *testing.T) {
@@ -172,8 +164,6 @@ func TestLoadConfig_DatabaseEnvOverride(t *testing.T) {
   path: /config/task-wizard.db
 server:
   port: 1234
-jwt:
-  secret: testsecret
 `)
 	assert.NoError(t, err)
 
@@ -219,8 +209,6 @@ func TestLoadConfig_MySQLConfig(t *testing.T) {
   migration: true
 server:
   port: 1234
-jwt:
-  secret: testsecret
 `)
 	assert.NoError(t, err)
 
