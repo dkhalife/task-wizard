@@ -78,10 +78,11 @@ class AppImpl extends React.Component<AppProps> {
       await this.props.fetchLabels()
       await this.props.fetchTasks()
       await this.props.fetchTokens()
-      await this.props.initGroups()
     } else if (getPathName() !== NavigationPaths.Login) {
       this.props.navigate(NavigationPaths.Login)
     }
+
+    await this.props.initGroups()
 
     document.addEventListener('visibilitychange', this.onVisibilityChange)
   }
