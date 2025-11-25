@@ -10,7 +10,7 @@ import (
 	"dkhalife.com/tasks/core/backend"
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/frontend"
-	auth "dkhalife.com/tasks/core/internal/middleware/auth"
+	"dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/migrations"
 	database "dkhalife.com/tasks/core/internal/utils/database"
 	"dkhalife.com/tasks/core/internal/utils/email"
@@ -75,7 +75,6 @@ func main() {
 
 		// add services
 		fx.Provide(notifier.NewNotifier),
-		fx.Provide(housekeeper.NewPasswordResetCleaner),
 		fx.Provide(housekeeper.NewAppTokenCleaner),
 
 		// Rate limiter

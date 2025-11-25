@@ -40,7 +40,7 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 |-------------------------------|------------------------------------|-------------------------------------------------------------------|
 | Tasks Overview                | `Ctrl + F`                         | Focuses the search box.                                           |
 | Tasks Overview                | `+` (outside of inputs)            | Opens the “Add Task” screen.                                      |
-| Forgot Password, Task Edit, and Password/Date modals | `Enter` in text input fields, password fields, or date fields | Submits or saves the form or dialog.                              |
+| Task Edit, and Date modals | `Enter` in text input fields or date fields | Submits or saves the form or dialog.                              |
 
 ## 🚀 Installation
 
@@ -139,8 +139,6 @@ The configuration files are yaml mappings with the following values:
 | `database.username`                      | (empty)                                             | Database username (MySQL only).                                             |
 | `database.password`                      | (empty)                                             | Database password (MySQL only).                                             |
 | `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that or set `TW_JWT_SECRET`.**   |
-| `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
-| `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
 | `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
 | `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
 | `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |

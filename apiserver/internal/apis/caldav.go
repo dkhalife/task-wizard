@@ -18,7 +18,6 @@ import (
 	"dkhalife.com/tasks/core/internal/utils/caldav"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"dkhalife.com/tasks/core/internal/ws"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -311,7 +310,7 @@ func (h *CalDAVAPIHandler) handleRootRedirect(c *gin.Context) {
 	}
 }
 
-func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *jwt.GinJWTMiddleware) {
+func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *authMW.AuthMiddleware) {
 	davRoutes := router.Group("dav")
 	davRoutes.Use(middleware.BasicAuthToJWTAdapter())
 	davRoutes.Use(auth.MiddlewareFunc())

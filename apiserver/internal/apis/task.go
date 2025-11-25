@@ -8,7 +8,6 @@ import (
 	"dkhalife.com/tasks/core/internal/models"
 	tService "dkhalife.com/tasks/core/internal/services/tasks"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -211,20 +210,20 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	c.JSON(status, response)
 }
 
-func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *jwt.GinJWTMiddleware) {
+func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddleware) {
 	tasksRoutes := router.Group("api/v1/tasks")
 	tasksRoutes.Use(auth.MiddlewareFunc())
 	{
-		tasksRoutes.GET("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasks)
-		tasksRoutes.GET("/completed", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getCompletedTasks)
-		tasksRoutes.PUT("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.editTask)
-		tasksRoutes.POST("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.createTask)
-		tasksRoutes.GET("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTask)
-		tasksRoutes.GET("/:id/history", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.GetTaskHistory)
-		tasksRoutes.POST("/:id/do", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.completeTask)
-		tasksRoutes.POST("/:id/undo", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.uncompleteTask)
-		tasksRoutes.POST("/:id/skip", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.skipTask)
-		tasksRoutes.PUT("/:id/dueDate", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.updateDueDate)
-		tasksRoutes.DELETE("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.deleteTask)
+		tasksRoutes.GET("/", authMW.ScopeMiddleware(models.ApiTokenScopeTasksRead), h.getTasks)
+		tasksRoutes.GET("/completed", authMW.ScopeMiddleware(models.ApiTokenScopeTasksRead), h.getCompletedTasks)
+		tasksRoutes.PUT("/", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.editTask)
+		tasksRoutes.POST("/", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.createTask)
+		tasksRoutes.GET("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTasksRead), h.getTask)
+		tasksRoutes.GET("/:id/history", authMW.ScopeMiddleware(models.ApiTokenScopeTasksRead), h.GetTaskHistory)
+		tasksRoutes.POST("/:id/do", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.completeTask)
+		tasksRoutes.POST("/:id/undo", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.uncompleteTask)
+		tasksRoutes.POST("/:id/skip", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.skipTask)
+		tasksRoutes.PUT("/:id/dueDate", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.updateDueDate)
+		tasksRoutes.DELETE("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTasksWrite), h.deleteTask)
 	}
 }

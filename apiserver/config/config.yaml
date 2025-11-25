@@ -4,8 +4,9 @@ database:
   path: /config/task-wizard.db
 jwt:
   secret: "secret"
-  session_time: 168h
-  max_refresh: 168h
+entra:
+  tenant_id: your-tenant-id
+  audience: your-audience
 server:
   host_name: example.com
   port: 2021

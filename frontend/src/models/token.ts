@@ -5,13 +5,16 @@ export interface APIToken {
   expires_at: string
 }
 
-export type ApiTokenScope =
-  | 'task:read'
-  | 'task:write'
-  | 'label:read'
-  | 'label:write'
-  | 'user:read'
-  | 'user:write'
-  | 'token:write'
-  | 'dav:read'
-  | 'dav:write'
+export const ApiTokenScopesList = [
+  "Tasks.Read",
+  "Tasks.Write",
+  "Labels.Read",
+  "Labels.Write",
+  "User.Read",
+  "User.Write",
+  "Tokens.Write",
+  "Dav.Read",
+  "Dav.Write",
+] as const;
+
+export type ApiTokenScope = (typeof ApiTokenScopesList)[number];

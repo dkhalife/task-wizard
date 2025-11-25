@@ -28,7 +28,6 @@ func (s *NotifierTestSuite) SetupTest() {
 	s.testUser = &models.User{
 		ID:        1,
 		Email:     "test@example.com",
-		Password:  "hashedpassword",
 		CreatedAt: time.Now(),
 	}
 

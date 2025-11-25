@@ -4,8 +4,9 @@ database:
   path: task-wizard.db
 jwt:
   secret: "s3cret"
-  session_time: 168h
-  max_refresh: 168h
+entra:
+  tenant_id: a8292176-9d5a-4891-8ee2-a5db434dac1c
+  audience: 28ea7654-5dea-4997-aa57-cf0d01b3d8d7
 server:
   host_name: localhost
   port: 2021

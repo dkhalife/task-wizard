@@ -10,6 +10,7 @@ import (
 type Config struct {
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
 	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
+	Entra         EntraConfig     `mapstructure:"entra" yaml:"entra"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
 	EmailConfig   EmailConfig     `mapstructure:"email" yaml:"email"`
@@ -27,9 +28,12 @@ type DatabaseConfig struct {
 }
 
 type JwtConfig struct {
-	Secret      string        `mapstructure:"secret" yaml:"secret"`
-	SessionTime time.Duration `mapstructure:"session_time" yaml:"session_time"`
-	MaxRefresh  time.Duration `mapstructure:"max_refresh" yaml:"max_refresh"`
+	Secret string `mapstructure:"secret" yaml:"secret"`
+}
+
+type EntraConfig struct {
+	TenantID string `mapstructure:"tenant_id" yaml:"tenant_id"`
+	Audience string `mapstructure:"audience" yaml:"audience"`
 }
 
 type ServerConfig struct {

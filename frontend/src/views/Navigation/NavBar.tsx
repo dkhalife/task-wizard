@@ -23,6 +23,7 @@ import { NavBarLink } from './NavBarLink'
 import { getPathName, NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { isMobile } from '@/utils/dom'
 import { Logo } from '@/Logo'
+import { logout } from '@/utils/msal'
 
 type NavBarProps = WithNavigate
 
@@ -49,14 +50,9 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
     this.setState({ drawerOpen: false })
   }
 
-  private logout = () => {
-    localStorage.removeItem('ca_token')
-    localStorage.removeItem('ca_expiration')
-    this.props.navigate(NavigationPaths.Login)
-  }
 
   render(): React.ReactNode {
-    if (['/signup', '/login', '/forgot-password'].includes(getPathName())) {
+    if (['/login'].includes(getPathName())) {
       return null
     }
 
@@ -153,7 +149,7 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
               onClick={this.openDrawer}
             >
               <ListItemButton
-                onClick={this.logout}
+                onClick={logout}
                 sx={{
                   py: 1.2,
                 }}

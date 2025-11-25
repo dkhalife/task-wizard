@@ -4,26 +4,23 @@ import {
   Container,
   Box,
   Typography,
-  Input,
   Button,
-  Divider,
 } from '@mui/joy'
-import React, { ChangeEvent } from 'react'
-import { doLogin } from '@/utils/auth'
+import React from 'react'
 import { setTitle } from '@/utils/dom'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
 import { AppDispatch } from '@/store/store'
 import { pushStatus } from '@/store/statusSlice'
 import { StatusSeverity } from '@/models/status'
+import { loginSilently, loginWithPopup } from '@/utils/msal'
 
 type LoginViewProps = WithNavigate & {
   pushStatus: (message: string, severity: StatusSeverity, timeout?: number) => void
 }
 
-interface LoginViewState {
-  email: string
-  password: string
+type LoginViewState = {
+  attemptedSilentLogin: boolean
 }
 
 class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
@@ -31,37 +28,39 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
     super(props)
 
     this.state = {
-      email: '',
-      password: '',
+      attemptedSilentLogin: false,
     }
   }
 
-  componentDidMount(): void {
+  async componentDidMount(): Promise<void> {
     setTitle('Login')
-  }
 
-  private handleSubmit = async (e: React.MouseEvent<HTMLAnchorElement> | React.FormEvent) => {
-    e.preventDefault()
+    if (!this.state.attemptedSilentLogin) {
+      try {
+        await loginSilently();
+        this.props.navigate(NavigationPaths.HomeView())
+      } catch {
+        // Expected failure
+      }
 
-    try {
-      const { email, password } = this.state
-      await doLogin(email, password, this.props.navigate)
-    } catch (error) {
-      this.props.pushStatus((error as Error).message, 'error', 5000)
+      this.setState({
+        attemptedSilentLogin: true,
+      })
     }
   }
 
-  private onEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    this.setState({ email: e.target.value })
-  }
-
-  private onPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    this.setState({ password: e.target.value })
+  private handleLogin = async () => {
+    try {
+      await loginWithPopup();
+      this.props.pushStatus('Login successful!', "success", 2000);
+      this.props.navigate(NavigationPaths.HomeView());
+    } catch (error) {
+      this.props.pushStatus('Login failed. Please try again.', "error", 5000);
+      console.error('Login error:', error);
+    }
   }
 
   render(): React.ReactNode {
-    const { navigate } = this.props
-
     return (
       <Container
         component='main'
@@ -77,7 +76,6 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
         >
           <Sheet
             component='form'
-            onSubmit={this.handleSubmit}
             sx={{
               mt: 1,
               width: '100%',
@@ -92,29 +90,9 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
             <Logo />
 
             <Typography>Sign in to your account to continue</Typography>
-            <Typography
-              alignSelf={'start'}
-              mt={4}
-            >
-              Email
-            </Typography>
-            <Input
-              required
-              fullWidth
-              autoComplete='email'
-              autoFocus
-              onChange={this.onEmailChange}
-            />
-            <Typography alignSelf={'start'}>Password:</Typography>
-            <Input
-              required
-              fullWidth
-              type='password'
-              onChange={this.onPasswordChange}
-            />
 
             <Button
-              type='submit'
+              type='button'
               fullWidth
               size='lg'
               variant='solid'
@@ -124,36 +102,9 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
                 border: 'moccasin',
                 borderRadius: '8px',
               }}
-              onClick={this.handleSubmit}
+              onClick={this.handleLogin}
             >
               Sign In
-            </Button>
-            <Button
-              type='button'
-              fullWidth
-              size='lg'
-              variant='plain'
-              sx={{
-                width: '100%',
-                border: 'moccasin',
-                borderRadius: '8px',
-              }}
-              onClick={() => navigate(NavigationPaths.ResetPassword)}
-            >
-              Forgot password?
-            </Button>
-
-            <Divider> or </Divider>
-            <Button
-              onClick={() => navigate(NavigationPaths.Register)}
-              fullWidth
-              variant='soft'
-              size='lg'
-              sx={{
-                mt: 2,
-              }}
-            >
-              Create new account
             </Button>
           </Sheet>
         </Box>

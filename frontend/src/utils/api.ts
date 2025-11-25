@@ -1,5 +1,4 @@
-import { RefreshToken } from '@/api/auth'
-import { TOKEN_REFRESH_THRESHOLD_MS } from '@/constants/time'
+import { getAccessToken, loginSilently, logout } from "./msal"
 
 const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -9,62 +8,25 @@ type FailureResponse = {
   error: string
 }
 
-let isRefreshingAccessToken = false
-const isTokenNearExpiration = () => {
-  const now = new Date()
-  const expiration = localStorage.getItem('ca_expiration') || ''
-  const expire = new Date(expiration)
-  return now.getTime() + TOKEN_REFRESH_THRESHOLD_MS > expire.getTime()
-}
-
-export const isTokenValid = (): boolean => {
-  const token = localStorage.getItem('ca_token')
-  if (token) {
-    const now = new Date()
-    const expiration = localStorage.getItem('ca_expiration') || ''
-    const expire = new Date(expiration)
-    if (now < expire) {
-      return true
-    }
-    localStorage.removeItem('ca_token')
-    localStorage.removeItem('ca_expiration')
-    return false
-  }
-  return false
-}
-
-export const refreshAccessToken = async () => {
-  isRefreshingAccessToken = true
-  try {
-    const data = await RefreshToken()
-    localStorage.setItem('ca_token', data.token)
-    localStorage.setItem('ca_expiration', data.expiration)
-  } catch (error) {
-    localStorage.removeItem('ca_token')
-    localStorage.removeItem('ca_expiration')
-    localStorage.setItem('ca_redirect', window.location.pathname)
-    window.location.href = '/login'
-    console.error('Failed to refresh access token', error)
-  } finally {
-    isRefreshingAccessToken = false
-  }
-}
-
 export async function Request<SuccessfulResponse>(
   url: string,
   method: RequestMethod = 'GET',
   body: unknown = {},
   requiresAuth: boolean = true,
 ): Promise<SuccessfulResponse> {
-  if (isTokenValid()) {
-    if (!isRefreshingAccessToken && isTokenNearExpiration()) {
-      await refreshAccessToken()
+  let accessToken: string | null = null
+  if (requiresAuth) {
+    try {
+      accessToken = getAccessToken();
+    } catch {
+      try {
+        await loginSilently();
+        accessToken = getAccessToken();
+      } catch (error) {
+        await logout();
+        throw error;
+      }
     }
-  } else if (requiresAuth) {
-    localStorage.setItem('ca_redirect', window.location.pathname)
-    window.location.href = '/login'
-
-    throw new Error('User is not authenticated')
   }
 
   const fullURL = `${API_URL}/api/v1${url}`
@@ -75,7 +37,7 @@ export async function Request<SuccessfulResponse>(
   }
 
   if (requiresAuth) {
-    headers['Authorization'] = 'Bearer ' + localStorage.getItem('ca_token')
+    headers['Authorization'] = 'Bearer ' + accessToken
   }
 
   const options: RequestInit = {

@@ -6,7 +6,7 @@ import { ErrorBoundary } from './components/ErrorBoundary'
 import { LogError, LogWarning } from './api/log'
 import { Provider } from 'react-redux'
 import { store } from './store/store'
-import { isTokenValid } from './utils/api'
+import { isTokenValid } from './utils/msal'
 
 window.onerror = (message, source, lineno, colno) => {
   // Telemetry APIs are behind auth wall, if the user isn't authenticated, we can't do anything

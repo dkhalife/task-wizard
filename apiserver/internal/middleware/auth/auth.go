@@ -1,163 +1,116 @@
 package auth
 
 import (
-	"fmt"
+	"context"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
-	"time"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
-	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	repos "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	jwt "github.com/appleboy/gin-jwt/v2"
+	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
 )
 
-type signIn struct {
-	Email    string `form:"email" json:"email" binding:"required"`
-	Password string `form:"password" json:"password" binding:"required"`
+type AuthMiddleware struct {
+	TenantID     string
+	Audience     string
+	Verifier     *oidc.IDTokenVerifier
+	Registration bool
+	uRepo        repos.IUserRepo
 }
 
-func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*jwt.GinJWTMiddleware, error) {
-	return jwt.New(&jwt.GinJWTMiddleware{
-		Realm:       "Task Wizard",
-		Key:         []byte(cfg.Jwt.Secret),
-		Timeout:     cfg.Jwt.SessionTime,
-		MaxRefresh:  cfg.Jwt.MaxRefresh, // 7 days as long as their token is valid they can refresh it
-		IdentityKey: auth.IdentityKey,
-		Authenticator: func(c *gin.Context) (interface{}, error) {
-			var req signIn
-			if err := c.ShouldBindJSON(&req); err != nil {
-				return nil, jwt.ErrMissingLoginValues
+func NewAuthMiddleware(cfg *config.Config, uRepo repos.IUserRepo) *AuthMiddleware {
+	issuer := "https://login.microsoftonline.com/" + cfg.Entra.TenantID + "/v2.0"
+
+	provider, err := oidc.NewProvider(context.Background(), issuer)
+	if err != nil {
+		panic("Failed to create OIDC provider: " + err.Error())
+	}
+
+	return &AuthMiddleware{
+		TenantID: cfg.Entra.TenantID,
+		Audience: cfg.Entra.Audience,
+		Verifier: provider.Verifier(&oidc.Config{
+			ClientID: cfg.Entra.Audience, // Must match "aud" in token
+		}),
+		Registration: cfg.Server.Registration,
+		uRepo:        uRepo,
+	}
+}
+
+func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		logger := logging.FromContext(c.Request.Context())
+
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Missing Authorization header"})
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || strings.ToLower(parts[0]) != "bearer" {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid Authorization header format"})
+			return
+		}
+
+		rawToken := parts[1]
+
+		// Verify token signature + issuer + audience
+		idToken, err := m.Verifier.Verify(c, rawToken)
+		if err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Invalid token: " + err.Error()})
+			return
+		}
+
+		// Extract claims
+		var claims map[string]interface{}
+		if err := idToken.Claims(&claims); err != nil {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "Failed to parse claims"})
+			return
+		}
+
+		user, err := m.uRepo.FindByEmail(c, claims["preferred_username"].(string))
+		if err != nil {
+			if !m.Registration {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{"error": "User not found"})
+				return
 			}
 
-			user, err := userRepo.FindByEmail(c.Request.Context(), req.Email)
-			if err != nil || user.Disabled {
-				return nil, jwt.ErrFailedAuthentication
-			}
+			err = m.uRepo.CreateUser(c, &models.User{
+				Email:       claims["preferred_username"].(string),
+				DisplayName: claims["name"].(string),
+			})
 
-			err = auth.Matches(user.Password, req.Password)
 			if err != nil {
-				if err != bcrypt.ErrMismatchedHashAndPassword {
-					logging.FromContext(c).Errorf("found unknown error when matches password", "err", err)
-				}
-				return nil, jwt.ErrFailedAuthentication
+				logger.Error("Failed to register user: " + err.Error())
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
+				return
 			}
 
-			return user, nil
-		},
-		PayloadFunc: func(data interface{}) jwt.MapClaims {
-			if u, ok := data.(*models.User); ok {
-				return jwt.MapClaims{
-					auth.IdentityKey: fmt.Sprintf("%d", u.ID),
-					"type":           "user",
-					"scopes":         []string{"task:read", "task:write", "label:read", "label:write", "user:read", "user:write", "token:write"},
-				}
-			}
-			return jwt.MapClaims{}
-		},
-		IdentityHandler: func(c *gin.Context) interface{} {
-			claims := jwt.ExtractClaims(c)
-
-			userIDRaw, ok := claims[auth.IdentityKey].(string)
-			if !ok {
-				logging.FromContext(c).Errorw("failed to extract ID from claims")
-				return nil
-			}
-			userID, err := strconv.Atoi(userIDRaw)
+			user, err = m.uRepo.FindByEmail(c, claims["preferred_username"].(string))
 			if err != nil {
-				return nil
+				logger.Error("Failed to retrieve newly created user: " + err.Error())
+				c.AbortWithStatusJSON(http.StatusInternalServerError, gin.H{"error": "User not found"})
+				return
 			}
+		}
 
-			var tokenID = 0
-			appTokenIDRaw, ok := claims[auth.AppTokenKey].(string)
-			if ok {
-				tokenID, err = strconv.Atoi(appTokenIDRaw)
-				if err != nil {
-					tokenID = 0
-				}
-			}
+		claimsStr := claims["scp"].(string)
+		scopes := auth.ConvertStringArrayToScopes(strings.Split(claimsStr, " "))
 
-			scopesRaw, ok := claims["scopes"].([]interface{})
-			if !ok {
-				return nil
-			}
+		c.Set(auth.IdentityKey, &models.SignedInIdentity{
+			UserID: user.ID,
+			Type:   "user",
+			Scopes: scopes,
+		})
 
-			var scopes []models.ApiTokenScope
-			for _, scope := range scopesRaw {
-				if s, ok := scope.(string); ok {
-					scopes = append(scopes, models.ApiTokenScope(s))
-				}
-			}
-
-			return &models.SignedInIdentity{
-				UserID:  userID,
-				TokenID: tokenID,
-				Type:    models.IdentityType(claims["type"].(string)),
-				Scopes:  scopes,
-			}
-		},
-		Authorizator: func(data interface{}, c *gin.Context) bool {
-			if identity, ok := data.(*models.SignedInIdentity); ok {
-				if identity.Type == models.IdentityTypeUser {
-					// Check that the user still exists
-					_, err := userRepo.GetUser(c.Request.Context(), identity.UserID)
-					if err != nil {
-						logging.FromContext(c).Errorw("failed to find user", "err", err)
-						return false
-					}
-				} else if identity.Type == models.IdentityTypeApp {
-					// An app token id must be present
-					if identity.TokenID == 0 {
-						logging.FromContext(c).Errorw("app token ID is nil")
-						return false
-					}
-
-					// Check that the app token still exists
-					_, err := userRepo.GetAppTokenByID(c.Request.Context(), identity.TokenID)
-					if err != nil {
-						logging.FromContext(c).Errorw("failed to find app token", "err", err)
-						return false
-					}
-				} else {
-					logging.FromContext(c).Errorw("unknown identity type", "type", identity.Type)
-					return false
-				}
-
-				return true
-			}
-			return false
-		},
-		Unauthorized: func(c *gin.Context, code int, message string) {
-			if strings.HasPrefix(c.Request.URL.Path, "/dav") {
-				c.Header("WWW-Authenticate", `Basic realm="Task Wizard"`)
-			}
-
-			c.JSON(code, gin.H{
-				"error": message,
-			})
-		},
-		LoginResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.JSON(http.StatusOK, gin.H{
-				"token":      token,
-				"expiration": expire,
-			})
-		},
-		RefreshResponse: func(c *gin.Context, code int, token string, expire time.Time) {
-			c.JSON(http.StatusOK, gin.H{
-				"token":      token,
-				"expiration": expire,
-			})
-		},
-		TokenLookup:   "header: Authorization",
-		TokenHeadName: "Bearer",
-		TimeFunc:      time.Now,
-	})
+		c.Next()
+	}
 }
 
 func ScopeMiddleware(requiredScope models.ApiTokenScope) gin.HandlerFunc {

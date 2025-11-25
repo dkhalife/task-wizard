@@ -3,10 +3,10 @@ package apis
 import (
 	"net/http"
 
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 	limiter "github.com/ulule/limiter/v3"
 )
@@ -53,7 +53,7 @@ func (h *LogsAPIHandler) Error(c *gin.Context) {
 	c.Status(http.StatusNoContent)
 }
 
-func LogRoutes(router *gin.Engine, h *LogsAPIHandler, auth *jwt.GinJWTMiddleware, limiter *limiter.Limiter) {
+func LogRoutes(router *gin.Engine, h *LogsAPIHandler, auth *authMW.AuthMiddleware, limiter *limiter.Limiter) {
 	logRoutes := router.Group("/api/v1/log")
 
 	logRoutes.Use(auth.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter))
