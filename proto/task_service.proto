@@ -1,0 +1,52 @@
+syntax = "proto3";
+
+package com.dkhalife.tasks.grpc;
+option go_package = "github.com/dkhalife/task-wizard/servers/grpc";
+option java_package = "com.dkhalife.tasks.grpc";
+option java_outer_classname = "TaskServiceProto";
+
+import "common.proto";
+import "task.proto";
+import "label.proto";
+import "user.proto";
+
+service TaskService {
+  rpc GetTasks (Empty) returns (TasksResponse) {}
+  rpc GetCompletedTasks (GetCompletedTasksRequest) returns (TasksResponse) {}
+  rpc GetTask (GetTaskRequest) returns (TaskResponse) {}
+  rpc CreateTask (CreateTaskRequest) returns (TaskResponse) {}
+  rpc UpdateTask (UpdateTaskRequest) returns (TaskResponse) {}
+  rpc DeleteTask (DeleteTaskRequest) returns (Empty) {}
+  rpc CompleteTask (CompleteTaskRequest) returns (TaskResponse) {}
+  rpc UncompleteTask (UncompleteTaskRequest) returns (TaskResponse) {}
+  rpc SkipTask (SkipTaskRequest) returns (TaskResponse) {}
+  rpc UpdateDueDate (UpdateDueDateRequest) returns (TaskResponse) {}
+  rpc GetTaskHistory (GetTaskHistoryRequest) returns (TaskHistoryResponse) {}
+}
+
+service LabelService {
+  rpc GetLabels (Empty) returns (LabelsResponse) {}
+  rpc CreateLabel (CreateLabelRequest) returns (LabelResponse) {}
+  rpc UpdateLabel (UpdateLabelRequest) returns (LabelResponse) {}
+  rpc DeleteLabel (DeleteLabelRequest) returns (Empty) {}
+}
+
+service UserService {
+  rpc GetProfile (Empty) returns (UserProfileResponse) {}
+  rpc UpdateNotificationSettings (UpdateNotificationSettingsRequest) returns (Empty) {}
+  rpc ChangePassword (ChangePasswordRequest) returns (Empty) {}
+}
+
+service TokenService {
+  rpc GetAppTokens (Empty) returns (AppTokensResponse) {}
+  rpc CreateAppToken (CreateAppTokenRequest) returns (AppTokenResponse) {}
+  rpc DeleteAppToken (DeleteAppTokenRequest) returns (Empty) {}
+}
+
+service AuthService {
+  rpc SignUp (SignUpRequest) returns (Empty) {}
+  rpc Login (LoginRequest) returns (AuthResponse) {}
+  rpc RefreshToken (RefreshTokenRequest) returns (AuthResponse) {}
+  rpc ResetPassword (ResetPasswordRequest) returns (Empty) {}
+  rpc UpdatePassword (UpdatePasswordRequest) returns (Empty) {}
+}

@@ -1,0 +1,83 @@
+syntax = "proto3";
+
+package com.dkhalife.tasks.grpc;
+option go_package = "github.com/dkhalife/task-wizard/servers/grpc";
+option java_package = "com.dkhalife.tasks.grpc";
+option java_outer_classname = "CommonProto";
+
+enum FrequencyType {
+  FREQUENCY_TYPE_UNSPECIFIED = 0;
+  FREQUENCY_TYPE_ONCE = 1;
+  FREQUENCY_TYPE_DAILY = 2;
+  FREQUENCY_TYPE_WEEKLY = 3;
+  FREQUENCY_TYPE_MONTHLY = 4;
+  FREQUENCY_TYPE_YEARLY = 5;
+  FREQUENCY_TYPE_CUSTOM = 6;
+}
+
+enum IntervalUnit {
+  INTERVAL_UNIT_UNSPECIFIED = 0;
+  INTERVAL_UNIT_HOURS = 1;
+  INTERVAL_UNIT_DAYS = 2;
+  INTERVAL_UNIT_WEEKS = 3;
+  INTERVAL_UNIT_MONTHS = 4;
+  INTERVAL_UNIT_YEARS = 5;
+}
+
+enum RepeatOn {
+  REPEAT_ON_UNSPECIFIED = 0;
+  REPEAT_ON_INTERVAL = 1;
+  REPEAT_ON_DAYS_OF_THE_WEEK = 2;
+  REPEAT_ON_DAY_OF_THE_MONTHS = 3;
+}
+
+message Frequency {
+  FrequencyType type = 1;
+  RepeatOn on = 2;
+  int32 every = 3;
+  IntervalUnit unit = 4;
+  repeated int32 days = 5;
+  repeated int32 months = 6;
+}
+
+enum NotificationProviderType {
+  NOTIFICATION_PROVIDER_NONE = 0;
+  NOTIFICATION_PROVIDER_WEBHOOK = 1;
+  NOTIFICATION_PROVIDER_GOTIFY = 2;
+}
+
+enum NotificationType {
+  NOTIFICATION_TYPE_UNSPECIFIED = 0;
+  NOTIFICATION_TYPE_DUE_DATE = 1;
+  NOTIFICATION_TYPE_PRE_DUE = 2;
+  NOTIFICATION_TYPE_OVERDUE = 3;
+}
+
+message NotificationTriggerOptions {
+  bool enabled = 1;
+  bool due_date = 2;
+  bool pre_due = 3;
+  bool overdue = 4;
+}
+
+message NotificationProvider {
+  NotificationProviderType provider = 1;
+  string url = 2;
+  string method = 3;
+  string token = 4;
+}
+
+enum ApiTokenScope {
+  API_TOKEN_SCOPE_UNSPECIFIED = 0;
+  API_TOKEN_SCOPE_TASK_READ = 1;
+  API_TOKEN_SCOPE_TASK_WRITE = 2;
+  API_TOKEN_SCOPE_LABEL_READ = 3;
+  API_TOKEN_SCOPE_LABEL_WRITE = 4;
+  API_TOKEN_SCOPE_USER_READ = 5;
+  API_TOKEN_SCOPE_USER_WRITE = 6;
+  API_TOKEN_SCOPE_TOKEN_WRITE = 7;
+  API_TOKEN_SCOPE_DAV_READ = 8;
+  API_TOKEN_SCOPE_DAV_WRITE = 9;
+}
+
+message Empty {}

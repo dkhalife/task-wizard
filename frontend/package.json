@@ -18,6 +18,7 @@
   "dependencies": {
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.0",
+    "grpc-web": "^1.5.0",
     "@mui/icons-material": "^6.3.1",
     "@mui/joy": "^5.0.0-beta.51",
     "@mui/material": "^6.3.1",
@@ -30,6 +31,7 @@
     "vite-plugin-package-version": "^1.1.0"
   },
   "devDependencies": {
+    "@bufbuild/protobuf": "^2.10.1",
     "@eslint/js": "^9.18.0",
     "@playwright/test": "^1.55.1",
     "@testing-library/dom": "^10.4.1",
@@ -52,6 +54,7 @@
     "prettier-plugin-react": "^0.0.1",
     "prettier": "^3.4.2",
     "ts-jest": "^29.4.4",
+    "ts-proto": "^2.8.3",
     "typescript-eslint": "^8.19.1",
     "typescript": "^5.7.3",
     "vite": "^6.4.1"
