@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+package com.dkhalife.tasks.grpc;
+option go_package = "github.com/dkhalife/task-wizard/servers/grpc";
+option java_package = "com.dkhalife.tasks.grpc";
+option java_outer_classname = "LabelProto";
+
+message Label {
+  int32 id = 1;
+  string name = 2;
+  string color = 3;
+}
+
+message CreateLabelRequest {
+  string name = 1;
+  string color = 2;
+}
+
+message UpdateLabelRequest {
+  int32 id = 1;
+  string name = 2;
+  string color = 3;
+}
+
+message DeleteLabelRequest {
+  int32 id = 1;
+}
+
+message LabelResponse {
+  Label label = 1;
+}
+
+message LabelsResponse {
+  repeated Label labels = 1;
+}

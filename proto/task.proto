@@ -1,0 +1,95 @@
+syntax = "proto3";
+
+package com.dkhalife.tasks.grpc;
+option go_package = "github.com/dkhalife/task-wizard/servers/grpc";
+option java_package = "com.dkhalife.tasks.grpc";
+option java_outer_classname = "TaskProto";
+
+import "common.proto";
+import "label.proto";
+
+message Task {
+  int32 id = 1;
+  string title = 2;
+  optional int64 next_due_date = 3;
+  optional int64 end_date = 4;
+  bool is_rolling = 5;
+  Frequency frequency = 6;
+  NotificationTriggerOptions notification = 7;
+  repeated Label labels = 8;
+}
+
+message TaskHistory {
+  int32 id = 1;
+  int32 task_id = 2;
+  optional int64 completed_date = 3;
+  optional int64 due_date = 4;
+}
+
+message CreateTaskRequest {
+  string title = 1;
+  optional int64 next_due_date = 2;
+  optional int64 end_date = 3;
+  bool is_rolling = 4;
+  Frequency frequency = 5;
+  NotificationTriggerOptions notification = 6;
+  repeated int32 label_ids = 7;
+}
+
+message UpdateTaskRequest {
+  int32 id = 1;
+  string title = 2;
+  optional int64 next_due_date = 3;
+  optional int64 end_date = 4;
+  bool is_rolling = 5;
+  Frequency frequency = 6;
+  NotificationTriggerOptions notification = 7;
+  repeated int32 label_ids = 8;
+}
+
+message GetTaskRequest {
+  int32 id = 1;
+}
+
+message DeleteTaskRequest {
+  int32 id = 1;
+}
+
+message CompleteTaskRequest {
+  int32 id = 1;
+  bool end_recurrence = 2;
+}
+
+message UncompleteTaskRequest {
+  int32 id = 1;
+}
+
+message SkipTaskRequest {
+  int32 id = 1;
+}
+
+message UpdateDueDateRequest {
+  int32 id = 1;
+  int64 due_date = 2;
+}
+
+message GetTaskHistoryRequest {
+  int32 id = 1;
+}
+
+message GetCompletedTasksRequest {
+  int32 limit = 1;
+  int32 page = 2;
+}
+
+message TaskResponse {
+  Task task = 1;
+}
+
+message TasksResponse {
+  repeated Task tasks = 1;
+}
+
+message TaskHistoryResponse {
+  repeated TaskHistory history = 1;
+}

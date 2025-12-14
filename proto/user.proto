@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package com.dkhalife.tasks.grpc;
+option go_package = "github.com/dkhalife/task-wizard/servers/grpc";
+option java_package = "com.dkhalife.tasks.grpc";
+option java_outer_classname = "UserProto";
+
+import "common.proto";
+
+message UserProfile {
+  string display_name = 1;
+  NotificationSettings notification_settings = 2;
+}
+
+message NotificationSettings {
+  NotificationProvider provider = 1;
+  NotificationTriggerOptions triggers = 2;
+}
+
+message AppToken {
+  int32 id = 1;
+  string name = 2;
+  string token = 3;
+  repeated ApiTokenScope scopes = 4;
+  int64 expires_at = 5;
+}
+
+message SignUpRequest {
+  string email = 1;
+  string password = 2;
+  string display_name = 3;
+}
+
+message LoginRequest {
+  string email = 1;
+  string password = 2;
+}
+
+message AuthResponse {
+  string access_token = 1;
+  string refresh_token = 2;
+  int64 expires_at = 3;
+}
+
+message RefreshTokenRequest {
+  string refresh_token = 1;
+}
+
+message ResetPasswordRequest {
+  string email = 1;
+}
+
+message UpdatePasswordRequest {
+  string code = 1;
+  string new_password = 2;
+}
+
+message ChangePasswordRequest {
+  string new_password = 1;
+}
+
+message CreateAppTokenRequest {
+  string name = 1;
+  repeated ApiTokenScope scopes = 2;
+  int32 expiration_days = 3;
+}
+
+message DeleteAppTokenRequest {
+  int32 id = 1;
+}
+
+message UpdateNotificationSettingsRequest {
+  NotificationProvider provider = 1;
+  NotificationTriggerOptions triggers = 2;
+}
+
+message UserProfileResponse {
+  UserProfile user = 1;
+}
+
+message AppTokensResponse {
+  repeated AppToken tokens = 1;
+}
+
+message AppTokenResponse {
+  AppToken token = 1;
+}
