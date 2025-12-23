@@ -1,4 +1,4 @@
-import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, toggleShowCompleted, fetchCompletedTasks, completeTask } from '@/store/tasksSlice'
+import { skipTask, deleteTask, updateDueDate, setGroupBy, toggleGroup, toggleShowCompleted, fetchCompletedTasks, completeTask, uncompleteTask } from '@/store/tasksSlice'
 import { Task, TASK_UPDATE_EVENT } from '@/models/task'
 import {
   ExpandCircleDown,
@@ -13,6 +13,7 @@ import {
   Visibility,
   VisibilityOff,
   PublishedWithChanges,
+  Cancel,
 } from '@mui/icons-material'
 import {
   Container,
@@ -56,6 +57,7 @@ type MyTasksProps = {
   fetchCompletedTasks: () => Promise<any>
 
   completeTask: (taskId: number, endRecurrence: boolean) => Promise<any>
+  uncompleteTask: (taskId: number) => Promise<any>
   deleteTask: (taskId: number) => Promise<any>
   skipTask: (taskId: number) => Promise<any>
   updateDueDate: (taskId: number, dueDate: string) => Promise<any>
@@ -65,6 +67,7 @@ type MyTasksProps = {
 interface MyTasksState {
   isMoreMenuOpen: boolean
   contextMenuTask: TaskUI | null
+	contextMenuIsCompleted: boolean
 }
 
 class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
@@ -85,6 +88,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     this.state = {
       isMoreMenuOpen: false,
       contextMenuTask: null,
+		contextMenuIsCompleted: false,
     }
   }
 
@@ -93,7 +97,10 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     switch (event) {
       case 'completed':
         message = 'Task completed'
-        break
+      break
+      case 'uncompleted':
+        message = 'Task uncompleted'
+			break
       case 'rescheduled':
         message = 'Task rescheduled'
         break
@@ -117,6 +124,11 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 
   componentDidMount(): void {
     setTitle('My Tasks')
+
+		const { showCompleted, completedTasks } = this.props
+		if (showCompleted && completedTasks.length === 0) {
+			void this.props.fetchCompletedTasks()
+		}
 
     document.addEventListener('click', this.dismissMoreMenu)
   }
@@ -149,7 +161,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     this.menuAnchorRef.style.top = `${y}px`
   }
 
-  private showContextMenu = (event: React.MouseEvent, task: TaskUI) => {
+  private showContextMenu = (event: React.MouseEvent, task: TaskUI, isCompleted: boolean) => {
     const { pageX, pageY } = event
     this.setMenuAnchorPos(pageX, pageY);
 
@@ -159,6 +171,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     this.setState({
       isMoreMenuOpen: true,
       contextMenuTask: task,
+		contextMenuIsCompleted: isCompleted,
     })
   }
 
@@ -166,6 +179,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     this.setState({
       isMoreMenuOpen: false,
       contextMenuTask: null,
+		contextMenuIsCompleted: false,
     })
   }
 
@@ -213,6 +227,18 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
     this.onEvent('skipped')
   }
 
+  private onUncompleteClicked = async () => {
+    const { contextMenuTask: task } = this.state
+    if (task === null) {
+      throw new Error('Attempted to uncomplete a task without a reference')
+    }
+
+    await this.props.uncompleteTask(task.id)
+
+    this.dismissMoreMenu()
+    this.onEvent('uncompleted')
+  }
+
   private onChangeDueDateClicked = () => {
     const { contextMenuTask: task } = this.state
     if (task === null) {
@@ -256,7 +282,7 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
 
   render(): React.ReactNode {
     const { groupBy, groups, expandedGroups, completedTasks, showCompleted } = this.props
-    const { isMoreMenuOpen, contextMenuTask } = this.state
+    const { isMoreMenuOpen, contextMenuTask, contextMenuIsCompleted } = this.state
 
     const { navigate } = this.props
     const hasTasks = this.hasTasks()
@@ -397,26 +423,35 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
           open={isMoreMenuOpen}
           ref={this.menuRef}
         >
-          {contextMenuTask && contextMenuTask.frequency.type !== 'once' && (
+          {contextMenuTask && contextMenuIsCompleted ? (
+            <MenuItem onClick={this.onUncompleteClicked}>
+              <Cancel />
+              Uncomplete
+            </MenuItem>
+          ) : (
             <>
-              <MenuItem onClick={this.onCompleteAndStopRecurrenceClicked}>
-                <PublishedWithChanges />
-                Complete and end recurrence
+              {contextMenuTask && contextMenuTask.frequency.type !== 'once' && (
+                <>
+                  <MenuItem onClick={this.onCompleteAndStopRecurrenceClicked}>
+                    <PublishedWithChanges />
+                    Complete and end recurrence
+                  </MenuItem>
+                  <MenuItem onClick={this.onSkipTaskClicked}>
+                    <SwitchAccessShortcut />
+                    Skip to next due date
+                  </MenuItem>
+                </>
+              )}
+              <MenuItem onClick={this.onChangeDueDateClicked}>
+                <MoreTime />
+                Change due date
               </MenuItem>
-              <MenuItem onClick={this.onSkipTaskClicked}>
-                <SwitchAccessShortcut />
-                Skip to next due date
+              <MenuItem onClick={this.onEditClicked}>
+                <Edit />
+                Edit
               </MenuItem>
             </>
           )}
-          <MenuItem onClick={this.onChangeDueDateClicked}>
-            <MoreTime />
-            Change due date
-          </MenuItem>
-          <MenuItem onClick={this.onEditClicked}>
-            <Edit />
-            Edit
-          </MenuItem>
           <Divider />
           <MenuItem onClick={this.onViewHistoryClicked}>
             <ManageSearch />
@@ -451,8 +486,9 @@ class MyTasksImpl extends React.Component<MyTasksProps, MyTasksState> {
                 <TaskCard
                   key={task.id}
                   task={task}
+					        isCompleted={true}
                   onTaskUpdate={this.onEvent}
-                  onContextMenu={this.showContextMenu}
+					        onContextMenu={this.showContextMenu}
                   navigate={navigate}
                 />
               ))}
@@ -532,6 +568,7 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
 
   completeTask: (taskId: number, endRecurrence: boolean) => dispatch(completeTask({ taskId, endRecurrence })),
+	uncompleteTask: (taskId: number) => dispatch(uncompleteTask(taskId)),
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),
   skipTask: (taskId: number) => dispatch(skipTask(taskId)),
   updateDueDate: (taskId: number, dueDate: string) => dispatch(updateDueDate({ taskId, dueDate })),

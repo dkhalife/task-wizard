@@ -280,7 +280,6 @@ export class WebSocketManager {
   private newRequestId(): string {
     try {
       // Modern browsers
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const c: any = crypto
       if (c && typeof c.randomUUID === 'function') {
         return c.randomUUID()
