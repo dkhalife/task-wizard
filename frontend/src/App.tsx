@@ -1,5 +1,5 @@
 import { NavBar } from './views/Navigation/NavBar'
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import { isTokenValid } from './utils/api'
 import React from 'react'
 import { WithNavigate } from './utils/navigation'
@@ -17,6 +17,7 @@ import { FIVE_MINUTES_MS } from '@/constants/time'
 
 type AppProps = {
   refreshStaleData: boolean
+  pathname: string
 
   fetchLabels: () => Promise<any>
   fetchUser: () => Promise<any>
@@ -26,9 +27,38 @@ type AppProps = {
 } & WithNavigate
 
 class AppImpl extends React.Component<AppProps> {
+  private initializedAuthenticated = false
+  private initializingAuthenticated = false
+
   private onVisibilityChange = () => {
     if (!document.hidden) {
       this.refreshStaleData()
+    }
+  }
+
+  private initializeAuthenticated = async () => {
+    if (this.initializedAuthenticated || this.initializingAuthenticated) {
+      return
+    }
+
+    if (!isTokenValid()) {
+      return
+    }
+
+    this.initializingAuthenticated = true
+    try {
+      preloadSounds()
+      WebSocketManager.getInstance()
+
+      await this.props.fetchUser()
+      await this.props.fetchLabels()
+      await this.props.fetchTasks()
+      await this.props.fetchTokens()
+      await this.props.initGroups()
+
+      this.initializedAuthenticated = true
+    } finally {
+      this.initializingAuthenticated = false
     }
   }
 
@@ -70,18 +100,27 @@ class AppImpl extends React.Component<AppProps> {
   }
 
   async componentDidMount(): Promise<void> {
-    if (isTokenValid()) {
-      preloadSounds();
-      WebSocketManager.getInstance();
-
-      await this.props.fetchUser()
-      await this.props.fetchLabels()
-      await this.props.fetchTasks()
-      await this.props.fetchTokens()
-      await this.props.initGroups()
-    }
+    await this.initializeAuthenticated()
 
     document.addEventListener('visibilitychange', this.onVisibilityChange)
+  }
+
+  async componentDidUpdate(prevProps: AppProps): Promise<void> {
+    // If we just navigated away from auth routes (e.g. successful login),
+    // the token becomes valid after App has already mounted. Ensure we
+    // initialize data once without requiring a full page refresh.
+    if (prevProps.pathname !== this.props.pathname) {
+      if (!isTokenValid()) {
+        this.initializedAuthenticated = false
+        return
+      }
+      await this.initializeAuthenticated()
+      return
+    }
+
+    // Also handle the case where token becomes valid without a pathname change
+    // (defensive; should be rare).
+    await this.initializeAuthenticated()
   }
 
   componentWillUnmount(): void {
@@ -90,6 +129,7 @@ class AppImpl extends React.Component<AppProps> {
 
   render() {
     const { navigate } = this.props
+    const { pathname } = this.props
 
     return (
       <div style={{ minHeight: '100vh' }}>
@@ -100,7 +140,10 @@ class AppImpl extends React.Component<AppProps> {
           defaultMode='system'
           colorSchemeNode={document.body}
         >
-          <NavBar navigate={navigate} />
+          <NavBar
+            navigate={navigate}
+            pathname={pathname}
+          />
           <Outlet />
           <StatusList />
         </CssVarsProvider>
@@ -121,7 +164,17 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   fetchTokens: () => dispatch(fetchTokens()),
 })
 
-export const App = connect(
+const ConnectedApp = connect(
   mapStateToProps,
   mapDispatchToProps,
 )(AppImpl)
+
+export const App = (props: WithNavigate) => {
+  const location = useLocation()
+  return (
+    <ConnectedApp
+      {...props}
+      pathname={location.pathname}
+    />
+  )
+}

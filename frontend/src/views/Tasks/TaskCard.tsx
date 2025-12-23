@@ -10,6 +10,7 @@ import {
   TimesOneMobiledata,
   Repeat,
   Check,
+  Cancel,
   NotificationsActive,
 } from '@mui/icons-material'
 import {
@@ -23,16 +24,18 @@ import {
 import React from 'react'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
-import { completeTask } from '@/store/tasksSlice'
+import { completeTask, uncompleteTask } from '@/store/tasksSlice'
 import { AppDispatch } from '@/store/store'
 import { TaskUI } from '@/utils/marshalling'
 
 type TaskCardProps = WithNavigate & {
   task: TaskUI
+	isCompleted?: boolean
 
   completeTask: (taskId: number, endRecurrence: boolean) => Promise<any>
+  uncompleteTask: (taskId: number) => Promise<any>
   onTaskUpdate: (event: TASK_UPDATE_EVENT) => void
-  onContextMenu: (event: React.MouseEvent<HTMLDivElement>, task: TaskUI) => void
+	onContextMenu: (event: React.MouseEvent<HTMLDivElement>, task: TaskUI, isCompleted: boolean) => void
 }
 
 class TaskCardImpl extends React.Component<TaskCardProps> {
@@ -54,6 +57,12 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
     onTaskUpdate('completed')
   }
 
+  private handleTaskUncomplete = async () => {
+    const { task, onTaskUpdate } = this.props
+    await this.props.uncompleteTask(task.id)
+    onTaskUpdate('uncompleted')
+  }
+
   private hasAnyNotificationsActive = () => {
     const { task } = this.props
     if (!task.notification.enabled) {
@@ -67,7 +76,7 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
   }
 
   render(): React.ReactNode {
-    const { task, navigate } = this.props
+    const { task, navigate, isCompleted } = this.props
 
     const notificationsActive = this.hasAnyNotificationsActive()
 
@@ -161,23 +170,22 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
               >
                 <IconButton
                   variant='solid'
-                  color='success'
-                  onClick={this.handleTaskCompletion}
+                  color={isCompleted ? 'danger' : 'success'}
+                  onClick={isCompleted ? this.handleTaskUncomplete : this.handleTaskCompletion}
                   sx={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
                     borderRadius: '50%',
                     minWidth: 50,
                     height: 50,
                     zIndex: 1,
+                    '& svg': {
+                      display: 'block',
+                    },
                   }}
                 >
-                  <div
-                    style={{
-                      position: 'relative',
-                      alignItems: 'center',
-                    }}
-                  >
-                    <Check />
-                  </div>
+                  {isCompleted ? <Cancel /> : <Check />}
                 </IconButton>
               </Box>
             </Grid>
@@ -186,7 +194,7 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
                 cursor: 'pointer',
                 flex: 1,
               }}
-              onContextMenu={(e) => this.props.onContextMenu(e, task)}
+              onContextMenu={(e) => this.props.onContextMenu(e, task, !!isCompleted)}
               onClick={() => navigate(NavigationPaths.TaskEdit(task.id))}
             >
               <Box
@@ -235,6 +243,7 @@ class TaskCardImpl extends React.Component<TaskCardProps> {
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   completeTask: (taskId: number, endRecurrence: boolean) => dispatch(completeTask({ taskId, endRecurrence })),
+	uncompleteTask: (taskId: number) => dispatch(uncompleteTask(taskId)),
 })
 
 export const TaskCard = connect(

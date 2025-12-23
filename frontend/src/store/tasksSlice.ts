@@ -3,6 +3,7 @@ import {
   GetTasks,
   GetCompletedTasks,
   MarkTaskComplete,
+  UncompleteTask,
   DeleteTask,
   SkipTask,
   CreateTask,
@@ -94,6 +95,14 @@ export const skipTask = createAsyncThunk(
   'tasks/skipTask',
   async (taskId: number) => {
     const response = await SkipTask(taskId)
+    return response.task
+  },
+)
+
+export const uncompleteTask = createAsyncThunk(
+  'tasks/uncompleteTask',
+  async (taskId: number) => {
+    const response = await UncompleteTask(taskId)
     return response.task
   },
 )
@@ -229,8 +238,31 @@ const tasksSlice = createSlice({
       const taskId = action.payload
       state.items = state.items.filter(t => t.id !== taskId)
       state.filteredItems = state.filteredItems.filter(t => t.id !== taskId)
+
+      // Keep completed list consistent when a completed task is deleted.
+      state.completedItems = state.completedItems.filter(t => t.id !== taskId)
+
       deleteTaskFromGroups(taskId, state.groupedItems)
     },
+    taskRemovedFromActive: (state, action: PayloadAction<number>) => {
+      const taskId = action.payload
+      state.items = state.items.filter(t => t.id !== taskId)
+      state.filteredItems = state.filteredItems.filter(t => t.id !== taskId)
+      deleteTaskFromGroups(taskId, state.groupedItems)
+    },
+	completedTaskRemoved: (state, action: PayloadAction<number>) => {
+		const taskId = action.payload
+		state.completedItems = state.completedItems.filter(t => t.id !== taskId)
+	},
+  completedTaskUpserted: (state, action: PayloadAction<Task>) => {
+    const task = action.payload
+    const index = state.completedItems.findIndex(t => t.id === task.id)
+    if (index >= 0) {
+      state.completedItems[index] = task
+    } else {
+      state.completedItems.unshift(task)
+    }
+  },
   },
   extraReducers: builder => {
     builder
@@ -356,10 +388,15 @@ const tasksSlice = createSlice({
             type: 'tasks/taskUpserted',
           })
         } else {
-          tasksSlice.caseReducers.taskDeleted(state, {
-            payload: newTask.id,
-            type: 'tasks/taskDeleted',
-          })
+			// Task is now completed/inactive; remove from active lists and add to completed list.
+			tasksSlice.caseReducers.taskRemovedFromActive(state, {
+				payload: newTask.id,
+				type: 'tasks/taskRemovedFromActive',
+			})
+			tasksSlice.caseReducers.completedTaskUpserted(state, {
+				payload: newTask,
+				type: 'tasks/completedTaskUpserted',
+			})
         }
 
         state.status = 'succeeded'
@@ -426,10 +463,36 @@ const tasksSlice = createSlice({
         state.status = 'failed'
         state.error = action.error.message ?? null
       })
+
+    // Uncomplete tasks
+    .addCase(uncompleteTask.pending, state => {
+    state.status = 'loading'
+    state.error = null
+    })
+    .addCase(uncompleteTask.fulfilled, (state, action) => {
+    const updatedTask = action.payload
+
+    // Task is active again; remove from completed list and upsert into active lists.
+    tasksSlice.caseReducers.completedTaskRemoved(state, {
+      payload: updatedTask.id,
+      type: 'tasks/completedTaskRemoved',
+    })
+    tasksSlice.caseReducers.taskUpserted(state, {
+      payload: updatedTask,
+      type: 'tasks/taskUpserted',
+    })
+
+    state.status = 'succeeded'
+    state.error = null
+    })
+    .addCase(uncompleteTask.rejected, (state, action) => {
+    state.status = 'failed'
+    state.error = action.error.message ?? null
+    })
   },
 })
 
-export const { setDraft, filterTasks, toggleShowCompleted, toggleGroup } = tasksSlice.actions
+export const { setDraft, filterTasks, toggleShowCompleted, toggleGroup, completedTaskRemoved } = tasksSlice.actions
 
 export const tasksReducer = tasksSlice.reducer
 
@@ -451,11 +514,13 @@ const onTaskCompleted = (data: WSEventPayloads['task_completed']) => {
   if (data.next_due_date) {
     store.dispatch(taskUpserted(data))
   } else {
-    store.dispatch(taskDeleted(data.id))
+		store.dispatch(tasksSlice.actions.taskRemovedFromActive(data.id))
+		store.dispatch(tasksSlice.actions.completedTaskUpserted(data))
   }
 }
 
 const onTaskUncompleted = (data: WSEventPayloads['task_uncompleted']) => {
+  store.dispatch(completedTaskRemoved(data.id))
   store.dispatch(taskUpserted(data))
 }
 

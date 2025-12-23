@@ -89,7 +89,7 @@ export const newTask = (): Task => ({
   labels: [],
 })
 
-export type TASK_UPDATE_EVENT = 'updated' | 'completed' | 'rescheduled' | 'skipped' | 'deleted'
+export type TASK_UPDATE_EVENT = 'updated' | 'completed' | 'uncompleted' | 'rescheduled' | 'skipped' | 'deleted'
 
 export const getDueDateChipText = (nextDueDate: Date | null): string => {
   if (nextDueDate === null) {

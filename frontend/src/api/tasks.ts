@@ -45,6 +45,12 @@ export const SkipTask = async (id: number): Promise<SingleTaskResponse> =>
       ws: (ws) => ws.request('skip_task', id),
     })
 
+export const UncompleteTask = async (id: number): Promise<SingleTaskResponse> =>
+    await transport({
+      http: () => Request<SingleTaskResponse>(`/tasks/${id}/undo`, 'POST'),
+      ws: (ws) => ws.request('uncomplete_task', id),
+    })
+
 export const CreateTask = async (task: Omit<Task, 'id'>) =>
   await transport({
     http: () => Request<TaskIdResponse>(`/tasks/`, 'POST', MarshallLabels(task)),

@@ -58,6 +58,11 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
   componentDidMount(): void {
     setTitle('Tasks Overview')
 
+		const { showCompleted, completedTasks } = this.props
+		if (showCompleted && completedTasks.length === 0) {
+			void this.props.fetchCompletedTasks()
+		}
+
     this.registerKeyboardShortcuts()
   }
 
