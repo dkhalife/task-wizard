@@ -12,6 +12,17 @@ export type WSAction =
   | 'create_app_token'
   | 'delete_app_token'
   | 'update_notification_settings'
+  | 'get_tasks'
+  | 'get_completed_tasks'
+  | 'get_task'
+  | 'create_task'
+  | 'update_task'
+  | 'delete_task'
+  | 'skip_task'
+  | 'update_due_date'
+  | 'complete_task'
+  | 'uncomplete_task'
+  | 'get_task_history'
 
 export interface WSActionPayloads {
   get_user_labels: void
@@ -30,6 +41,27 @@ export interface WSActionPayloads {
     provider: NotificationType
     triggers: NotificationTriggerOptions
   }
+
+  get_tasks: void
+  get_completed_tasks: {
+    limit?: number
+    page?: number
+  }
+  get_task: number
+  create_task: Omit<Omit<Task, 'id'>, 'labels'> & { labels: number[] }
+  update_task: Omit<Task, 'labels'> & { labels: number[] }
+  delete_task: number
+  skip_task: number
+  update_due_date: {
+    id: number
+    due_date: string
+  }
+  complete_task: {
+    id: number
+    endRecurrence: boolean
+  }
+  uncomplete_task: number
+  get_task_history: number
 }
 
 export type WSEvent =
