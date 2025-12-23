@@ -74,7 +74,7 @@ describe('featureFlags', () => {
     })
 
     it('should handle all feature flag types', () => {
-      const flags: FeatureFlag[] = ['useWebsockets', 'refreshStaleData']
+      const flags: FeatureFlag[] = ['useWebsockets', 'sendViaWebsocket', 'refreshStaleData']
       
       flags.forEach(flag => {
         setFeatureFlag(flag, true)

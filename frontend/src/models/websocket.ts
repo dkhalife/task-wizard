@@ -13,7 +13,7 @@ export interface WSActionPayloads {
   get_user_labels: void
   create_label: Omit<Label, 'id'>
   update_label: Label
-  delete_label: { id: number }
+  delete_label: number
 }
 
 export type WSEvent =
