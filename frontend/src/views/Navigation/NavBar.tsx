@@ -20,11 +20,13 @@ import React from 'react'
 import { ThemeToggleButton } from '../Settings/ThemeToggleButton'
 import { SyncStatus } from './SyncStatus'
 import { NavBarLink } from './NavBarLink'
-import { getPathName, NavigationPaths, WithNavigate } from '@/utils/navigation'
+import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { isMobile } from '@/utils/dom'
 import { Logo } from '@/Logo'
 
-type NavBarProps = WithNavigate
+type NavBarProps = WithNavigate & {
+  pathname: string
+}
 
 interface NavBarState {
   drawerOpen: boolean
@@ -56,7 +58,7 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
   }
 
   render(): React.ReactNode {
-    if (['/signup', '/login', '/forgot-password'].includes(getPathName())) {
+    if (['/signup', '/login', '/forgot-password'].includes(this.props.pathname)) {
       return null
     }
 
