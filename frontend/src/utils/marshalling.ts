@@ -63,11 +63,16 @@ export const MakeTask = (taskUI: Omit<TaskUI, 'id'>): Omit<Task, 'id'> => {
     end_date: MarshallDate(taskUI.end_date),
   }
 }
+type HasLabels = {
+  labels: Array<{ id: number }>
+}
 
-export const MarshallLabels = (task: Task): Omit<Task, 'labels'> & {labels: number[] } => {
+export const MarshallLabels = <T extends HasLabels>(
+  value: T,
+): Omit<T, 'labels'> & { labels: number[] } => {
   return {
-    ...task,
-    labels: task.labels.map(label => label.id),
+    ...value,
+    labels: value.labels.map(label => label.id),
   }
 }
 

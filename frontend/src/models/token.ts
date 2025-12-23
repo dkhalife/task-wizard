@@ -1,8 +1,9 @@
 export interface APIToken {
-  id: string
+  id: number
   name: string
   token: string
   expires_at: string
+  scopes?: string[]
 }
 
 export type ApiTokenScope =

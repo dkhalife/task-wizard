@@ -1,5 +1,6 @@
 import { Label } from '@/models/label'
 import { Request } from '../utils/api'
+import { transport } from './transport'
 
 type LabelsResponse = {
   labels: Label[]
@@ -10,9 +11,25 @@ type SingleLabelResponse = {
 }
 
 export const CreateLabel = async (label: Omit<Label, 'id'>) =>
-  await Request<SingleLabelResponse>(`/labels`, 'POST', label)
-export const GetLabels = async () => await Request<LabelsResponse>(`/labels`)
+  await transport({
+    http: () => Request<SingleLabelResponse>(`/labels`, 'POST', label),
+    ws: (ws) => ws.request('create_label', label),
+  })
+
+export const GetLabels = async () =>
+  await transport({
+    http: () => Request<LabelsResponse>(`/labels`),
+    ws: (ws) => ws.request('get_user_labels'),
+  })
+
 export const UpdateLabel = async (label: Label) =>
-  await Request<SingleLabelResponse>(`/labels`, 'PUT', label)
+  await transport({
+    http: () => Request<SingleLabelResponse>(`/labels`, 'PUT', label),
+    ws: (ws) => ws.request('update_label', label),
+  })
+
 export const DeleteLabel = async (id: number) =>
-  await Request<void>(`/labels/${id}`, 'DELETE')
+  await transport({
+    http: () => Request<void>(`/labels/${id}`, 'DELETE'),
+    ws: (ws) => ws.request('delete_label', id),
+  })

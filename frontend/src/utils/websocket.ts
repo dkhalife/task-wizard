@@ -18,6 +18,14 @@ export class WebSocketManager {
   private manualClose = false
   private enabled: boolean = store.getState().featureFlags.useWebsockets
   private listeners: Map<WSEvent, Set<WebSocketEventListener>> = new Map()
+  private pendingRequests: Map<
+    string,
+    {
+      resolve: (value: any) => void
+      reject: (reason?: any) => void
+      timeoutId: ReturnType<typeof setTimeout>
+    }
+  > = new Map()
   private dispatch = store.dispatch
   private reconnectTimer?: ReturnType<typeof setTimeout>
 
@@ -87,8 +95,27 @@ export class WebSocketManager {
 
     this.socket.onmessage = (event) => {
       try {
-        const message = JSON.parse(event.data)
-        this.emit(message.action, message.data)
+        const message: {
+          action?: string
+          data?: unknown
+          requestId?: string
+          status?: number
+        } = JSON.parse(event.data)
+
+        // Request/response messages include requestId + status.
+        if (message.requestId && typeof message.status === 'number') {
+          const pending = this.pendingRequests.get(message.requestId)
+          if (pending) {
+            clearTimeout(pending.timeoutId)
+            this.pendingRequests.delete(message.requestId)
+            pending.resolve(message)
+            return
+          }
+        }
+
+        if (typeof message.action === 'string') {
+          this.emit(message.action as WSEvent, message.data as any)
+        }
       } catch {
         console.debug('Unexpected WebSocket message type:', event.data)
       }
@@ -97,6 +124,7 @@ export class WebSocketManager {
     this.socket.onclose = () => {
       this.socket = null
       this.dispatch(wsDisconnected(null))
+      this.rejectAllPendingRequests(new Error('WebSocket connection closed'))
       this.scheduleReconnect()
     }
 
@@ -180,6 +208,8 @@ export class WebSocketManager {
       this.dispatch(wsDisconnected(null))
     }
 
+    this.rejectAllPendingRequests(new Error('WebSocket disconnected'))
+
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
       this.reconnectTimer = undefined
@@ -198,6 +228,81 @@ export class WebSocketManager {
     }
 
     this.socket!.send(JSON.stringify(request))
+  }
+
+  async request<T extends WSAction, TResponse>(
+    action: T,
+    data?: WSRequest<T>['data'],
+    timeoutMs: number = 5000,
+  ): Promise<TResponse> {
+    if (!this.isConnected()) {
+      throw new Error('WebSocket is not connected')
+    }
+
+    const requestId = this.newRequestId()
+    const request: WSRequest<T> = {
+      requestId,
+      action,
+      ...(data === undefined ? {} : { data }),
+    }
+
+    const response = await new Promise<any>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        this.pendingRequests.delete(requestId)
+        reject(new Error('WebSocket request timed out'))
+      }, timeoutMs)
+
+      this.pendingRequests.set(requestId, { resolve, reject, timeoutId })
+      try {
+        this.send(request)
+      } catch (e) {
+        clearTimeout(timeoutId)
+        this.pendingRequests.delete(requestId)
+        reject(e)
+      }
+    })
+
+    const status = response?.status
+    const payload = response?.data
+    if (typeof status === 'number' && status >= 400) {
+      const msg = (payload as any)?.error
+      throw new Error(typeof msg === 'string' ? msg : 'WebSocket request failed')
+    }
+
+    // Mirror HTTP Request() behavior: treat 204 as empty payload.
+    if (status === 204) {
+      return {} as TResponse
+    }
+
+    return payload as TResponse
+  }
+
+  private newRequestId(): string {
+    try {
+      // Modern browsers
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const c: any = crypto
+      if (c && typeof c.randomUUID === 'function') {
+        return c.randomUUID()
+      }
+    } catch {
+      // ignore
+    }
+
+    return `${Date.now()}-${Math.random().toString(16).slice(2)}`
+  }
+
+  private rejectAllPendingRequests(err: Error) {
+    const pending = Array.from(this.pendingRequests.values())
+    this.pendingRequests.clear()
+    pending.forEach(p => {
+      clearTimeout(p.timeoutId)
+      try {
+        p.reject(err)
+      } catch {
+        // ignore
+      }
+    })
   }
 
   private scheduleReconnect() {

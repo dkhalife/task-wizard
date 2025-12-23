@@ -41,7 +41,7 @@ export const createToken = createAsyncThunk(
 
 export const deleteToken = createAsyncThunk(
   'tokens/deleteToken',
-  async (tokenId: string) => await DeleteLongLivedToken(tokenId)
+  async (tokenId: number) => await DeleteLongLivedToken(tokenId)
 )
 
 const tokensSlice = createSlice({
