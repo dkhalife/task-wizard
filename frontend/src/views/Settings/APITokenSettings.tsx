@@ -25,11 +25,11 @@ type APITokenSettingsProps = {
     scopes: ApiTokenScope[],
     expiration: number,
   }) => Promise<any>
-  deleteToken: (tokenId: string) => Promise<any>
+  deleteToken: (tokenId: number) => Promise<any>
 }
 
 interface APITokenSettingsState {
-  showTokenId: string | null
+  showTokenId: number | null
 }
 
 class APITokenSettingsImpl extends React.Component<
@@ -192,7 +192,7 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
     scopes: ApiTokenScope[],
     expiration: number,
   }) => dispatch(createToken(token)),
-  deleteToken: (tokenId: string) => dispatch(deleteToken(tokenId)),
+  deleteToken: (tokenId: number) => dispatch(deleteToken(tokenId)),
 })
 
 export const APITokenSettings = connect(

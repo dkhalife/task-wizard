@@ -4,6 +4,7 @@ import {
   NotificationTriggerOptions,
   NotificationType,
 } from '@/models/notifications'
+import { transport } from './transport'
 
 type UserResponse = {
   user: User
@@ -21,7 +22,11 @@ export const UpdateNotificationSettings = async (
   provider: NotificationType,
   triggers: NotificationTriggerOptions,
 ) =>
-  await Request<void>(`/users/notifications`, 'PUT', {
-    provider,
-    triggers,
+  await transport({
+    http: () =>
+      Request<void>(`/users/notifications`, 'PUT', {
+        provider,
+        triggers,
+      }),
+    ws: (ws) => ws.request('update_notification_settings', { provider, triggers }),
   })
