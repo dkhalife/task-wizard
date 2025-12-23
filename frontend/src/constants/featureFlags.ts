@@ -1,6 +1,6 @@
 import { retrieveValue, storeValue } from '@/utils/storage'
 
-export type FeatureFlag = 'useWebsockets' | 'sendViaWebsocket' | 'refreshStaleData'
+export type FeatureFlag = 'sendViaWebsocket' | 'refreshStaleData'
 
 export interface FeatureFlagDefinition {
   name: FeatureFlag
@@ -10,13 +10,8 @@ export interface FeatureFlagDefinition {
 
 export const featureFlagDefinitions: FeatureFlagDefinition[] = [
   {
-    name: 'useWebsockets',
-    description: 'Use websockets',
-    defaultValue: false,
-  },
-  {
     name: 'sendViaWebsocket',
-    description: 'Send requests via WebSocket (requires websockets)',
+    description: 'Send requests via WebSocket',
     defaultValue: false,
   },
   {

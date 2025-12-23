@@ -16,7 +16,6 @@ export class WebSocketManager {
   private socket: WebSocket | null = null
   private retryCount = 0
   private manualClose = false
-  private enabled: boolean = store.getState().featureFlags.useWebsockets
   private listeners: Map<WSEvent, Set<WebSocketEventListener>> = new Map()
   private pendingRequests: Map<
     string,
@@ -30,25 +29,7 @@ export class WebSocketManager {
   private reconnectTimer?: ReturnType<typeof setTimeout>
 
   private constructor() {
-    if (this.enabled) {
-      this.connect()
-    }
-
-    store.subscribe(() => {
-      const newState = store.getState()
-      const newEnabledState = newState.featureFlags.useWebsockets
-
-      // If websockets were disabled, disconnect
-      if (this.enabled && !newEnabledState) {
-        this.enabled = newEnabledState
-        this.disconnect()
-      }
-      // If websockets were enabled, try to connect
-      else if (!this.enabled && newEnabledState) {
-        this.enabled = newEnabledState
-        this.connect()
-      }
-    })
+    this.connect()
   }
 
   static getInstance(): WebSocketManager {
@@ -305,7 +286,7 @@ export class WebSocketManager {
   }
 
   private scheduleReconnect() {
-    if (this.manualClose || !this.enabled) {
+    if (this.manualClose) {
       return
     }
 
