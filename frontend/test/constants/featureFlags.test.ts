@@ -13,8 +13,10 @@ describe('featureFlags', () => {
 
   describe('setFeatureFlag', () => {
     it('should store feature flag with correct prefix', () => {
-      setFeatureFlag('useWebsockets', true)
-      const storedValue = localStorage.getItem(FEATURE_FLAG_PREFIX + 'useWebsockets')
+      setFeatureFlag('sendViaWebsocket', true)
+      const storedValue = localStorage.getItem(
+        FEATURE_FLAG_PREFIX + 'sendViaWebsocket',
+      )
       expect(storedValue).toBe('true')
     })
 
@@ -25,36 +27,36 @@ describe('featureFlags', () => {
     })
 
     it('should update existing feature flag', () => {
-      setFeatureFlag('useWebsockets', true)
-      expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'useWebsockets')).toBe('true')
+      setFeatureFlag('sendViaWebsocket', true)
+      expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'sendViaWebsocket')).toBe('true')
       
-      setFeatureFlag('useWebsockets', false)
-      expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'useWebsockets')).toBe('false')
+      setFeatureFlag('sendViaWebsocket', false)
+      expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'sendViaWebsocket')).toBe('false')
     })
 
     it('should handle multiple feature flags independently', () => {
-      setFeatureFlag('useWebsockets', true)
+      setFeatureFlag('sendViaWebsocket', true)
       setFeatureFlag('refreshStaleData', false)
       
-      expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'useWebsockets')).toBe('true')
+      expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'sendViaWebsocket')).toBe('true')
       expect(localStorage.getItem(FEATURE_FLAG_PREFIX + 'refreshStaleData')).toBe('false')
     })
   })
 
   describe('getFeatureFlag', () => {
     it('should return stored value when flag exists', () => {
-      localStorage.setItem(FEATURE_FLAG_PREFIX + 'useWebsockets', 'true')
-      const result = getFeatureFlag('useWebsockets', false)
+      localStorage.setItem(FEATURE_FLAG_PREFIX + 'sendViaWebsocket', 'true')
+      const result = getFeatureFlag('sendViaWebsocket', false)
       expect(result).toBe(true)
     })
 
     it('should return default value when flag does not exist', () => {
-      const result = getFeatureFlag('useWebsockets', false)
+      const result = getFeatureFlag('sendViaWebsocket', false)
       expect(result).toBe(false)
     })
 
     it('should return different default values correctly', () => {
-      const result1 = getFeatureFlag('useWebsockets', true)
+      const result1 = getFeatureFlag('sendViaWebsocket', true)
       expect(result1).toBe(true)
       
       const result2 = getFeatureFlag('refreshStaleData', false)
@@ -68,13 +70,13 @@ describe('featureFlags', () => {
     })
 
     it('should retrieve true value correctly', () => {
-      localStorage.setItem(FEATURE_FLAG_PREFIX + 'useWebsockets', 'true')
-      const result = getFeatureFlag('useWebsockets', false)
+      localStorage.setItem(FEATURE_FLAG_PREFIX + 'sendViaWebsocket', 'true')
+      const result = getFeatureFlag('sendViaWebsocket', false)
       expect(result).toBe(true)
     })
 
     it('should handle all feature flag types', () => {
-      const flags: FeatureFlag[] = ['useWebsockets', 'sendViaWebsocket', 'refreshStaleData']
+      const flags: FeatureFlag[] = ['sendViaWebsocket', 'refreshStaleData']
       
       flags.forEach(flag => {
         setFeatureFlag(flag, true)
@@ -85,8 +87,8 @@ describe('featureFlags', () => {
 
   describe('getFeatureFlag and setFeatureFlag integration', () => {
     it('should store and retrieve feature flag correctly', () => {
-      setFeatureFlag('useWebsockets', true)
-      expect(getFeatureFlag('useWebsockets', false)).toBe(true)
+      setFeatureFlag('sendViaWebsocket', true)
+      expect(getFeatureFlag('sendViaWebsocket', false)).toBe(true)
     })
 
     it('should update and retrieve updated value', () => {
@@ -98,25 +100,25 @@ describe('featureFlags', () => {
     })
 
     it('should maintain feature flag values independently', () => {
-      setFeatureFlag('useWebsockets', true)
+      setFeatureFlag('sendViaWebsocket', true)
       setFeatureFlag('refreshStaleData', false)
       
-      expect(getFeatureFlag('useWebsockets', false)).toBe(true)
+      expect(getFeatureFlag('sendViaWebsocket', false)).toBe(true)
       expect(getFeatureFlag('refreshStaleData', true)).toBe(false)
     })
 
     it('should handle toggling feature flags', () => {
       // Initial state
-      setFeatureFlag('useWebsockets', false)
-      expect(getFeatureFlag('useWebsockets', false)).toBe(false)
+      setFeatureFlag('sendViaWebsocket', false)
+      expect(getFeatureFlag('sendViaWebsocket', false)).toBe(false)
       
       // Toggle on
-      setFeatureFlag('useWebsockets', true)
-      expect(getFeatureFlag('useWebsockets', false)).toBe(true)
+      setFeatureFlag('sendViaWebsocket', true)
+      expect(getFeatureFlag('sendViaWebsocket', false)).toBe(true)
       
       // Toggle off
-      setFeatureFlag('useWebsockets', false)
-      expect(getFeatureFlag('useWebsockets', false)).toBe(false)
+      setFeatureFlag('sendViaWebsocket', false)
+      expect(getFeatureFlag('sendViaWebsocket', false)).toBe(false)
     })
   })
 
@@ -126,7 +128,7 @@ describe('featureFlags', () => {
     })
 
     it('should be used as prefix for all feature flags', () => {
-      setFeatureFlag('useWebsockets', true)
+      setFeatureFlag('sendViaWebsocket', true)
       const keys = Object.keys(localStorage)
       const flagKeys = keys.filter(key => key.startsWith(FEATURE_FLAG_PREFIX))
       expect(flagKeys.length).toBeGreaterThan(0)

@@ -6,8 +6,6 @@ import { RootState } from '@/store/store'
 import { SyncState } from '@/models/sync'
 
 interface SyncStatusProps {
-  websocketsEnabled: boolean
-
   style?: React.CSSProperties
   userStatus: SyncState
   userError: string | null
@@ -77,9 +75,7 @@ class SyncStatusImpl extends React.Component<SyncStatusProps, SyncStatusState> {
       { name: 'Tokens', status: tokensStatus, error: tokensError },
     ]
 
-    if (this.props.websocketsEnabled) {
-      statuses.push({ name: 'WebSocket', status: wsStatus, error: wsError })
-    }
+    statuses.push({ name: 'WebSocket', status: wsStatus, error: wsError })
 
     return statuses
   }
@@ -154,7 +150,6 @@ class SyncStatusImpl extends React.Component<SyncStatusProps, SyncStatusState> {
 }
 
 const mapStateToProps = (state: RootState) => ({
-  websocketsEnabled: state.featureFlags.useWebsockets,
   userStatus: state.user.status,
   userError: state.user.error,
   tasksStatus: state.tasks.status,
