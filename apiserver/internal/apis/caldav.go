@@ -2,6 +2,7 @@ package apis
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"io"
 	"net/http"
@@ -12,6 +13,7 @@ import (
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	models "dkhalife.com/tasks/core/internal/models"
 	cRepo "dkhalife.com/tasks/core/internal/repos/caldav"
+	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/utils/auth"
@@ -20,18 +22,21 @@ import (
 	"dkhalife.com/tasks/core/internal/ws"
 	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
 )
 
 type CalDAVAPIHandler struct {
 	tRepo *tRepo.TaskRepository
 	cRepo *cRepo.CalDavRepository
+	nRepo *nRepo.NotificationRepository
 	ws    *ws.WSServer
 }
 
-func CalDAVAPI(tRepo *tRepo.TaskRepository, cRepo *cRepo.CalDavRepository, wsServer *ws.WSServer) *CalDAVAPIHandler {
+func CalDAVAPI(tRepo *tRepo.TaskRepository, cRepo *cRepo.CalDavRepository, nRepo *nRepo.NotificationRepository, wsServer *ws.WSServer) *CalDAVAPIHandler {
 	return &CalDAVAPIHandler{
 		tRepo: tRepo,
 		cRepo: cRepo,
+		nRepo: nRepo,
 		ws:    wsServer,
 	}
 }
@@ -272,6 +277,12 @@ func (h *CalDAVAPIHandler) handlePut(c *gin.Context) {
 		log.Errorf("Error getting updated task: %s", err.Error())
 		// Don't fail the request if we can't broadcast
 	} else {
+		// Regenerate notifications for the updated task
+		go func(task *models.Task, logger *zap.SugaredLogger) {
+			ctx := logging.ContextWithLogger(context.Background(), logger)
+			h.nRepo.GenerateNotifications(ctx, task)
+		}(updatedTask, log)
+
 		// Broadcast the update to all connected clients for this user
 		h.ws.BroadcastToUser(currentIdentity.UserID, ws.WSResponse{
 			Action: "task_updated",
