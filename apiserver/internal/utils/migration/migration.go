@@ -12,6 +12,7 @@ func Migration(db *gorm.DB) error {
 		models.AppToken{},
 		models.Label{},
 		models.Task{},
+		models.TaskLabel{},
 		models.TaskHistory{},
 		models.NotificationSettings{},
 		models.Notification{},

@@ -30,8 +30,8 @@ type TaskHistory struct {
 }
 
 type TaskLabel struct {
-	TaskID  int `json:"task_id"`
-	LabelID int `json:"label_id"`
+	TaskID  int `json:"task_id" gorm:"primaryKey"`
+	LabelID int `json:"label_id" gorm:"primaryKey"`
 }
 
 type CreateTaskReq struct {
