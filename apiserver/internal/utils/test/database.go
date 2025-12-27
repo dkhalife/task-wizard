@@ -1,14 +1,15 @@
 package test
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
 	"time"
 
 	"dkhalife.com/tasks/core/config"
+	"dkhalife.com/tasks/core/internal/migrations"
 	dbutil "dkhalife.com/tasks/core/internal/utils/database"
-	"dkhalife.com/tasks/core/internal/utils/migration"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
 )
@@ -25,7 +26,8 @@ func (suite *DatabaseTestSuite) SetupTest() {
 	db, err := dbutil.NewDatabase(cfg)
 	suite.Require().NoError(err)
 
-	err = migration.Migration(db)
+	runner := migrations.NewRunner(db)
+	err = runner.MigrateUp(context.Background(), 0)
 	suite.Require().NoError(err)
 
 	suite.DB = db
