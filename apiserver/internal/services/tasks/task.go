@@ -372,6 +372,11 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 		}
 	}
 
+	go func(task *models.Task, logger *zap.SugaredLogger) {
+		ctx := logging.ContextWithLogger(context.Background(), logger)
+		s.n.GenerateNotifications(ctx, task)
+	}(task, log)
+
 	s.ws.BroadcastToUser(userID, ws.WSResponse{
 		Action: "task_updated",
 		Data:   task,
