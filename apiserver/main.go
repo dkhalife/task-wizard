@@ -38,7 +38,6 @@ import (
 	"dkhalife.com/tasks/core/internal/services/scheduler"
 	tService "dkhalife.com/tasks/core/internal/services/tasks"
 	uService "dkhalife.com/tasks/core/internal/services/users"
-	migration "dkhalife.com/tasks/core/internal/utils/migration"
 )
 
 func main() {
@@ -158,11 +157,8 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 			logging.FromContext(ctx).Info("Starting server")
 
 			if cfg.Database.Migration {
-				if err := migration.Migration(db); err != nil {
-					return fmt.Errorf("failed to auto-migrate: %s", err.Error())
-				}
-
-				if err := migrations.Run(ctx, db); err != nil {
+				runner := migrations.NewRunner(db)
+				if err := runner.MigrateUp(ctx, 0); err != nil {
 					return fmt.Errorf("failed to run migrations: %s", err.Error())
 				}
 			}
