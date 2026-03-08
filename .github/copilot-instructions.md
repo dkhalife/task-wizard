@@ -6,9 +6,9 @@ For detailed architecture, data flow, and feature documentation, see the `.agent
 
 ## Project Overview
 
-Task Wizard is a self-hosted, privacy-focused task management app: React frontend communicates via gRPC-Web/HTTP → Go API server handles business logic and persistence → SQLite/MySQL via GORM. A .NET MCP server exposes tools for AI assistants.
+Task Wizard is a self-hosted, privacy-focused task management app: React frontend communicates via HTTP → Go API server handles business logic and persistence → SQLite/MySQL via GORM. A .NET MCP server exposes tools for AI assistants.
 
-**Components:** API Server (`apiserver/`), Frontend (`frontend/`), MCP Server (`mcpserver/`), Proto (`proto/`)
+**Components:** API Server (`apiserver/`), Frontend (`frontend/`), MCP Server (`mcpserver/`)
 
 ## Development Commands
 
@@ -28,9 +28,6 @@ cd frontend && yarn test:e2e                         # E2E tests (Playwright)
 
 # MCP Server
 cd mcpserver && dotnet build                         # Build
-
-# Proto generation (after modifying .proto files)
-cd proto && .\generate.ps1
 ```
 
 ## Code Style
@@ -72,7 +69,6 @@ cd proto && .\generate.ps1
 ## Workflow Rules
 
 - **Always build and test before completing work**: run `go build ./... && go test ./...` for backend, `yarn lint && yarn tsc && yarn build` for frontend, `dotnet build` for MCP server
-- After proto changes, run `cd proto && .\generate.ps1` and verify all builds still pass
 
 ## CI/CD
 

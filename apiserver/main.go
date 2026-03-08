@@ -21,8 +21,7 @@ import (
 	"go.uber.org/fx"
 	"go.uber.org/fx/fxevent"
 	"go.uber.org/zap/zapcore"
-	"golang.org/x/net/http2"
-	"golang.org/x/net/http2/h2c"
+
 	"gorm.io/gorm"
 
 	apis "dkhalife.com/tasks/core/internal/apis"
@@ -134,10 +133,9 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	}
 
 	r := gin.New()
-	h2s := &http2.Server{}
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler:      h2c.NewHandler(r, h2s),
+		Handler:      r,
 		ReadTimeout:  cfg.Server.ReadTimeout,
 		WriteTimeout: cfg.Server.WriteTimeout,
 	}
