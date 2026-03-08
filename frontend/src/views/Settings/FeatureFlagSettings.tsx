@@ -20,6 +20,11 @@ class FeatureFlagSettingsImpl extends React.Component<FeatureFlagSettingsProps> 
 
   render(): React.ReactNode {
     const { flags } = this.props
+
+    if (featureFlagDefinitions.length === 0) {
+      return null
+    }
+
     return (
       <Box sx={{ mt: 2 }}>
         <Typography level='h3'>Feature Flags</Typography>
