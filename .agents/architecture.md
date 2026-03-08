@@ -1,12 +1,12 @@
 # Task Wizard — Architecture Summary
 
-Task Wizard is a self-hosted, privacy-focused task management application. It is composed of three main services and a shared protobuf contract layer.
+Task Wizard is a self-hosted, privacy-focused task management application. It is composed of three main services.
 
 ## System Components
 
 ### 1. API Server (`apiserver/`)
 - **Language**: Go
-- **Framework**: Gin (HTTP), gRPC, WebSocket
+- **Framework**: Gin (HTTP), WebSocket
 - **DI**: Uber FX
 - **Database**: SQLite (default) or MySQL via GORM
 - **Role**: The central backend. Handles all business logic, persistence, authentication, background scheduling, notifications, and serves the frontend as static files.
@@ -14,7 +14,7 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 ### 2. Frontend (`frontend/`)
 - **Language**: TypeScript
 - **Framework**: React (class components) with Redux
-- **Transport**: gRPC-Web as primary, HTTP REST as fallback
+- **Transport**: HTTP REST
 - **Role**: Single-page application for task management, label organization, notification configuration, API token management, and user settings.
 
 ### 3. MCP Server (`mcpserver/`)
@@ -22,14 +22,11 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 - **Framework**: ASP.NET Core with ModelContextProtocol
 - **Role**: Exposes task and label management as MCP (Model Context Protocol) tools so AI assistants can interact with Task Wizard programmatically. Currently uses in-memory stub data.
 
-### 4. Protobuf Contracts (`proto/`)
-- **Language**: Protocol Buffers v3
-- **Role**: Single source of truth for all message types, enumerations, and service definitions shared between the API server (Go) and the frontend (TypeScript). Code generation scripts produce Go and TypeScript stubs.
 
 ## Communication
 
 ```
-┌───────────┐  gRPC-Web / HTTP   ┌──────────────┐
+┌───────────┐    HTTP REST       ┌──────────────┐
 │  Frontend │ ──────────────────► │  API Server  │
 │  (React)  │ ◄──── WebSocket ── │  (Go / Gin)  │
 └───────────┘                    └──────┬───────┘
@@ -52,7 +49,6 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 | Layer | Directory | Purpose |
 |-------|-----------|---------|
 | HTTP Handlers | `internal/apis/` | REST + CalDAV route handlers |
-| gRPC Services | `internal/grpc/` | Generated gRPC service implementations |
 | Middleware | `internal/middleware/` | JWT auth, scope enforcement |
 | Models | `internal/models/` | GORM data models |
 | Repositories | `internal/repos/` | Database access layer |
@@ -68,8 +64,7 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 |-------|-----------|---------|
 | Views | `src/views/` | Page-level React components (Tasks, Labels, Settings, Auth, etc.) |
 | Store | `src/store/` | Redux slices for tasks, labels, user, tokens, feature flags, WebSocket, status |
-| API | `src/api/` | HTTP/gRPC transport abstraction |
-| gRPC | `src/grpc/` | Generated gRPC-Web client and type definitions |
+| API | `src/api/` | HTTP transport abstraction |
 | Models | `src/models/` | TypeScript interfaces and helpers |
 | Components | `src/components/` | Shared UI components (ErrorBoundary, StatusList) |
 
@@ -80,6 +75,6 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 - **Dependency injection** (Uber FX) for wiring
 - **Scope-based authorization** on API tokens (e.g. `task:read`, `label:write`, `dav:read`)
 - **Background scheduler** for notifications, token cleanup, password reset expiration
-- **Smart transport** in the frontend — tries WebSocket/gRPC first, falls back to HTTP
+- **Smart transport** in the frontend — uses WebSocket for real-time updates, HTTP for requests
 - **Feature flags** to toggle behaviors like WebSocket transport and auto-refresh
 - **Real-time sync** via WebSocket with per-user connection tracking
