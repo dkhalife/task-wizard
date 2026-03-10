@@ -24,15 +24,11 @@ func TestUserTestSuite(t *testing.T) {
 func (s *UserTestSuite) SetupTest() {
 	s.DatabaseTestSuite.SetupTest()
 
-	// Create mock config
 	s.cfg = &config.Config{
 		Server: config.ServerConfig{
 			Registration: true,
 		},
-		SchedulerJobs: config.SchedulerConfig{
-			PasswordResetValidity: 24 * time.Hour,
-		},
-		Jwt: config.JwtConfig{
+		AppTokens: config.AppTokensConfig{
 			Secret: "test-secret",
 		},
 	}
@@ -43,22 +39,24 @@ func (s *UserTestSuite) TestCreateUser() {
 	ctx := context.Background()
 
 	user := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		DisplayName: "Test User",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.repo.CreateUser(ctx, user)
 	s.Require().NoError(err)
 	s.NotZero(user.ID)
 
-	// Verify user was created
 	var fetchedUser models.User
 	err = s.DB.First(&fetchedUser, user.ID).Error
 	s.Require().NoError(err)
 	s.Equal(user.Email, fetchedUser.Email)
+	s.Equal(user.DirectoryID, fetchedUser.DirectoryID)
+	s.Equal(user.ObjectID, fetchedUser.ObjectID)
 
-	// Verify notification settings were created
 	var settings models.NotificationSettings
 	err = s.DB.Where("user_id = ?", user.ID).First(&settings).Error
 	s.Require().NoError(err)
@@ -69,12 +67,12 @@ func (s *UserTestSuite) TestCreateUser() {
 func (s *UserTestSuite) TestCreateUserRegistrationDisabled() {
 	ctx := context.Background()
 
-	// Disable registration
 	s.cfg.Server.Registration = false
 
 	user := &models.User{
-		Email:    "test@example.com",
-		Password: "hashedpassword",
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
 	}
 
 	err := s.repo.CreateUser(ctx, user)
@@ -86,9 +84,10 @@ func (s *UserTestSuite) TestGetUser() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
@@ -100,165 +99,84 @@ func (s *UserTestSuite) TestGetUser() {
 	s.Equal(testUser.Email, user.Email)
 }
 
-func (s *UserTestSuite) TestFindByEmail() {
+func (s *UserTestSuite) TestFindByEntraID() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "dir-123",
+		ObjectID:    "obj-456",
+		DisplayName: "Entra User",
+		Email:       "entra@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
 	s.Require().NoError(err)
 
-	user, err := s.repo.FindByEmail(ctx, "test@example.com")
+	user, err := s.repo.FindByEntraID(ctx, "dir-123", "obj-456")
 	s.Require().NoError(err)
 	s.NotNil(user)
 	s.Equal(testUser.ID, user.ID)
+	s.Equal("Entra User", user.DisplayName)
 }
 
-func (s *UserTestSuite) TestSetPasswordResetToken() {
+func (s *UserTestSuite) TestFindByEntraIDNotFound() {
 	ctx := context.Background()
 
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
-	}
-
-	err := s.DB.Create(testUser).Error
-	s.Require().NoError(err)
-
-	token := "reset-token-123"
-	err = s.repo.SetPasswordResetToken(ctx, testUser.Email, token)
-	s.Require().NoError(err)
-
-	var reset models.UserPasswordReset
-	err = s.DB.Where("user_id = ?", testUser.ID).First(&reset).Error
-	s.Require().NoError(err)
-	s.Equal(token, reset.Token)
-	s.Equal(testUser.Email, reset.Email)
-}
-
-func (s *UserTestSuite) TestActivateAccount() {
-	ctx := context.Background()
-
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		Disabled:  true,
-		CreatedAt: time.Now(),
-	}
-
-	err := s.DB.Create(testUser).Error
-	s.Require().NoError(err)
-
-	token := "activation-token-123"
-	reset := &models.UserPasswordReset{
-		UserID:         testUser.ID,
-		Email:          testUser.Email,
-		Token:          token,
-		ExpirationDate: time.Now().Add(24 * time.Hour),
-	}
-
-	err = s.DB.Create(reset).Error
-	s.Require().NoError(err)
-
-	activated, err := s.repo.ActivateAccount(ctx, testUser.Email, token)
-	s.Require().NoError(err)
-	s.True(activated)
-
-	// Verify user is activated
-	var updatedUser models.User
-	err = s.DB.First(&updatedUser, testUser.ID).Error
-	s.Require().NoError(err)
-	s.False(updatedUser.Disabled)
-}
-
-func (s *UserTestSuite) TestActivateAccountInvalidToken() {
-	ctx := context.Background()
-
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		Disabled:  true,
-		CreatedAt: time.Now(),
-	}
-
-	err := s.DB.Create(testUser).Error
-	s.Require().NoError(err)
-
-	activated, err := s.repo.ActivateAccount(ctx, testUser.Email, "wrong-token")
+	_, err := s.repo.FindByEntraID(ctx, "nonexistent-dir", "nonexistent-obj")
 	s.Require().Error(err)
-	s.False(activated)
-	s.Contains(err.Error(), "invalid token")
 }
 
-func (s *UserTestSuite) TestUpdatePasswordByToken() {
+func (s *UserTestSuite) TestEnsureUserCreatesNew() {
 	ctx := context.Background()
 
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "old-password",
-		CreatedAt: time.Now(),
-	}
-
-	err := s.DB.Create(testUser).Error
+	user, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User", "new@example.com")
 	s.Require().NoError(err)
-
-	token := "reset-token-123"
-	reset := &models.UserPasswordReset{
-		UserID:         testUser.ID,
-		Email:          testUser.Email,
-		Token:          token,
-		ExpirationDate: time.Now().Add(24 * time.Hour),
-	}
-
-	err = s.DB.Create(reset).Error
-	s.Require().NoError(err)
-
-	newPassword := "new-password"
-	err = s.repo.UpdatePasswordByToken(ctx, testUser.Email, token, newPassword)
-	s.Require().NoError(err)
-
-	// Verify password was updated
-	var updatedUser models.User
-	err = s.DB.First(&updatedUser, testUser.ID).Error
-	s.Require().NoError(err)
-	s.Equal(newPassword, updatedUser.Password)
-
-	// Verify the reset token was deleted
-	var resetCount int64
-	err = s.DB.Model(&models.UserPasswordReset{}).Where("token = ?", token).Count(&resetCount).Error
-	s.Require().NoError(err)
-	s.Equal(int64(0), resetCount)
+	s.NotNil(user)
+	s.NotZero(user.ID)
+	s.Equal("new-dir", user.DirectoryID)
+	s.Equal("new-obj", user.ObjectID)
+	s.Equal("New User", user.DisplayName)
 }
 
-func (s *UserTestSuite) TestUpdatePasswordByTokenInvalidToken() {
+func (s *UserTestSuite) TestEnsureUserReturnsExisting() {
 	ctx := context.Background()
 
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "old-password",
-		CreatedAt: time.Now(),
+	existing := &models.User{
+		DirectoryID: "existing-dir",
+		ObjectID:    "existing-obj",
+		DisplayName: "Existing User",
+		Email:       "existing@example.com",
+		CreatedAt:   time.Now(),
 	}
 
-	err := s.DB.Create(testUser).Error
+	err := s.DB.Create(existing).Error
 	s.Require().NoError(err)
 
-	err = s.repo.UpdatePasswordByToken(ctx, testUser.Email, "wrong-token", "new-password")
+	user, err := s.repo.EnsureUser(ctx, "existing-dir", "existing-obj", "Different Name", "different@example.com")
+	s.Require().NoError(err)
+	s.Equal(existing.ID, user.ID)
+	s.Equal("Existing User", user.DisplayName)
+}
+
+func (s *UserTestSuite) TestEnsureUserRegistrationDisabled() {
+	ctx := context.Background()
+
+	s.cfg.Server.Registration = false
+
+	_, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User", "new@example.com")
 	s.Require().Error(err)
-	s.Contains(err.Error(), "invalid token")
+	s.Contains(err.Error(), "registration is disabled")
 }
 
 func (s *UserTestSuite) TestCreateAppToken() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
@@ -278,21 +196,20 @@ func (s *UserTestSuite) TestCreateAppTokenInvalidScope() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
 	s.Require().NoError(err)
 
-	// Test with user scope (not allowed)
 	scopes := []models.ApiTokenScope{models.ApiTokenScopeUserRead}
 	_, err = s.repo.CreateAppToken(ctx, testUser.ID, "Test Token", scopes, 30)
 	s.Require().Error(err)
 	s.Contains(err.Error(), "user scopes are not allowed")
 
-	// Test with token scope (not allowed)
 	scopes = []models.ApiTokenScope{models.ApiTokenScopeTokenWrite}
 	_, err = s.repo.CreateAppToken(ctx, testUser.ID, "Test Token", scopes, 30)
 	s.Require().Error(err)
@@ -303,15 +220,15 @@ func (s *UserTestSuite) TestGetAllUserTokens() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
 	s.Require().NoError(err)
 
-	// Create multiple tokens
 	token1 := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Token 1",
@@ -338,7 +255,6 @@ func (s *UserTestSuite) TestGetAllUserTokens() {
 	s.Require().NoError(err)
 	s.Require().Len(tokens, 2)
 
-	// Should be ordered by expiration date (ascending)
 	s.Equal(token1.ID, tokens[0].ID)
 	s.Equal(token2.ID, tokens[1].ID)
 }
@@ -347,15 +263,15 @@ func (s *UserTestSuite) TestDeleteAppToken() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
 	s.Require().NoError(err)
 
-	// Create a token
 	token := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Test Token",
@@ -367,11 +283,9 @@ func (s *UserTestSuite) TestDeleteAppToken() {
 	err = s.DB.Create(token).Error
 	s.Require().NoError(err)
 
-	// Delete the token
 	err = s.repo.DeleteAppToken(ctx, testUser.ID, token.ID)
 	s.Require().NoError(err)
 
-	// Verify it's deleted
 	var count int64
 	err = s.DB.Model(&models.AppToken{}).Where("id = ?", token.ID).Count(&count).Error
 	s.Require().NoError(err)
@@ -382,15 +296,15 @@ func (s *UserTestSuite) TestUpdateNotificationSettings() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
 	s.Require().NoError(err)
 
-	// Create initial notification settings
 	settings := &models.NotificationSettings{
 		UserID: testUser.ID,
 		Provider: models.NotificationProvider{
@@ -401,7 +315,6 @@ func (s *UserTestSuite) TestUpdateNotificationSettings() {
 	err = s.DB.Create(settings).Error
 	s.Require().NoError(err)
 
-	// Update settings
 	provider := models.NotificationProvider{
 		Provider: models.NotificationProviderGotify,
 		URL:      "https://example.com",
@@ -416,7 +329,6 @@ func (s *UserTestSuite) TestUpdateNotificationSettings() {
 	err = s.repo.UpdateNotificationSettings(ctx, testUser.ID, provider, triggers)
 	s.Require().NoError(err)
 
-	// Verify settings updated
 	var updated models.NotificationSettings
 	err = s.DB.Where("user_id = ?", testUser.ID).First(&updated).Error
 	s.Require().NoError(err)
@@ -427,96 +339,14 @@ func (s *UserTestSuite) TestUpdateNotificationSettings() {
 	s.True(updated.Triggers.PreDue)
 }
 
-func (s *UserTestSuite) TestUpdatePasswordByUserId() {
-	ctx := context.Background()
-
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "old-password",
-		CreatedAt: time.Now(),
-	}
-
-	err := s.DB.Create(testUser).Error
-	s.Require().NoError(err)
-
-	// Update password
-	newPassword := "new-password"
-	err = s.repo.UpdatePasswordByUserId(ctx, testUser.ID, newPassword)
-	s.Require().NoError(err)
-
-	// Verify password updated
-	var updated models.User
-	err = s.DB.First(&updated, testUser.ID).Error
-	s.Require().NoError(err)
-	s.Equal(newPassword, updated.Password)
-}
-
-func (s *UserTestSuite) TestDeleteStalePasswordResets() {
-	ctx := context.Background()
-
-	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
-	}
-
-	err := s.DB.Create(testUser).Error
-	s.Require().NoError(err)
-
-	anotherUser := &models.User{
-		Email:     "test2@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
-	}
-
-	err = s.DB.Create(anotherUser).Error
-	s.Require().NoError(err)
-
-	// Create valid reset token
-	validReset := &models.UserPasswordReset{
-		UserID:         testUser.ID,
-		Email:          testUser.Email,
-		Token:          "valid-token",
-		ExpirationDate: time.Now().Add(24 * time.Hour), // Future
-	}
-
-	err = s.DB.Create(validReset).Error
-	s.Require().NoError(err)
-
-	// Create expired reset token
-	expiredReset := &models.UserPasswordReset{
-		UserID:         anotherUser.ID,
-		Email:          anotherUser.Email,
-		Token:          "expired-token",
-		ExpirationDate: time.Now().Add(-24 * time.Hour), // Past
-	}
-
-	err = s.DB.Create(expiredReset).Error
-	s.Require().NoError(err)
-
-	// Delete stale resets
-	err = s.repo.DeleteStalePasswordResets(ctx)
-	s.Require().NoError(err)
-
-	// Verify only expired token was deleted
-	var count int64
-	err = s.DB.Model(&models.UserPasswordReset{}).Count(&count).Error
-	s.Require().NoError(err)
-	s.Equal(int64(1), count)
-
-	var remaining models.UserPasswordReset
-	err = s.DB.First(&remaining).Error
-	s.Require().NoError(err)
-	s.Equal("valid-token", remaining.Token)
-}
-
 func (s *UserTestSuite) TestGetAppTokensNearingExpiration() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
@@ -524,36 +354,33 @@ func (s *UserTestSuite) TestGetAppTokensNearingExpiration() {
 
 	now := time.Now()
 
-	// Create tokens with different expiration times
 	token1 := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Expired Token",
 		Token:     "token1",
-		ExpiresAt: now.Add(-48 * time.Hour), // Already expired
+		ExpiresAt: now.Add(-48 * time.Hour),
 	}
 
 	token2 := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Nearing Expiration",
 		Token:     "token2",
-		ExpiresAt: now.Add(6 * time.Hour), // Will expire soon
+		ExpiresAt: now.Add(6 * time.Hour),
 	}
 
 	token3 := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Valid Token",
 		Token:     "token3",
-		ExpiresAt: now.Add(30 * 24 * time.Hour), // Not close to expiration
+		ExpiresAt: now.Add(30 * 24 * time.Hour),
 	}
 
 	err = s.DB.Create([]*models.AppToken{token1, token2, token3}).Error
 	s.Require().NoError(err)
 
-	// Associate user with token
 	err = s.DB.Exec("UPDATE app_tokens SET user_id = ?", testUser.ID).Error
 	s.Require().NoError(err)
 
-	// Test with 12 hour window
 	tokens, err := s.repo.GetAppTokensNearingExpiration(ctx, 12*time.Hour)
 	s.Require().NoError(err)
 	s.Require().Len(tokens, 1)
@@ -564,9 +391,10 @@ func (s *UserTestSuite) TestDeleteStaleAppTokens() {
 	ctx := context.Background()
 
 	testUser := &models.User{
-		Email:     "test@example.com",
-		Password:  "hashedpassword",
-		CreatedAt: time.Now(),
+		DirectoryID: "test-dir",
+		ObjectID:    "test-obj",
+		Email:       "test@example.com",
+		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(testUser).Error
@@ -574,29 +402,26 @@ func (s *UserTestSuite) TestDeleteStaleAppTokens() {
 
 	now := time.Now()
 
-	// Create tokens with different expiration times
 	token1 := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Expired Token",
 		Token:     "token1",
-		ExpiresAt: now.Add(-48 * time.Hour), // Already expired
+		ExpiresAt: now.Add(-48 * time.Hour),
 	}
 
 	token2 := &models.AppToken{
 		UserID:    testUser.ID,
 		Name:      "Valid Token",
 		Token:     "token2",
-		ExpiresAt: now.Add(24 * time.Hour), // Still valid
+		ExpiresAt: now.Add(24 * time.Hour),
 	}
 
 	err = s.DB.Create([]*models.AppToken{token1, token2}).Error
 	s.Require().NoError(err)
 
-	// Delete stale tokens
 	err = s.repo.DeleteStaleAppTokens(ctx)
 	s.Require().NoError(err)
 
-	// Verify only expired token was deleted
 	var count int64
 	err = s.DB.Model(&models.AppToken{}).Count(&count).Error
 	s.Require().NoError(err)
