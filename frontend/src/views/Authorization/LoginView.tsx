@@ -4,12 +4,10 @@ import {
   Container,
   Box,
   Typography,
-  Input,
   Button,
-  Divider,
 } from '@mui/joy'
-import React, { ChangeEvent } from 'react'
-import { doLogin } from '@/utils/auth'
+import React from 'react'
+import { loginWithPopup } from '@/utils/msal'
 import { setTitle } from '@/utils/dom'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
@@ -21,47 +19,21 @@ type LoginViewProps = WithNavigate & {
   pushStatus: (message: string, severity: StatusSeverity, timeout?: number) => void
 }
 
-interface LoginViewState {
-  email: string
-  password: string
-}
-
-class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
-  constructor(props: LoginViewProps) {
-    super(props)
-
-    this.state = {
-      email: '',
-      password: '',
-    }
-  }
-
+class LoginViewImpl extends React.Component<LoginViewProps> {
   componentDidMount(): void {
     setTitle('Login')
   }
 
-  private handleSubmit = async (e: React.MouseEvent<HTMLAnchorElement> | React.FormEvent) => {
-    e.preventDefault()
-
+  private handleLogin = async () => {
     try {
-      const { email, password } = this.state
-      await doLogin(email, password, this.props.navigate)
+      await loginWithPopup()
+      this.props.navigate(NavigationPaths.HomeView())
     } catch (error) {
       this.props.pushStatus((error as Error).message, 'error', 5000)
     }
   }
 
-  private onEmailChange = (e: ChangeEvent<HTMLInputElement>) => {
-    this.setState({ email: e.target.value })
-  }
-
-  private onPasswordChange = (e: ChangeEvent<HTMLInputElement>) => {
-    this.setState({ password: e.target.value })
-  }
-
   render(): React.ReactNode {
-    const { navigate } = this.props
-
     return (
       <Container
         component='main'
@@ -76,8 +48,6 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
           }}
         >
           <Sheet
-            component='form'
-            onSubmit={this.handleSubmit}
             sx={{
               mt: 1,
               width: '100%',
@@ -91,69 +61,20 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
           >
             <Logo />
 
-            <Typography>Sign in to your account to continue</Typography>
-            <Typography
-              alignSelf={'start'}
-              mt={4}
-            >
-              Email
-            </Typography>
-            <Input
-              required
-              fullWidth
-              autoComplete='email'
-              autoFocus
-              onChange={this.onEmailChange}
-            />
-            <Typography alignSelf={'start'}>Password:</Typography>
-            <Input
-              required
-              fullWidth
-              type='password'
-              onChange={this.onPasswordChange}
-            />
+            <Typography sx={{ mt: 2 }}>Sign in to your account to continue</Typography>
 
             <Button
-              type='submit'
               fullWidth
               size='lg'
               variant='solid'
               sx={{
                 width: '100%',
                 mt: 3,
-                border: 'moccasin',
                 borderRadius: '8px',
               }}
-              onClick={this.handleSubmit}
+              onClick={this.handleLogin}
             >
-              Sign In
-            </Button>
-            <Button
-              type='button'
-              fullWidth
-              size='lg'
-              variant='plain'
-              sx={{
-                width: '100%',
-                border: 'moccasin',
-                borderRadius: '8px',
-              }}
-              onClick={() => navigate(NavigationPaths.ResetPassword)}
-            >
-              Forgot password?
-            </Button>
-
-            <Divider> or </Divider>
-            <Button
-              onClick={() => navigate(NavigationPaths.Register)}
-              fullWidth
-              variant='soft'
-              size='lg'
-              sx={{
-                mt: 2,
-              }}
-            >
-              Create new account
+              Sign in
             </Button>
           </Sheet>
         </Box>

@@ -10,11 +10,6 @@ type UserResponse = {
   user: User
 }
 
-export const UpdatePassword = async (newPassword: string) =>
-  await Request<void>(`/users/change_password`, 'PUT', {
-    password: newPassword,
-  })
-
 export const GetUserProfile = async () =>
   await Request<UserResponse>(`/users/profile`)
 

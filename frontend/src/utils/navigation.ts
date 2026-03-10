@@ -9,8 +9,6 @@ export const getQuery = (key: string): string => {
 
 export const NavigationPaths = {
   Login: '/login',
-  Register: '/signup',
-  ResetPassword: '/forgot-password',
   MyTasks: '/my/tasks',
   TasksOverview: '/tasks',
   HomeView: () => (getHomeView() === 'my_tasks' ? '/my/tasks' : '/tasks'),
