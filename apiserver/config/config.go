@@ -13,6 +13,7 @@ type Config struct {
 	AppTokens     AppTokensConfig `mapstructure:"app_tokens" yaml:"app_tokens"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
+	EmailConfig   EmailConfig     `mapstructure:"email" yaml:"email"`
 }
 
 type DatabaseConfig struct {
@@ -59,6 +60,13 @@ type SchedulerConfig struct {
 	TokenExpirationCleanup  time.Duration `mapstructure:"token_expiration_cleanup" yaml:"token_expiration_cleanup" default:"24h"`
 }
 
+type EmailConfig struct {
+	Host     string `mapstructure:"host"`
+	Port     int    `mapstructure:"port"`
+	Email    string `mapstructure:"email"`
+	Password string `mapstructure:"password"`
+}
+
 func LoadConfig(configFile string) *Config {
 	viper.SetConfigType("yaml")
 
@@ -81,6 +89,10 @@ func LoadConfig(configFile string) *Config {
 	_ = viper.BindEnv("entra.client_id", "TW_ENTRA_CLIENT_ID")
 	_ = viper.BindEnv("entra.audience", "TW_ENTRA_AUDIENCE")
 	_ = viper.BindEnv("app_tokens.secret", "TW_APP_TOKEN_SECRET")
+	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
+	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
+	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
+	_ = viper.BindEnv("email.password", "TW_EMAIL_PASSWORD")
 	_ = viper.BindEnv("database.type", "TW_DATABASE_TYPE")
 	_ = viper.BindEnv("database.host", "TW_DATABASE_HOST")
 	_ = viper.BindEnv("database.port", "TW_DATABASE_PORT")

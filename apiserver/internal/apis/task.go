@@ -8,7 +8,6 @@ import (
 	"dkhalife.com/tasks/core/internal/models"
 	tService "dkhalife.com/tasks/core/internal/services/tasks"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -211,7 +210,7 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	c.JSON(status, response)
 }
 
-func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *jwt.GinJWTMiddleware) {
+func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddleware) {
 	tasksRoutes := router.Group("api/v1/tasks")
 	tasksRoutes.Use(auth.MiddlewareFunc())
 	{

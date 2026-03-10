@@ -48,6 +48,18 @@ const (
 	ApiTokenScopeDavWrite   ApiTokenScope = "dav:write"
 )
 
+func AllUserScopes() []ApiTokenScope {
+	return []ApiTokenScope{
+		ApiTokenScopeTaskRead,
+		ApiTokenScopeTaskWrite,
+		ApiTokenScopeLabelRead,
+		ApiTokenScopeLabelWrite,
+		ApiTokenScopeUserRead,
+		ApiTokenScopeUserWrite,
+		ApiTokenScopeTokenWrite,
+	}
+}
+
 type AppToken struct {
 	ID        int       `json:"id" gorm:"primary_key"`
 	UserID    int       `json:"user_id" gorm:"column:user_id;not null"`
