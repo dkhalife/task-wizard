@@ -40,7 +40,21 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 |-------------------------------|------------------------------------|-------------------------------------------------------------------|
 | Tasks Overview                | `Ctrl + F`                         | Focuses the search box.                                           |
 | Tasks Overview                | `+` (outside of inputs)            | Opens the “Add Task” screen.                                      |
-| Forgot Password, Task Edit, and Password/Date modals | `Enter` in text input fields, password fields, or date fields | Submits or saves the form or dialog.                              |
+| Task Edit and Date modals     | `Enter` in text or date fields     | Submits or saves the form or dialog.                              |
+
+## 🔐 Authentication
+
+Task Wizard uses [Microsoft Entra ID](https://www.microsoft.com/en-us/security/business/identity-access/microsoft-entra-id) (Azure AD) for user authentication. Users sign in via a popup flow using MSAL, and the backend verifies tokens using OIDC.
+
+To set up authentication:
+
+1. Register an application in your Azure AD tenant
+2. Configure `entra.tenant_id`, `entra.client_id`, and `entra.audience` in `config.yaml` (or via `TW_ENTRA_*` environment variables)
+3. Set `entra.enabled` to `true`
+
+For development without Azure AD, set `entra.enabled` to `false` to enable dev bypass mode (all requests are treated as authenticated).
+
+App tokens (used for CalDAV and API integrations) are independently signed with `app_tokens.secret` and remain functional regardless of Entra configuration.
 
 ## 🚀 Installation
 
@@ -82,7 +96,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 In the [config](./apiserver/config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `jwt.secret`, and database credentials using environment variables for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
+**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `app_tokens.secret`, Entra ID settings, and database credentials using environment variables for improved security and flexibility. The server will fail to start if `app_tokens.secret` is left as `"secret"`, so be sure to set `TW_APP_TOKENS_SECRET` or edit `config.yaml`.
 
 ### Database Configuration
 
@@ -123,6 +137,16 @@ You can also use environment variables for database configuration:
 - `TW_DATABASE_USERNAME` - Database username
 - `TW_DATABASE_PASSWORD` - Database password
 
+### Authentication Configuration
+
+Configure Entra ID authentication with environment variables or `config.yaml`:
+
+- `TW_ENTRA_ENABLED` - Enable Entra ID authentication (true/false)
+- `TW_ENTRA_TENANT_ID` - Azure AD tenant ID
+- `TW_ENTRA_CLIENT_ID` - Azure AD application (client) ID
+- `TW_ENTRA_AUDIENCE` - Expected token audience
+- `TW_APP_TOKENS_SECRET` - Secret for signing app tokens (must be changed from default)
+
 ### Configuration Reference
 
 The configuration files are yaml mappings with the following values:
@@ -138,9 +162,11 @@ The configuration files are yaml mappings with the following values:
 | `database.database`                      | (empty)                                             | Database name (MySQL only).                                                 |
 | `database.username`                      | (empty)                                             | Database username (MySQL only).                                             |
 | `database.password`                      | (empty)                                             | Database password (MySQL only).                                             |
-| `jwt.secret`                             | `"secret"`                                          | The secret key used for signing JWT tokens. **Make sure to change that or set `TW_JWT_SECRET`.**   |
-| `jwt.session_time`                       | `168h`                                              | The duration for which a JWT session is valid.                              |
-| `jwt.max_refresh`                        | `168h`                                              | The maximum duration for refreshing a JWT session.                          |
+| `entra.enabled`                          | `false`                                             | Enables Microsoft Entra ID (Azure AD) authentication.                       |
+| `entra.tenant_id`                        | (empty)                                             | The Azure AD tenant ID for authentication.                                  |
+| `entra.client_id`                        | (empty)                                             | The Azure AD application (client) ID.                                       |
+| `entra.audience`                         | (empty)                                             | The expected audience for Entra ID tokens.                                  |
+| `app_tokens.secret`                      | `"secret"`                                          | The secret key used for signing app tokens. **Must be changed from default or set `TW_APP_TOKENS_SECRET`.** |
 | `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
 | `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
 | `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |
@@ -148,13 +174,12 @@ The configuration files are yaml mappings with the following values:
 | `server.rate_period`                     | `60s`                                               | The period for rate limiting.                                               |
 | `server.rate_limit`                      | `300`                                               | The maximum number of requests allowed within the rate period.              |
 | `server.serve_frontend`                  | `true`                                              | Indicates if the frontend should be served by the backend server.           |
-| `server.registration`                    | `true`                                              | Indicates whether new accounts can be created on the backend server.        |
+| `server.registration`                    | `true`                                              | Indicates whether new accounts can be created when users first sign in.     |
 | `server.log_level`                       | `debug` when `server.debug` = `true`, else `warn`   | The min level to log (debug, info, warn, error, dpanic, panic, fatal).      |
 | `server.allowed_origins`                 | `(empty)`                                           | Origins allowed to issue cross-domain requests.                             |
 | `server.allow_credentials`               | `false`                                             | Whether cross-domain requests can include credentials.                      |
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
-| `scheduler_jobs.password_reset_validity` | `24h`                                               | How long password reset tokens are valid for.                               |
 | `scheduler_jobs.notification_cleanup`    | `10m`                                               | The interval for cleaning up sent notifications.                            |
 | `scheduler_jobs.token_expiration_cleanup`| `24h`                                               | The interval for cleaning up expired tokens.                                |
 |`scheduler_jobs.token_expiration_reminder`| `72h`                                               | How long before an app token expiration to send a reminder for it.          |
