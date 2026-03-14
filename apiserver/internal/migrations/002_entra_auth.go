@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -21,43 +22,47 @@ func (m *EntraAuthMigration) Name() string {
 }
 
 func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
-	type columnInfo struct {
-		Name string `gorm:"column:name"`
+	dbCtx := db.WithContext(ctx)
+	migrator := dbCtx.Migrator()
+	dialect := db.Dialector.Name()
+
+	var colType string
+	switch dialect {
+	case "sqlite":
+		colType = "TEXT"
+	case "mysql":
+		colType = "VARCHAR(255)"
+	default:
+		return fmt.Errorf("unsupported dialect: %s", dialect)
 	}
 
-	var columns []columnInfo
-	if err := db.WithContext(ctx).Raw("PRAGMA table_info(users)").Scan(&columns).Error; err != nil {
-		return err
-	}
-
-	hasDirectoryID := false
-	hasObjectID := false
-	for _, col := range columns {
-		if col.Name == "directory_id" {
-			hasDirectoryID = true
-		}
-		if col.Name == "object_id" {
-			hasObjectID = true
-		}
-	}
-
-	if !hasDirectoryID {
-		if err := db.WithContext(ctx).Exec("ALTER TABLE users ADD COLUMN directory_id TEXT NOT NULL DEFAULT ''").Error; err != nil {
+	if !migrator.HasColumn("users", "directory_id") {
+		if err := dbCtx.Exec(fmt.Sprintf("ALTER TABLE users ADD COLUMN directory_id %s NOT NULL DEFAULT ''", colType)).Error; err != nil {
 			return err
 		}
 	}
 
-	if !hasObjectID {
-		if err := db.WithContext(ctx).Exec("ALTER TABLE users ADD COLUMN object_id TEXT NOT NULL DEFAULT ''").Error; err != nil {
+	if !migrator.HasColumn("users", "object_id") {
+		if err := dbCtx.Exec(fmt.Sprintf("ALTER TABLE users ADD COLUMN object_id %s NOT NULL DEFAULT ''", colType)).Error; err != nil {
 			return err
 		}
 	}
 
-	if err := db.WithContext(ctx).Exec("CREATE UNIQUE INDEX IF NOT EXISTS idx_users_entra_id ON users(directory_id, object_id) WHERE directory_id != '' AND object_id != ''").Error; err != nil {
-		return err
+	if !migrator.HasIndex("users", "idx_users_entra_id") {
+		var indexSQL string
+		switch dialect {
+		case "sqlite":
+			indexSQL = "CREATE UNIQUE INDEX idx_users_entra_id ON users(directory_id, object_id) WHERE directory_id != '' AND object_id != ''"
+		case "mysql":
+			indexSQL = "CREATE UNIQUE INDEX idx_users_entra_id ON users ((IF(directory_id = '', NULL, directory_id)), (IF(object_id = '', NULL, object_id)))"
+		}
+
+		if err := dbCtx.Exec(indexSQL).Error; err != nil {
+			return err
+		}
 	}
 
-	if err := db.WithContext(ctx).Exec("DROP TABLE IF EXISTS user_password_resets").Error; err != nil {
+	if err := dbCtx.Exec("DROP TABLE IF EXISTS user_password_resets").Error; err != nil {
 		return err
 	}
 
@@ -65,11 +70,16 @@ func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
 }
 
 func (m *EntraAuthMigration) Down(ctx context.Context, db *gorm.DB) error {
-	if err := db.WithContext(ctx).Exec("DROP INDEX IF EXISTS idx_users_entra_id").Error; err != nil {
-		return err
+	dbCtx := db.WithContext(ctx)
+	migrator := dbCtx.Migrator()
+
+	if migrator.HasIndex("users", "idx_users_entra_id") {
+		if err := migrator.DropIndex("users", "idx_users_entra_id"); err != nil {
+			return err
+		}
 	}
 
-	if err := db.WithContext(ctx).Exec(`CREATE TABLE IF NOT EXISTS user_password_resets (
+	if err := dbCtx.Exec(`CREATE TABLE IF NOT EXISTS user_password_resets (
 		user_id INTEGER NOT NULL PRIMARY KEY,
 		email TEXT NOT NULL,
 		token TEXT NOT NULL,
