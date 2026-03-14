@@ -15,7 +15,7 @@ export const initializeMsal = async () => {
   authConfig = await GetAuthConfig()
   if (!authConfig.enabled) return
 
-  const pca = await createStandardPublicClientApplication({
+  pcaPromise = createStandardPublicClientApplication({
     auth: {
       clientId: authConfig.client_id,
       authority: `https://login.microsoftonline.com/${authConfig.tenant_id}`,
@@ -26,12 +26,16 @@ export const initializeMsal = async () => {
     },
   })
 
-  pcaPromise = Promise.resolve(pca)
+  const pca = await pcaPromise
 
-  const response = await pca.handleRedirectPromise()
-  if (response?.account) {
-    pca.setActiveAccount(response.account)
-    cachedAuthResult = response
+  try {
+    const response = await pca.handleRedirectPromise()
+    if (response?.account) {
+      pca.setActiveAccount(response.account)
+      cachedAuthResult = response
+    }
+  } catch {
+    // Allow the app to continue in unauthenticated state
   }
 }
 
