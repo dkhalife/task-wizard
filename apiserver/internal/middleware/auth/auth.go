@@ -36,7 +36,11 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddl
 		return m, nil
 	}
 
-	issuer := "https://sts.windows.net/" + cfg.Entra.TenantID + "/"
+	issuer := cfg.Entra.Issuer
+	if issuer == "" {
+		issuer = "https://login.microsoftonline.com/" + cfg.Entra.TenantID + "/v2.0"
+	}
+
 	provider, err := oidc.NewProvider(context.Background(), issuer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OIDC provider: %s", err.Error())

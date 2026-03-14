@@ -32,6 +32,7 @@ type EntraConfig struct {
 	TenantID string `mapstructure:"tenant_id" yaml:"tenant_id"`
 	ClientID string `mapstructure:"client_id" yaml:"client_id"`
 	Audience string `mapstructure:"audience" yaml:"audience"`
+	Issuer   string `mapstructure:"issuer" yaml:"issuer"`
 }
 
 type JwtConfig struct {
@@ -88,6 +89,7 @@ func LoadConfig(configFile string) *Config {
 	_ = viper.BindEnv("entra.tenant_id", "TW_ENTRA_TENANT_ID")
 	_ = viper.BindEnv("entra.client_id", "TW_ENTRA_CLIENT_ID")
 	_ = viper.BindEnv("entra.audience", "TW_ENTRA_AUDIENCE")
+	_ = viper.BindEnv("entra.issuer", "TW_ENTRA_ISSUER")
 	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
 	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
 	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
