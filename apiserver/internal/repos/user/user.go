@@ -2,6 +2,7 @@ package repos
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -84,6 +85,10 @@ func (r *UserRepository) EnsureUser(c context.Context, directoryID string, objec
 		return user, nil
 	}
 
+	if !errors.Is(err, gorm.ErrRecordNotFound) {
+		return nil, fmt.Errorf("find user by Entra ID: %s", err.Error())
+	}
+
 	newUser := &models.User{
 		DirectoryID: directoryID,
 		ObjectID:    objectID,
@@ -92,7 +97,7 @@ func (r *UserRepository) EnsureUser(c context.Context, directoryID string, objec
 	}
 
 	if err := r.CreateUser(c, newUser); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create user: %s", err.Error())
 	}
 
 	return newUser, nil
