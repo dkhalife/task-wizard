@@ -126,7 +126,7 @@ func (r *UserRepository) CreateAppToken(c context.Context, userID int, name stri
 			"scopes":         scopes,
 		})
 
-		signedToken, err := jwtToken.SignedString([]byte(r.cfg.AppTokens.Secret))
+		signedToken, err := jwtToken.SignedString([]byte(r.cfg.Jwt.Secret))
 		if err != nil {
 			return fmt.Errorf("failed to sign token: %s", err.Error())
 		}

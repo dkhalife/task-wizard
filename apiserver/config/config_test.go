@@ -32,7 +32,7 @@ entra:
   tenant_id: test-tenant
   client_id: test-client
   audience: api://test-client
-app_tokens:
+jwt:
   secret: test-app-secret
 scheduler_jobs:
   due_frequency: 5m
@@ -60,7 +60,7 @@ scheduler_jobs:
 	assert.Equal(t, "test-client", cfg.Entra.ClientID)
 	assert.Equal(t, "api://test-client", cfg.Entra.Audience)
 
-	assert.Equal(t, "test-app-secret", cfg.AppTokens.Secret)
+	assert.Equal(t, "test-app-secret", cfg.Jwt.Secret)
 
 	assert.Equal(t, 5*time.Minute, cfg.SchedulerJobs.DueFrequency)
 	assert.Equal(t, 24*time.Hour, cfg.SchedulerJobs.OverdueFrequency)
@@ -97,7 +97,7 @@ func TestLoadConfig_PanicOnDefaultSecret(t *testing.T) {
 	defer os.Remove("./config/config.yaml")
 	defer f.Close()
 
-	_, err = f.WriteString("server:\n  port: 1234\napp_tokens:\n  secret: secret\n")
+	_, err = f.WriteString("server:\n  port: 1234\njwt:\n  secret: secret\n")
 	assert.NoError(t, err)
 
 	viper.Reset()
@@ -118,7 +118,7 @@ func TestLoadConfig_EntraEnvOverride(t *testing.T) {
   tenant_id: file-tenant
   client_id: file-client
   audience: api://file-client
-app_tokens:
+jwt:
   secret: file-secret
 server:
   port: 1234
@@ -129,7 +129,7 @@ server:
 	os.Setenv("TW_ENTRA_TENANT_ID", "env-tenant")
 	os.Setenv("TW_ENTRA_CLIENT_ID", "env-client")
 	os.Setenv("TW_ENTRA_AUDIENCE", "api://env-client")
-	os.Setenv("TW_APP_TOKEN_SECRET", "env-secret")
+	os.Setenv("TW_JWT_SECRET", "env-secret")
 
 	viper.Reset()
 	cfg := LoadConfig("./config/config.yaml")
@@ -138,13 +138,13 @@ server:
 	assert.Equal(t, "env-tenant", cfg.Entra.TenantID)
 	assert.Equal(t, "env-client", cfg.Entra.ClientID)
 	assert.Equal(t, "api://env-client", cfg.Entra.Audience)
-	assert.Equal(t, "env-secret", cfg.AppTokens.Secret)
+	assert.Equal(t, "env-secret", cfg.Jwt.Secret)
 
 	os.Unsetenv("TW_ENTRA_ENABLED")
 	os.Unsetenv("TW_ENTRA_TENANT_ID")
 	os.Unsetenv("TW_ENTRA_CLIENT_ID")
 	os.Unsetenv("TW_ENTRA_AUDIENCE")
-	os.Unsetenv("TW_APP_TOKEN_SECRET")
+	os.Unsetenv("TW_JWT_SECRET")
 }
 
 func TestLoadConfig_EnvFile(t *testing.T) {
@@ -153,7 +153,7 @@ func TestLoadConfig_EnvFile(t *testing.T) {
 	defer os.Remove("envconfig.yaml")
 	defer f.Close()
 
-	_, err = f.WriteString("server:\n  port: 4444\napp_tokens:\n  secret: test-secret\n")
+	_, err = f.WriteString("server:\n  port: 4444\njwt:\n  secret: test-secret\n")
 	assert.NoError(t, err)
 
 	os.Setenv("TW_CONFIG_FILE", "envconfig.yaml")
@@ -168,14 +168,14 @@ func TestLoadConfig_CLIOverridesEnv(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove("env.yaml")
 	defer f1.Close()
-	_, err = f1.WriteString("server:\n  port: 3333\napp_tokens:\n  secret: test-secret\n")
+	_, err = f1.WriteString("server:\n  port: 3333\njwt:\n  secret: test-secret\n")
 	assert.NoError(t, err)
 
 	f2, err := os.Create("cli.yaml")
 	assert.NoError(t, err)
 	defer os.Remove("cli.yaml")
 	defer f2.Close()
-	_, err = f2.WriteString("server:\n  port: 2222\napp_tokens:\n  secret: test-secret\n")
+	_, err = f2.WriteString("server:\n  port: 2222\njwt:\n  secret: test-secret\n")
 	assert.NoError(t, err)
 
 	os.Setenv("TW_CONFIG_FILE", "env.yaml")
@@ -197,7 +197,7 @@ func TestLoadConfig_DatabaseEnvOverride(t *testing.T) {
   path: /config/task-wizard.db
 server:
   port: 1234
-app_tokens:
+jwt:
   secret: test-secret
 `)
 	assert.NoError(t, err)
@@ -244,7 +244,7 @@ func TestLoadConfig_MySQLConfig(t *testing.T) {
   migration: true
 server:
   port: 1234
-app_tokens:
+jwt:
   secret: test-secret
 `)
 	assert.NoError(t, err)

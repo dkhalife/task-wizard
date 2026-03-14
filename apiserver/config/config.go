@@ -10,7 +10,7 @@ import (
 type Config struct {
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
 	Entra         EntraConfig     `mapstructure:"entra" yaml:"entra"`
-	AppTokens     AppTokensConfig `mapstructure:"app_tokens" yaml:"app_tokens"`
+	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
 	EmailConfig   EmailConfig     `mapstructure:"email" yaml:"email"`
@@ -34,7 +34,7 @@ type EntraConfig struct {
 	Audience string `mapstructure:"audience" yaml:"audience"`
 }
 
-type AppTokensConfig struct {
+type JwtConfig struct {
 	Secret string `mapstructure:"secret" yaml:"secret"`
 }
 
@@ -88,7 +88,7 @@ func LoadConfig(configFile string) *Config {
 	_ = viper.BindEnv("entra.tenant_id", "TW_ENTRA_TENANT_ID")
 	_ = viper.BindEnv("entra.client_id", "TW_ENTRA_CLIENT_ID")
 	_ = viper.BindEnv("entra.audience", "TW_ENTRA_AUDIENCE")
-	_ = viper.BindEnv("app_tokens.secret", "TW_APP_TOKEN_SECRET")
+	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
 	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
 	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
 	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
@@ -111,8 +111,8 @@ func LoadConfig(configFile string) *Config {
 		panic(err)
 	}
 
-	if config.AppTokens.Secret == "secret" {
-		panic("App token secret must be changed from the default 'secret'. Set TW_APP_TOKEN_SECRET or update config.yaml")
+	if config.Jwt.Secret == "secret" {
+		panic("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
 	}
 
 	return &config

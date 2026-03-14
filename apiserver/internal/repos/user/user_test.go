@@ -28,7 +28,7 @@ func (s *UserTestSuite) SetupTest() {
 		Server: config.ServerConfig{
 			Registration: true,
 		},
-		AppTokens: config.AppTokensConfig{
+		Jwt: config.JwtConfig{
 			Secret: "test-secret",
 		},
 	}

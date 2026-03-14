@@ -45,8 +45,8 @@ func (s *WSServerTestSuite) SetupTest() {
 	gin.SetMode(gin.TestMode)
 
 	cfg := &config.Config{
-		Entra: config.EntraConfig{Enabled: false},
-		AppTokens: config.AppTokensConfig{Secret: "test-secret"},
+		Entra:  config.EntraConfig{Enabled: false},
+		Jwt:    config.JwtConfig{Secret: "test-secret"},
 		Server: config.ServerConfig{Registration: true},
 	}
 

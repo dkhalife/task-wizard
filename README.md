@@ -54,7 +54,7 @@ To set up authentication:
 
 For development without Azure AD, set `entra.enabled` to `false` to enable dev bypass mode (all requests are treated as authenticated).
 
-App tokens (used for CalDAV and API integrations) are independently signed with `app_tokens.secret` and remain functional regardless of Entra configuration.
+App tokens (used for CalDAV and API integrations) are independently signed with `jwt.secret` and remain functional regardless of Entra configuration.
 
 ## 🚀 Installation
 
@@ -96,7 +96,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 In the [config](./apiserver/config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `app_tokens.secret`, Entra ID settings, and database credentials using environment variables for improved security and flexibility. The server will fail to start if `app_tokens.secret` is left as `"secret"`, so be sure to set `TW_APP_TOKENS_SECRET` or edit `config.yaml`.
+**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `jwt.secret`, Entra ID settings, and database credentials using environment variables for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
 
 ### Database Configuration
 
@@ -145,7 +145,7 @@ Configure Entra ID authentication with environment variables or `config.yaml`:
 - `TW_ENTRA_TENANT_ID` - Azure AD tenant ID
 - `TW_ENTRA_CLIENT_ID` - Azure AD application (client) ID
 - `TW_ENTRA_AUDIENCE` - Expected token audience
-- `TW_APP_TOKENS_SECRET` - Secret for signing app tokens (must be changed from default)
+- `TW_JWT_SECRET` - Secret for signing app tokens (must be changed from default)
 
 ### Configuration Reference
 
@@ -166,7 +166,7 @@ The configuration files are yaml mappings with the following values:
 | `entra.tenant_id`                        | (empty)                                             | The Azure AD tenant ID for authentication.                                  |
 | `entra.client_id`                        | (empty)                                             | The Azure AD application (client) ID.                                       |
 | `entra.audience`                         | (empty)                                             | The expected audience for Entra ID tokens.                                  |
-| `app_tokens.secret`                      | `"secret"`                                          | The secret key used for signing app tokens. **Must be changed from default or set `TW_APP_TOKENS_SECRET`.** |
+| `jwt.secret`                             | `"secret"`                                          | The secret key used for signing app tokens. **Must be changed from default or set `TW_JWT_SECRET`.** |
 | `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
 | `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
 | `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |

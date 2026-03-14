@@ -7,7 +7,7 @@ entra:
   tenant_id: ""
   client_id: ""
   audience: ""
-app_tokens:
+jwt:
   secret: "secret"
 server:
   host_name: example.com

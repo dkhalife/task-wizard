@@ -29,7 +29,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddl
 	m := &AuthMiddleware{
 		enabled:  cfg.Entra.Enabled,
 		userRepo: userRepo,
-		secret:   cfg.AppTokens.Secret,
+		secret:   cfg.Jwt.Secret,
 	}
 
 	if !cfg.Entra.Enabled {
