@@ -7,9 +7,9 @@ import {
   Button,
 } from '@mui/joy'
 import React from 'react'
-import { loginWithPopup } from '@/utils/msal'
+import { loginWithRedirect } from '@/utils/msal'
 import { setTitle } from '@/utils/dom'
-import { NavigationPaths, WithNavigate } from '@/utils/navigation'
+import { WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
 import { AppDispatch } from '@/store/store'
 import { pushStatus } from '@/store/statusSlice'
@@ -26,8 +26,7 @@ class LoginViewImpl extends React.Component<LoginViewProps> {
 
   private handleLogin = async () => {
     try {
-      await loginWithPopup()
-      this.props.navigate(NavigationPaths.HomeView())
+      await loginWithRedirect()
     } catch (error) {
       this.props.pushStatus((error as Error).message, 'error', 5000)
     }

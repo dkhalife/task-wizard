@@ -31,7 +31,7 @@ class AppImpl extends React.Component<AppProps> {
   private initializingAuthenticated = false
 
   private onVisibilityChange = () => {
-    if (!document.hidden) {
+    if (!document.hidden && this.initializedAuthenticated) {
       this.refreshStaleData()
     }
   }
