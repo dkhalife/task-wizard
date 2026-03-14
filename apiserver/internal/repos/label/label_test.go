@@ -27,7 +27,6 @@ func (s *LabelTestSuite) SetupTest() {
 	s.testUser = &models.User{
 		ID:        1,
 		Email:     "test@example.com",
-		Password:  "hashedpassword",
 		CreatedAt: time.Now(),
 	}
 
@@ -83,7 +82,7 @@ func (s *LabelTestSuite) TestAreLabelsAssignableByUser() {
 	err := s.DB.Create(&testLabels).Error
 	s.Require().NoError(err)
 
-	anotherUser := &models.User{Email: "another@example.com", Password: "hashedpassword"}
+	anotherUser := &models.User{Email: "another@example.com"}
 	err = s.DB.Create(anotherUser).Error
 	s.Require().NoError(err)
 
@@ -149,7 +148,7 @@ func (s *LabelTestSuite) TestDeleteLabel() {
 	s.Require().NoError(err)
 	s.Equal(int64(0), count)
 
-	anotherUser := &models.User{Email: "another@example.com", Password: "hashedpassword"}
+	anotherUser := &models.User{Email: "another@example.com"}
 	err = s.DB.Create(anotherUser).Error
 	s.Require().NoError(err)
 

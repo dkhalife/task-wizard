@@ -6,6 +6,7 @@ import {
 } from '@/models/websocket'
 import { store } from '@/store/store'
 import { wsConnecting, wsConnected, wsDisconnected } from '@/store/wsSlice'
+import { acquireAccessToken, isAuthEnabled } from '@/utils/msal'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -29,7 +30,7 @@ export class WebSocketManager {
   private reconnectTimer?: ReturnType<typeof setTimeout>
 
   private constructor() {
-    this.connect()
+    // Don't auto-connect. wait for explicit connect() call after auth init
   }
 
   static getInstance(): WebSocketManager {
@@ -39,10 +40,19 @@ export class WebSocketManager {
     return WebSocketManager.instance
   }
 
-  connect() {
-    const token = localStorage.getItem('ca_token')
-    if (!token) {
-      this.dispatch(wsDisconnected("User is not signed in"))
+  async connect() {
+    let token = ''
+    if (isAuthEnabled()) {
+      try {
+        token = await acquireAccessToken()
+      } catch {
+        this.dispatch(wsDisconnected('Failed to acquire token'))
+        return
+      }
+    }
+
+    if (!token && isAuthEnabled()) {
+      this.dispatch(wsDisconnected('User is not signed in'))
       return
     }
 
@@ -62,7 +72,7 @@ export class WebSocketManager {
     const url = `${baseUrl}/ws`
 
     try {
-      this.socket = new WebSocket(url, [wsProtocol, token])
+      this.socket = new WebSocket(url, [wsProtocol, token || 'no-auth'])
     } catch (err: any) {
       this.dispatch(wsDisconnected(err.message || 'Failed to connect'))
       this.scheduleReconnect()
@@ -295,7 +305,7 @@ export class WebSocketManager {
     if (this.reconnectTimer) {
       clearTimeout(this.reconnectTimer)
     }
-    this.reconnectTimer = setTimeout(() => this.connect(), delay)
+    this.reconnectTimer = setTimeout(() => { void this.connect() }, delay)
   }
 }
 

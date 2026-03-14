@@ -20,11 +20,11 @@ import React from 'react'
 import { ThemeToggleButton } from '../Settings/ThemeToggleButton'
 import { SyncStatus } from './SyncStatus'
 import { NavBarLink } from './NavBarLink'
-import { NavigationPaths, WithNavigate } from '@/utils/navigation'
+import { NavigationPaths } from '@/utils/navigation'
 import { isMobile } from '@/utils/dom'
 import { Logo } from '@/Logo'
 
-type NavBarProps = WithNavigate & {
+type NavBarProps = {
   pathname: string
 }
 
@@ -51,14 +51,13 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
     this.setState({ drawerOpen: false })
   }
 
-  private logout = () => {
-    localStorage.removeItem('ca_token')
-    localStorage.removeItem('ca_expiration')
-    this.props.navigate(NavigationPaths.Login)
+  private logout = async () => {
+    const { logout } = await import('@/utils/msal')
+    await logout()
   }
 
   render(): React.ReactNode {
-    if (['/signup', '/login', '/forgot-password'].includes(this.props.pathname)) {
+    if (['/login'].includes(this.props.pathname)) {
       return null
     }
 

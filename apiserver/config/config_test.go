@@ -27,20 +27,17 @@ database:
   type: sqlite
   path: test.db
   migration: true
+entra:
+  enabled: true
+  tenant_id: test-tenant
+  client_id: test-client
+  audience: api://test-client
 jwt:
-  secret: testsecret
-  session_time: 1h
-  max_refresh: 1h
+  secret: test-app-secret
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h
-  password_reset_validity: 24h
   token_expiration_reminder: 72h
-email:
-  host: smtp.example.com
-  port: 587
-  email: test@example.com
-  password: testpass
 `)
 
 	assert.NoError(t, err)
@@ -58,67 +55,95 @@ email:
 	assert.Equal(t, "test.db", cfg.Database.FilePath)
 	assert.Equal(t, true, cfg.Database.Migration)
 
-	assert.Equal(t, "testsecret", cfg.Jwt.Secret)
-	assert.Equal(t, 1*time.Hour, cfg.Jwt.SessionTime)
-	assert.Equal(t, 1*time.Hour, cfg.Jwt.MaxRefresh)
+	assert.Equal(t, true, cfg.Entra.Enabled)
+	assert.Equal(t, "test-tenant", cfg.Entra.TenantID)
+	assert.Equal(t, "test-client", cfg.Entra.ClientID)
+	assert.Equal(t, "api://test-client", cfg.Entra.Audience)
+
+	assert.Equal(t, "test-app-secret", cfg.Jwt.Secret)
 
 	assert.Equal(t, 5*time.Minute, cfg.SchedulerJobs.DueFrequency)
 	assert.Equal(t, 24*time.Hour, cfg.SchedulerJobs.OverdueFrequency)
-	assert.Equal(t, 24*time.Hour, cfg.SchedulerJobs.PasswordResetValidity)
 	assert.Equal(t, 72*time.Hour, cfg.SchedulerJobs.TokenExpirationReminder)
-
-	assert.Equal(t, "smtp.example.com", cfg.EmailConfig.Host)
-	assert.Equal(t, 587, cfg.EmailConfig.Port)
-	assert.Equal(t, "test@example.com", cfg.EmailConfig.Email)
-	assert.Equal(t, "testpass", cfg.EmailConfig.Password)
 }
 
 func TestLoadConfig_PanicOnMissingFile(t *testing.T) {
+	// Temporarily rename the real config.yaml so viper can't find any config
+	renamed := false
+	if _, err := os.Stat("./config.yaml"); err == nil {
+		err = os.Rename("./config.yaml", "./config.yaml.bak")
+		assert.NoError(t, err)
+		renamed = true
+	}
+
 	_ = os.Remove("./config/config.yaml")
 	viper.Reset()
+
+	defer func() {
+		if renamed {
+			_ = os.Rename("./config.yaml.bak", "./config.yaml")
+		}
+	}()
 
 	assert.Panics(t, func() {
 		_ = LoadConfig("")
 	})
 }
 
-func TestLoadConfig_EmailEnvOverride(t *testing.T) {
+func TestLoadConfig_PanicOnDefaultSecret(t *testing.T) {
 	_ = os.MkdirAll("./config", 0755)
 	f, err := os.Create("./config/config.yaml")
 	assert.NoError(t, err)
 	defer os.Remove("./config/config.yaml")
 	defer f.Close()
 
-	_, err = f.WriteString(`email:
-  host: smtp.example.com
-  port: 25
-  email: test@example.com
-  password: testpass
+	_, err = f.WriteString("server:\n  port: 1234\njwt:\n  secret: secret\n")
+	assert.NoError(t, err)
+
+	viper.Reset()
+	assert.Panics(t, func() {
+		_ = LoadConfig("./config/config.yaml")
+	})
+}
+
+func TestLoadConfig_EntraEnvOverride(t *testing.T) {
+	_ = os.MkdirAll("./config", 0755)
+	f, err := os.Create("./config/config.yaml")
+	assert.NoError(t, err)
+	defer os.Remove("./config/config.yaml")
+	defer f.Close()
+
+	_, err = f.WriteString(`entra:
+  enabled: false
+  tenant_id: file-tenant
+  client_id: file-client
+  audience: api://file-client
+jwt:
+  secret: file-secret
 server:
   port: 1234
-jwt:
-  secret: testsecret
 `)
 	assert.NoError(t, err)
 
-	os.Setenv("TW_EMAIL_HOST", "smtp.override.com")
-	os.Setenv("TW_EMAIL_PORT", "2525")
-	os.Setenv("TW_EMAIL_SENDER", "override@example.com")
-	os.Setenv("TW_EMAIL_PASSWORD", "overridepass")
-	os.Setenv("TW_JWT_SECRET", "s3cret")
+	os.Setenv("TW_ENTRA_ENABLED", "true")
+	os.Setenv("TW_ENTRA_TENANT_ID", "env-tenant")
+	os.Setenv("TW_ENTRA_CLIENT_ID", "env-client")
+	os.Setenv("TW_ENTRA_AUDIENCE", "api://env-client")
+	os.Setenv("TW_JWT_SECRET", "env-secret")
 
 	viper.Reset()
 	cfg := LoadConfig("./config/config.yaml")
 
-	assert.Equal(t, "smtp.override.com", cfg.EmailConfig.Host)
-	assert.Equal(t, 2525, cfg.EmailConfig.Port)
-	assert.Equal(t, "override@example.com", cfg.EmailConfig.Email)
-	assert.Equal(t, "overridepass", cfg.EmailConfig.Password)
+	assert.Equal(t, true, cfg.Entra.Enabled)
+	assert.Equal(t, "env-tenant", cfg.Entra.TenantID)
+	assert.Equal(t, "env-client", cfg.Entra.ClientID)
+	assert.Equal(t, "api://env-client", cfg.Entra.Audience)
+	assert.Equal(t, "env-secret", cfg.Jwt.Secret)
 
-	os.Unsetenv("TW_EMAIL_HOST")
-	os.Unsetenv("TW_EMAIL_PORT")
-	os.Unsetenv("TW_EMAIL_SENDER")
-	os.Unsetenv("TW_EMAIL_PASSWORD")
+	os.Unsetenv("TW_ENTRA_ENABLED")
+	os.Unsetenv("TW_ENTRA_TENANT_ID")
+	os.Unsetenv("TW_ENTRA_CLIENT_ID")
+	os.Unsetenv("TW_ENTRA_AUDIENCE")
 	os.Unsetenv("TW_JWT_SECRET")
 }
 
@@ -128,7 +153,7 @@ func TestLoadConfig_EnvFile(t *testing.T) {
 	defer os.Remove("envconfig.yaml")
 	defer f.Close()
 
-	_, err = f.WriteString("server:\n  port: 4444\n")
+	_, err = f.WriteString("server:\n  port: 4444\njwt:\n  secret: test-secret\n")
 	assert.NoError(t, err)
 
 	os.Setenv("TW_CONFIG_FILE", "envconfig.yaml")
@@ -143,14 +168,14 @@ func TestLoadConfig_CLIOverridesEnv(t *testing.T) {
 	assert.NoError(t, err)
 	defer os.Remove("env.yaml")
 	defer f1.Close()
-	_, err = f1.WriteString("server:\n  port: 3333\n")
+	_, err = f1.WriteString("server:\n  port: 3333\njwt:\n  secret: test-secret\n")
 	assert.NoError(t, err)
 
 	f2, err := os.Create("cli.yaml")
 	assert.NoError(t, err)
 	defer os.Remove("cli.yaml")
 	defer f2.Close()
-	_, err = f2.WriteString("server:\n  port: 2222\n")
+	_, err = f2.WriteString("server:\n  port: 2222\njwt:\n  secret: test-secret\n")
 	assert.NoError(t, err)
 
 	os.Setenv("TW_CONFIG_FILE", "env.yaml")
@@ -173,7 +198,7 @@ func TestLoadConfig_DatabaseEnvOverride(t *testing.T) {
 server:
   port: 1234
 jwt:
-  secret: testsecret
+  secret: test-secret
 `)
 	assert.NoError(t, err)
 
@@ -220,7 +245,7 @@ func TestLoadConfig_MySQLConfig(t *testing.T) {
 server:
   port: 1234
 jwt:
-  secret: testsecret
+  secret: test-secret
 `)
 	assert.NoError(t, err)
 

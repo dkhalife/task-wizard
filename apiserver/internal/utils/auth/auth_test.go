@@ -1,41 +1,36 @@
 package auth
 
 import (
+	"net/http/httptest"
 	"testing"
 
-	"github.com/stretchr/testify/suite"
+	"dkhalife.com/tasks/core/internal/models"
+	"github.com/gin-gonic/gin"
+	"github.com/stretchr/testify/assert"
 )
 
-type AuthTestSuite struct {
-	suite.Suite
+func TestCurrentIdentity_Present(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+
+	expected := &models.SignedInIdentity{
+		UserID:  42,
+		TokenID: 0,
+		Type:    models.IdentityTypeUser,
+		Scopes:  models.AllUserScopes(),
+	}
+	c.Set(IdentityKey, expected)
+
+	result := CurrentIdentity(c)
+	assert.NotNil(t, result)
+	assert.Equal(t, 42, result.UserID)
+	assert.Equal(t, models.IdentityTypeUser, result.Type)
 }
 
-func TestAuthTestSuite(t *testing.T) {
-	suite.Run(t, new(AuthTestSuite))
-}
+func TestCurrentIdentity_Missing(t *testing.T) {
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
 
-func (s *AuthTestSuite) TestEncodePasswordAndMatches() {
-	password := "securepassword"
-	hashedPassword, err := EncodePassword(password)
-	s.Require().NoError(err)
-	s.NoError(Matches(hashedPassword, password))
-	s.Error(Matches(hashedPassword, "wrongpassword"))
-}
-
-func (s *AuthTestSuite) TestEncodeAndDecodeEmailAndCode() {
-	email := "user@example.com"
-	code := "reset-code"
-
-	encoded := EncodeEmailAndCode(email, code)
-	decodedEmail, decodedCode, err := DecodeEmailAndCode(encoded)
-
-	s.Require().NoError(err)
-	s.Equal(email, decodedEmail)
-	s.Equal(code, decodedCode)
-}
-
-func (s *AuthTestSuite) TestGenerateEmailResetToken() {
-	token, err := GenerateEmailResetToken(nil)
-	s.NoError(err)
-	s.NotEmpty(token)
+	result := CurrentIdentity(c)
+	assert.Nil(t, result)
 }

@@ -2,23 +2,19 @@ package ws
 
 import (
 	"context"
-	"errors"
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/utils/auth"
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
 )
 
@@ -38,7 +34,7 @@ type WSServer struct {
 	handlers        map[string]messageHandler
 	pingPeriod      time.Duration
 	pongWait        time.Duration
-	cfg             *config.Config
+	authMiddleware  *authMW.AuthMiddleware
 	tRepo           *tRepo.TaskRepository
 	lRepo           *lRepo.LabelRepository
 	uRepo           uRepo.IUserRepo
@@ -47,7 +43,7 @@ type WSServer struct {
 type messageHandler func(ctx context.Context, userID int, msg WSMessage) *WSResponse
 
 // NewWSServer creates a new websocket server instance.
-func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
+func NewWSServer(authMiddleware *authMW.AuthMiddleware, tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
 	return &WSServer{
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
@@ -59,7 +55,7 @@ func NewWSServer(cfg *config.Config, tRepo *tRepo.TaskRepository, lRepo *lRepo.L
 		handlers:        make(map[string]messageHandler),
 		pongWait:        60 * time.Second,
 		pingPeriod:      54 * time.Second,
-		cfg:             cfg,
+		authMiddleware:  authMiddleware,
 		tRepo:           tRepo,
 		lRepo:           lRepo,
 		uRepo:           uRepo,
@@ -97,82 +93,17 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 		return
 	}
 
-	token, err := jwt.Parse(bearerToken, func(t *jwt.Token) (interface{}, error) {
-		if jwt.GetSigningMethod("HS256") != t.Method {
-			return nil, errors.New("invalid signing algorithm")
-		}
-
-		return []byte(s.cfg.Jwt.Secret), nil
-	})
-
-	if err != nil || token == nil || !token.Valid {
-		logging.FromContext(c).Debug("token is invalid or missing")
+	identity, err := s.authMiddleware.VerifyWSToken(c.Request.Context(), bearerToken)
+	if err != nil {
+		logging.FromContext(c).Debugf("token verification failed: %v", err)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
-	claims := token.Claims.(jwt.MapClaims)
-
-	userIdRaw, ok := claims[auth.IdentityKey]
-	if !ok {
-		logging.FromContext(c).Debugf("user ID not found in claims")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	userIdRawStr, ok := userIdRaw.(string)
-	if !ok {
-		logging.FromContext(c).Debugf("user ID is not a string")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	identityType, ok := claims["type"]
-	if !ok {
-		logging.FromContext(c).Debugf("identity type not found in claims")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	identityTypeStr, ok := identityType.(string)
-	if !ok {
-		logging.FromContext(c).Debugf("identity type is not a string")
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	identityType = models.IdentityType(identityTypeStr)
-	if identityType != models.IdentityTypeUser {
+	if identity.Type != models.IdentityTypeUser {
 		logging.FromContext(c).Debug("identity type is not user")
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
-	}
-
-	userID, err := strconv.Atoi(userIdRawStr)
-	if err != nil {
-		logging.FromContext(c).Debugf("failed to convert user ID to integer: %v", err)
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	scopesRaw, ok := claims["scopes"].([]interface{})
-	if !ok {
-		c.AbortWithStatus(http.StatusUnauthorized)
-		return
-	}
-
-	var scopes []models.ApiTokenScope
-	for _, scope := range scopesRaw {
-		if s, ok := scope.(string); ok {
-			scopes = append(scopes, models.ApiTokenScope(s))
-		}
-	}
-
-	identity := &models.SignedInIdentity{
-		UserID:  userID,
-		TokenID: 0,
-		Type:    models.IdentityTypeUser,
-		Scopes:  scopes,
 	}
 
 	wsConn, err := s.upgrader.Upgrade(c.Writer, c.Request, http.Header{

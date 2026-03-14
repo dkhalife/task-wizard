@@ -9,6 +9,7 @@ import (
 
 type Config struct {
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
+	Entra         EntraConfig     `mapstructure:"entra" yaml:"entra"`
 	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
@@ -26,10 +27,16 @@ type DatabaseConfig struct {
 	Migration bool   `mapstructure:"migration" yaml:"migration"`
 }
 
+type EntraConfig struct {
+	Enabled  bool   `mapstructure:"enabled" yaml:"enabled"`
+	TenantID string `mapstructure:"tenant_id" yaml:"tenant_id"`
+	ClientID string `mapstructure:"client_id" yaml:"client_id"`
+	Audience string `mapstructure:"audience" yaml:"audience"`
+	Issuer   string `mapstructure:"issuer" yaml:"issuer"`
+}
+
 type JwtConfig struct {
-	Secret      string        `mapstructure:"secret" yaml:"secret"`
-	SessionTime time.Duration `mapstructure:"session_time" yaml:"session_time"`
-	MaxRefresh  time.Duration `mapstructure:"max_refresh" yaml:"max_refresh"`
+	Secret string `mapstructure:"secret" yaml:"secret"`
 }
 
 type ServerConfig struct {
@@ -49,7 +56,6 @@ type ServerConfig struct {
 type SchedulerConfig struct {
 	DueFrequency            time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
 	OverdueFrequency        time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
-	PasswordResetValidity   time.Duration `mapstructure:"password_reset_validity" yaml:"password_reset_validity" default:"24h"`
 	TokenExpirationReminder time.Duration `mapstructure:"token_expiration_reminder" yaml:"token_expiration_reminder" default:"72h"`
 	NotificationCleanup     time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
 	TokenExpirationCleanup  time.Duration `mapstructure:"token_expiration_cleanup" yaml:"token_expiration_cleanup" default:"24h"`
@@ -79,7 +85,11 @@ func LoadConfig(configFile string) *Config {
 		viper.AddConfigPath("./config")
 	}
 
-	// Allow values with secrets to be set via environment variables
+	_ = viper.BindEnv("entra.enabled", "TW_ENTRA_ENABLED")
+	_ = viper.BindEnv("entra.tenant_id", "TW_ENTRA_TENANT_ID")
+	_ = viper.BindEnv("entra.client_id", "TW_ENTRA_CLIENT_ID")
+	_ = viper.BindEnv("entra.audience", "TW_ENTRA_AUDIENCE")
+	_ = viper.BindEnv("entra.issuer", "TW_ENTRA_ISSUER")
 	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
 	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
 	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")

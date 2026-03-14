@@ -8,7 +8,6 @@ import (
 	models "dkhalife.com/tasks/core/internal/models"
 	lService "dkhalife.com/tasks/core/internal/services/labels"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	jwt "github.com/appleboy/gin-jwt/v2"
 	"github.com/gin-gonic/gin"
 )
 
@@ -81,7 +80,7 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 	c.JSON(status, response)
 }
 
-func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, authGate *jwt.GinJWTMiddleware) {
+func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, authGate *authMW.AuthMiddleware) {
 	labelRoutes := r.Group("api/v1/labels")
 	labelRoutes.Use(authGate.MiddlewareFunc())
 	{

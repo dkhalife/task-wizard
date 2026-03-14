@@ -4,16 +4,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/url"
 
 	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/services/logging"
 	"github.com/wneessen/go-mail"
 )
 
 type IEmailSender interface {
-	SendResetPasswordEmail(ctx context.Context, to string, code string) error
-	SendWelcomeEmail(ctx context.Context, name string, to string, activationCode string)
 	SendTokenExpirationReminder(ctx context.Context, tokenName string, to string) error
 }
 
@@ -88,63 +84,6 @@ func (es *EmailSender) sendEmail(to string, subject string, body string) error {
 	}
 
 	return nil
-}
-
-func (es *EmailSender) SendResetPasswordEmail(c context.Context, to string, code string) error {
-	err := es.validateConfig()
-	if err != nil {
-		return err
-	}
-
-	resetURL := es.AppHost + "/password/update?c=" + url.QueryEscape(code)
-	htmlBody := `
-		<html>
-		<body>
-			<p>Dear user,</p>
-			<p>Please use the link below to reset your password:</p>
-			<p><a href="` + resetURL + `">Reset Password</a></p>
-			<p>If you did not request a password reset, please ignore this email.</p>
-			<p>Thank you,</p>
-			<p><strong>Task Wizard</strong></p>
-		</body>
-		</html>
-	`
-
-	err = es.sendEmail(to, "Task Wizard - Password Reset", htmlBody)
-	if err != nil {
-		return err
-	}
-
-	return nil
-}
-
-func (es *EmailSender) SendWelcomeEmail(c context.Context, name string, to string, activationCode string) {
-	log := logging.FromContext(c)
-	err := es.validateConfig()
-	if err != nil {
-		log.Errorf("failed to validate email config: %s", err.Error())
-		return
-	}
-
-	activationURL := es.AppHost + "/activate?code=" + url.QueryEscape(activationCode)
-	htmlBody := `
-		<html>
-		<body>
-			<p>Dear ` + name + `,</p>
-			<p>Welcome to Task Wizard! Please use the link below to activate your account:</p>
-			<p><a href="` + activationURL + `">Activate Account</a></p>
-			<p>If you did not sign up for this account, please ignore this email.</p>
-			<p>Thank you,</p>
-			<p><strong>Task Wizard</strong></p>
-		</body>
-		</html>
-	`
-
-	err = es.sendEmail(to, "Task Wizard - Welcome!", htmlBody)
-	if err != nil {
-		log.Errorf("failed to send welcome email: %s", err.Error())
-		return
-	}
 }
 
 func (es *EmailSender) SendTokenExpirationReminder(c context.Context, tokenName string, to string) error {

@@ -73,15 +73,12 @@ func main() {
 
 		// add services
 		fx.Provide(notifier.NewNotifier),
-		fx.Provide(housekeeper.NewPasswordResetCleaner),
 		fx.Provide(housekeeper.NewAppTokenCleaner),
 
 		// Rate limiter
 		fx.Provide(utils.NewRateLimiter),
 
-		// add email sender:
 		fx.Provide(email.NewEmailSender),
-		// add handlers also
 		fx.Provide(newServer),
 		fx.Provide(ws.NewWSServer),
 		fx.Provide(scheduler.NewScheduler),

@@ -5,25 +5,36 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
-	"strconv"
 	"strings"
 	"testing"
 	"time"
 
 	"dkhalife.com/tasks/core/config"
-	auth "dkhalife.com/tasks/core/internal/utils/auth"
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
+	"dkhalife.com/tasks/core/internal/models"
+	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/suite"
 )
+
+type mockWSUserRepo struct {
+	uRepo.IUserRepo
+}
+
+func (m *mockWSUserRepo) EnsureUser(c context.Context, directoryID string, objectID string, displayName string, email string) (*models.User, error) {
+	return &models.User{ID: 1, DirectoryID: directoryID, ObjectID: objectID, DisplayName: displayName, Email: email}, nil
+}
+
+func (m *mockWSUserRepo) GetUser(c context.Context, id int) (*models.User, error) {
+	return &models.User{ID: id, DisplayName: "Test User"}, nil
+}
 
 // WSServerTestSuite defines test suite for websocket server.
 type WSServerTestSuite struct {
 	suite.Suite
 	router *gin.Engine
 	server *WSServer
-	cfg    *config.Config
 }
 
 func TestWSServerTestSuite(t *testing.T) {
@@ -32,36 +43,26 @@ func TestWSServerTestSuite(t *testing.T) {
 
 func (s *WSServerTestSuite) SetupTest() {
 	gin.SetMode(gin.TestMode)
-	s.cfg = &config.Config{
-		Jwt: config.JwtConfig{
-			Secret:      "test-secret",
-			SessionTime: time.Hour,
-			MaxRefresh:  time.Hour,
-		},
+
+	cfg := &config.Config{
+		Entra:  config.EntraConfig{Enabled: false},
+		Jwt:    config.JwtConfig{Secret: "test-secret"},
+		Server: config.ServerConfig{Registration: true},
 	}
-	s.server = NewWSServer(s.cfg, nil, nil, nil)
+
+	mockRepo := &mockWSUserRepo{}
+	authMiddleware, err := authMW.NewAuthMiddleware(cfg, mockRepo)
+	s.Require().NoError(err)
+
+	s.server = NewWSServer(authMiddleware, nil, nil, mockRepo)
 	s.router = gin.New()
 	s.router.GET("/ws", s.server.HandleConnection)
-}
-
-func (s *WSServerTestSuite) createTestJWT(userID int) string {
-	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		auth.IdentityKey: strconv.Itoa(userID),
-		"exp":            time.Now().Add(time.Hour).Unix(),
-		"type":           "user",
-		"scopes":         []string{"read", "write"},
-	})
-
-	signedToken, err := token.SignedString([]byte(s.cfg.Jwt.Secret))
-	s.Require().NoError(err)
-	return signedToken
 }
 
 func (s *WSServerTestSuite) dial(ts *httptest.Server) (*websocket.Conn, *http.Response, error) {
 	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
 	header := http.Header{}
-	jwtToken := s.createTestJWT(1)
-	header.Set("Sec-WebSocket-Protocol", "test-protocol, "+jwtToken)
+	header.Set("Sec-WebSocket-Protocol", "test-protocol, dummy-token")
 	return websocket.DefaultDialer.Dial(url, header)
 }
 
@@ -77,10 +78,8 @@ func (s *WSServerTestSuite) TestHandleConnection_Unauthorized() {
 	ts := httptest.NewServer(s.router)
 	defer ts.Close()
 
-	// Try to connect without proper protocol header
 	url := "ws" + strings.TrimPrefix(ts.URL, "http") + "/ws"
 	header := http.Header{}
-	// Don't set the required Sec-WebSocket-Protocol header
 	conn, _, err := websocket.DefaultDialer.Dial(url, header)
 	if conn != nil {
 		conn.Close()
@@ -133,12 +132,10 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 	conn, _, err := s.dial(ts)
 	s.Require().NoError(err)
 
-	// Set up proper ping/pong handler
 	conn.SetPongHandler(func(appData string) error {
 		return nil
 	})
 
-	// Set up a goroutine to handle incoming messages
 	done := make(chan struct{})
 	go func() {
 		defer close(done)
@@ -147,16 +144,14 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 			if err != nil {
 				return
 			}
-			// The ping/pong is handled automatically by the SetPongHandler
 		}
 	}()
 
-	// Wait for a few ping cycles to ensure the connection stays alive
 	time.Sleep(3 * s.server.pingPeriod)
 	s.Equal(1, len(s.server.connections))
 
 	conn.Close()
-	<-done // Wait for the reading goroutine to finish
+	<-done
 	s.waitForConnections(0)
 }
 
