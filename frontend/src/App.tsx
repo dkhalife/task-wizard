@@ -1,6 +1,7 @@
 import { NavBar } from './views/Navigation/NavBar'
-import { Outlet, useLocation } from 'react-router-dom'
-import { initializeMsal, loginSilently } from './utils/msal'
+import { Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { initializeMsal, isAuthEnabled, loginSilently } from './utils/msal'
+import { NavigationPaths } from './utils/navigation'
 import React from 'react'
 import { CssBaseline, CssVarsProvider } from '@mui/joy'
 import { preloadSounds } from './utils/sound'
@@ -16,6 +17,7 @@ import { FIVE_MINUTES_MS } from '@/constants/time'
 
 type AppProps = {
   pathname: string
+  navigate: (path: string) => void
 
   fetchLabels: () => Promise<any>
   fetchUser: () => Promise<any>
@@ -91,12 +93,18 @@ class AppImpl extends React.Component<AppProps> {
     const silentOk = await loginSilently()
     if (silentOk) {
       await this.initializeAuthenticated()
+    } else if (isAuthEnabled() && this.props.pathname !== NavigationPaths.Login) {
+      this.props.navigate(NavigationPaths.Login)
     }
 
     document.addEventListener('visibilitychange', this.onVisibilityChange)
   }
 
   async componentDidUpdate(prevProps: AppProps): Promise<void> {
+    if (this.props.pathname === NavigationPaths.Login) {
+      return
+    }
+
     if (prevProps.pathname !== this.props.pathname) {
       await this.initializeAuthenticated()
       return
@@ -147,9 +155,11 @@ const ConnectedApp = connect(
 
 export const App = () => {
   const location = useLocation()
+  const navigate = useNavigate()
   return (
     <ConnectedApp
       pathname={location.pathname}
+      navigate={navigate}
     />
   )
 }

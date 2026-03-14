@@ -1,4 +1,5 @@
 import { acquireAccessToken, isAuthEnabled } from '@/utils/msal'
+import { NavigationPaths } from '@/utils/navigation'
 
 const API_URL = import.meta.env.VITE_APP_API_URL
 
@@ -7,6 +8,8 @@ type RequestMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 type FailureResponse = {
   error: string
 }
+
+let redirectingToLogin = false
 
 export async function Request<SuccessfulResponse>(
   url: string,
@@ -22,8 +25,16 @@ export async function Request<SuccessfulResponse>(
   }
 
   if (requiresAuth && isAuthEnabled()) {
-    const token = await acquireAccessToken()
-    headers['Authorization'] = 'Bearer ' + token
+    try {
+      const token = await acquireAccessToken()
+      headers['Authorization'] = 'Bearer ' + token
+    } catch {
+      if (!redirectingToLogin) {
+        redirectingToLogin = true
+        window.location.href = NavigationPaths.Login
+      }
+      throw new Error('Authentication required')
+    }
   }
 
   const options: RequestInit = {
