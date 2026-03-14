@@ -30,8 +30,8 @@ export const initializeMsal = async () => {
 const getScopes = (): string[] => {
   if (!authConfig) return []
   return [
-    `api://${authConfig.client_id}/Tasks.Read`,
-    `api://${authConfig.client_id}/Tasks.Write`,
+    `${authConfig.audience}/Tasks.Read`,
+    `${authConfig.audience}/Tasks.Write`,
   ]
 }
 
