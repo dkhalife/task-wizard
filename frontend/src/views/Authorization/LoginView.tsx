@@ -1,3 +1,4 @@
+import { Loading } from '@/Loading'
 import { Logo } from '@/Logo'
 import { Sheet } from '@mui/joy'
 import {
@@ -7,9 +8,9 @@ import {
   Button,
 } from '@mui/joy'
 import React from 'react'
-import { loginWithRedirect } from '@/utils/msal'
+import { initializeMsal, loginSilently, loginWithRedirect } from '@/utils/msal'
 import { setTitle } from '@/utils/dom'
-import { WithNavigate } from '@/utils/navigation'
+import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
 import { AppDispatch } from '@/store/store'
 import { pushStatus } from '@/store/statusSlice'
@@ -19,9 +20,25 @@ type LoginViewProps = WithNavigate & {
   pushStatus: (message: string, severity: StatusSeverity, timeout?: number) => void
 }
 
-class LoginViewImpl extends React.Component<LoginViewProps> {
-  componentDidMount(): void {
+type LoginViewState = {
+  authReady: boolean
+}
+
+class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
+  constructor(props: LoginViewProps) {
+    super(props)
+    this.state = { authReady: false }
+  }
+
+  async componentDidMount(): Promise<void> {
     setTitle('Login')
+    await initializeMsal()
+    const silentOk = await loginSilently()
+    if (silentOk) {
+      this.props.navigate(NavigationPaths.HomeView())
+      return
+    }
+    this.setState({ authReady: true })
   }
 
   private handleLogin = async () => {
@@ -33,6 +50,10 @@ class LoginViewImpl extends React.Component<LoginViewProps> {
   }
 
   render(): React.ReactNode {
+    if (!this.state.authReady) {
+      return <Loading />
+    }
+
     return (
       <Container
         component='main'
