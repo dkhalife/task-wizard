@@ -13,7 +13,7 @@ window.onerror = (message, source, lineno, colno) => {
     return
   }
 
-  try {  
+  try {
     LogError(`${source}:${lineno}:${colno} ${message}`, window.location.pathname)
   } catch {
     console.debug('Fatal error: ', message, source, lineno, colno)

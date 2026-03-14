@@ -15,7 +15,7 @@ export const initializeMsal = async () => {
   authConfig = await GetAuthConfig()
   if (!authConfig.enabled) return
 
-  pcaPromise = createStandardPublicClientApplication({
+  const pca = await createStandardPublicClientApplication({
     auth: {
       clientId: authConfig.client_id,
       authority: `https://login.microsoftonline.com/${authConfig.tenant_id}`,
@@ -25,6 +25,14 @@ export const initializeMsal = async () => {
       cacheLocation: 'localStorage',
     },
   })
+
+  pcaPromise = Promise.resolve(pca)
+
+  const response = await pca.handleRedirectPromise()
+  if (response?.account) {
+    pca.setActiveAccount(response.account)
+    cachedAuthResult = response
+  }
 }
 
 const getScopes = (): string[] => {
@@ -48,13 +56,10 @@ export const isAuthEnabled = (): boolean => {
   return authConfig?.enabled ?? false
 }
 
-export const loginWithPopup = async () => {
+export const loginWithRedirect = async () => {
   if (!authConfig?.enabled || !pcaPromise) return
   const pca = await pcaPromise
-  cachedAuthResult = await pca.loginPopup({ scopes: getScopes() })
-  if (cachedAuthResult.account) {
-    pca.setActiveAccount(cachedAuthResult.account)
-  }
+  await pca.loginRedirect({ scopes: getScopes() })
 }
 
 export const loginSilently = async (): Promise<boolean> => {
@@ -87,10 +92,6 @@ export const logout = async () => {
     return
   }
   const pca = await pcaPromise
-  const account = pca.getActiveAccount() ?? pca.getAllAccounts()[0]
-  if (account) {
-    await pca.logoutPopup({ account })
-  }
   cachedAuthResult = null
-  window.location.href = '/'
+  await pca.logoutRedirect({ postLogoutRedirectUri: window.location.origin })
 }
