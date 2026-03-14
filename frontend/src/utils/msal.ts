@@ -10,8 +10,16 @@ import type { AuthConfig } from '@/api/auth'
 let authConfig: AuthConfig | null = null
 let cachedAuthResult: AuthenticationResult | null = null
 let pcaPromise: Promise<IPublicClientApplication> | null = null
+let initPromise: Promise<void> | null = null
 
-export const initializeMsal = async () => {
+export const initializeMsal = () => {
+  if (!initPromise) {
+    initPromise = doInitializeMsal()
+  }
+  return initPromise
+}
+
+const doInitializeMsal = async () => {
   authConfig = await GetAuthConfig()
   if (!authConfig.enabled) return
 
