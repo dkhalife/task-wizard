@@ -2,6 +2,7 @@ package migrations
 
 import (
 	"context"
+	"fmt"
 
 	"gorm.io/gorm"
 )
@@ -21,45 +22,69 @@ func (m *InitialSchemaMigration) Name() string {
 }
 
 func (m *InitialSchemaMigration) Up(ctx context.Context, db *gorm.DB) error {
+	dialect := db.Dialector.Name()
+
+	var (
+		autoInc     string
+		strCol      string
+		idxIne      string
+		tokenIdxCol string
+	)
+
+	switch dialect {
+	case "sqlite":
+		autoInc = "AUTOINCREMENT"
+		strCol = "TEXT"
+		idxIne = "IF NOT EXISTS "
+		tokenIdxCol = "token"
+	case "mysql":
+		autoInc = "AUTO_INCREMENT"
+		strCol = "VARCHAR(255)"
+		idxIne = ""
+		tokenIdxCol = "token(255)"
+	default:
+		return fmt.Errorf("unsupported dialect: %s", dialect)
+	}
+
 	statements := []string{
-		`CREATE TABLE IF NOT EXISTS users (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			display_name TEXT NOT NULL DEFAULT '',
-			email TEXT NOT NULL DEFAULT '' UNIQUE,
-			password TEXT NOT NULL DEFAULT '',
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS users (
+			id INTEGER PRIMARY KEY %s,
+			display_name %s NOT NULL DEFAULT '',
+			email %s NOT NULL DEFAULT '' UNIQUE,
+			password %s NOT NULL DEFAULT '',
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT NULL,
 			disabled BOOLEAN DEFAULT false
-		)`,
+		)`, autoInc, strCol, strCol, strCol),
 		`CREATE TABLE IF NOT EXISTS user_password_resets (
 			user_id INTEGER NOT NULL PRIMARY KEY,
 			email TEXT NOT NULL,
 			token TEXT NOT NULL,
 			expiration_date DATETIME NOT NULL
 		)`,
-		`CREATE TABLE IF NOT EXISTS app_tokens (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS app_tokens (
+			id INTEGER PRIMARY KEY %s,
 			user_id INTEGER NOT NULL,
-			name TEXT NOT NULL,
-			token TEXT NOT NULL,
+			name %s NOT NULL,
+			token %s NOT NULL,
 			scopes TEXT,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			expires_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			CONSTRAINT fk_users_app_tokens FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX IF NOT EXISTS idx_app_tokens_token ON app_tokens(token)`,
-		`CREATE TABLE IF NOT EXISTS labels (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
-			name TEXT NOT NULL,
+		)`, autoInc, strCol, strCol),
+		fmt.Sprintf(`CREATE INDEX %sidx_app_tokens_token ON app_tokens(%s)`, idxIne, tokenIdxCol),
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS labels (
+			id INTEGER PRIMARY KEY %s,
+			name %s NOT NULL,
 			color VARCHAR(7) NOT NULL,
 			created_by INTEGER NOT NULL,
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT NULL,
 			CONSTRAINT fk_users_labels FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX IF NOT EXISTS idx_labels_created_by ON labels(created_by)`,
-		`CREATE TABLE IF NOT EXISTS tasks (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+		)`, autoInc, strCol),
+		fmt.Sprintf(`CREATE INDEX %sidx_labels_created_by ON labels(created_by)`, idxIne),
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS tasks (
+			id INTEGER PRIMARY KEY %s,
 			title TEXT NOT NULL,
 			frequency_type VARCHAR(9),
 			frequency_on VARCHAR(18) DEFAULT NULL,
@@ -79,10 +104,10 @@ func (m *InitialSchemaMigration) Up(ctx context.Context, db *gorm.DB) error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			updated_at DATETIME DEFAULT NULL,
 			CONSTRAINT fk_users_tasks FOREIGN KEY (created_by) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_next_due_date ON tasks(next_due_date)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_created_by ON tasks(created_by)`,
-		`CREATE INDEX IF NOT EXISTS idx_tasks_is_active ON tasks(is_active)`,
+		)`, autoInc),
+		fmt.Sprintf(`CREATE INDEX %sidx_tasks_next_due_date ON tasks(next_due_date)`, idxIne),
+		fmt.Sprintf(`CREATE INDEX %sidx_tasks_created_by ON tasks(created_by)`, idxIne),
+		fmt.Sprintf(`CREATE INDEX %sidx_tasks_is_active ON tasks(is_active)`, idxIne),
 		`CREATE TABLE IF NOT EXISTS task_labels (
 			task_id INTEGER NOT NULL,
 			label_id INTEGER NOT NULL,
@@ -90,14 +115,14 @@ func (m *InitialSchemaMigration) Up(ctx context.Context, db *gorm.DB) error {
 			CONSTRAINT fk_task_labels_task FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
 			CONSTRAINT fk_task_labels_label FOREIGN KEY (label_id) REFERENCES labels(id) ON DELETE CASCADE
 		)`,
-		`CREATE TABLE IF NOT EXISTS task_histories (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS task_histories (
+			id INTEGER PRIMARY KEY %s,
 			task_id INTEGER NOT NULL,
 			completed_date DATETIME,
 			due_date DATETIME,
 			CONSTRAINT fk_tasks_history FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX IF NOT EXISTS idx_task_histories_task_id ON task_histories(task_id)`,
+		)`, autoInc),
+		fmt.Sprintf(`CREATE INDEX %sidx_task_histories_task_id ON task_histories(task_id)`, idxIne),
 		`CREATE TABLE IF NOT EXISTS notification_settings (
 			user_id INTEGER NOT NULL,
 			notifications_provider_type VARCHAR(7),
@@ -110,8 +135,8 @@ func (m *InitialSchemaMigration) Up(ctx context.Context, db *gorm.DB) error {
 			notifications_triggers_overdue BOOLEAN DEFAULT false,
 			CONSTRAINT fk_users_notification_settings FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
 		)`,
-		`CREATE TABLE IF NOT EXISTS notifications (
-			id INTEGER PRIMARY KEY AUTOINCREMENT,
+		fmt.Sprintf(`CREATE TABLE IF NOT EXISTS notifications (
+			id INTEGER PRIMARY KEY %s,
 			task_id INTEGER NOT NULL,
 			user_id INTEGER NOT NULL,
 			text TEXT NOT NULL,
@@ -121,11 +146,11 @@ func (m *InitialSchemaMigration) Up(ctx context.Context, db *gorm.DB) error {
 			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 			CONSTRAINT fk_tasks_notifications FOREIGN KEY (task_id) REFERENCES tasks(id) ON DELETE CASCADE,
 			CONSTRAINT fk_users_notifications FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-		)`,
-		`CREATE INDEX IF NOT EXISTS idx_notifications_task_id ON notifications(task_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_notifications_user_id ON notifications(user_id)`,
-		`CREATE INDEX IF NOT EXISTS idx_notifications_is_sent ON notifications(is_sent)`,
-		`CREATE INDEX IF NOT EXISTS idx_notifications_scheduled_for ON notifications(scheduled_for)`,
+		)`, autoInc),
+		fmt.Sprintf(`CREATE INDEX %sidx_notifications_task_id ON notifications(task_id)`, idxIne),
+		fmt.Sprintf(`CREATE INDEX %sidx_notifications_user_id ON notifications(user_id)`, idxIne),
+		fmt.Sprintf(`CREATE INDEX %sidx_notifications_is_sent ON notifications(is_sent)`, idxIne),
+		fmt.Sprintf(`CREATE INDEX %sidx_notifications_scheduled_for ON notifications(scheduled_for)`, idxIne),
 	}
 
 	for _, stmt := range statements {
