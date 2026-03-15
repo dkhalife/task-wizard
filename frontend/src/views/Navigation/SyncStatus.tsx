@@ -13,8 +13,6 @@ interface SyncStatusProps {
   tasksError: string | null
   labelsStatus: SyncState
   labelsError: string | null
-  tokensStatus: SyncState
-  tokensError: string | null
   wsStatus: SyncState
   wsError: string | null
 }
@@ -59,11 +57,9 @@ class SyncStatusImpl extends React.Component<SyncStatusProps, SyncStatusState> {
       userStatus,
       tasksStatus,
       labelsStatus,
-      tokensStatus,
       userError,
       tasksError,
       labelsError,
-      tokensError,
       wsStatus,
       wsError,
     } = this.props
@@ -72,7 +68,6 @@ class SyncStatusImpl extends React.Component<SyncStatusProps, SyncStatusState> {
       { name: 'User', status: userStatus, error: userError },
       { name: 'Tasks', status: tasksStatus, error: tasksError },
       { name: 'Labels', status: labelsStatus, error: labelsError },
-      { name: 'Tokens', status: tokensStatus, error: tokensError },
     ]
 
     statuses.push({ name: 'WebSocket', status: wsStatus, error: wsError })
@@ -156,8 +151,6 @@ const mapStateToProps = (state: RootState) => ({
   tasksError: state.tasks.error,
   labelsStatus: state.labels.status,
   labelsError: state.labels.error,
-  tokensStatus: state.tokens.status,
-  tokensError: state.tokens.error,
   wsStatus: state.ws.status,
   wsError: state.ws.error,
 })

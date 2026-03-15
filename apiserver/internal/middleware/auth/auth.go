@@ -6,18 +6,15 @@ import (
 	"fmt"
 	"net/http"
 	"slices"
-	"strconv"
 	"strings"
 	"time"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
-	"dkhalife.com/tasks/core/internal/services/logging"
 	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
-	"github.com/golang-jwt/jwt/v4"
 )
 
 type AuthMiddleware struct {
@@ -26,7 +23,6 @@ type AuthMiddleware struct {
 	issuer   string
 	audience string
 	userRepo uRepo.IUserRepo
-	secret   string
 }
 
 type accessTokenClaims struct {
@@ -43,7 +39,6 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddl
 	m := &AuthMiddleware{
 		enabled:  cfg.Entra.Enabled,
 		userRepo: userRepo,
-		secret:   cfg.Jwt.Secret,
 	}
 
 	if !cfg.Entra.Enabled {
@@ -103,10 +98,6 @@ func (m *AuthMiddleware) authenticate(c *gin.Context) (*models.SignedInIdentity,
 		return nil, fmt.Errorf("missing authorization token")
 	}
 
-	if identity, err := m.verifyAppToken(c, token); err == nil {
-		return identity, nil
-	}
-
 	return m.verifyAccessToken(c.Request.Context(), token)
 }
 
@@ -116,74 +107,6 @@ func extractBearerToken(c *gin.Context) string {
 		return ""
 	}
 	return strings.TrimPrefix(authHeader, "Bearer ")
-}
-
-func (m *AuthMiddleware) verifyAppToken(c *gin.Context, rawToken string) (*models.SignedInIdentity, error) {
-	log := logging.FromContext(c)
-
-	token, err := jwt.Parse(rawToken, func(t *jwt.Token) (interface{}, error) {
-		if t.Method != jwt.SigningMethodHS256 {
-			return nil, fmt.Errorf("unexpected signing method")
-		}
-		return []byte(m.secret), nil
-	})
-
-	if err != nil || !token.Valid {
-		return nil, fmt.Errorf("invalid app token")
-	}
-
-	claims, ok := token.Claims.(jwt.MapClaims)
-	if !ok {
-		return nil, fmt.Errorf("invalid claims")
-	}
-
-	tokenType, _ := claims["type"].(string)
-	if tokenType != string(models.IdentityTypeApp) {
-		return nil, fmt.Errorf("not an app token")
-	}
-
-	userIDRaw, ok := claims[authUtils.IdentityKey].(string)
-	if !ok {
-		return nil, fmt.Errorf("missing user ID")
-	}
-
-	userID, err := strconv.Atoi(userIDRaw)
-	if err != nil {
-		return nil, fmt.Errorf("invalid user ID")
-	}
-
-	var tokenID int
-	if raw, ok := claims[authUtils.AppTokenKey].(string); ok {
-		tokenID, _ = strconv.Atoi(raw)
-	}
-
-	if tokenID == 0 {
-		return nil, fmt.Errorf("missing token ID")
-	}
-
-	if _, err := m.userRepo.GetAppTokenByID(c.Request.Context(), tokenID); err != nil {
-		log.Errorw("failed to find app token", "err", err)
-		return nil, fmt.Errorf("app token not found")
-	}
-
-	scopesRaw, ok := claims["scopes"].([]interface{})
-	if !ok {
-		return nil, fmt.Errorf("missing scopes")
-	}
-
-	var scopes []models.ApiTokenScope
-	for _, scope := range scopesRaw {
-		if s, ok := scope.(string); ok {
-			scopes = append(scopes, models.ApiTokenScope(s))
-		}
-	}
-
-	return &models.SignedInIdentity{
-		UserID:  userID,
-		TokenID: tokenID,
-		Type:    models.IdentityTypeApp,
-		Scopes:  scopes,
-	}, nil
 }
 
 func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string) (*models.SignedInIdentity, error) {
@@ -219,10 +142,9 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 	}
 
 	return &models.SignedInIdentity{
-		UserID:  user.ID,
-		TokenID: 0,
-		Type:    models.IdentityTypeUser,
-		Scopes:  models.AllUserScopes(),
+		UserID: user.ID,
+		Type:   models.IdentityTypeUser,
+		Scopes: models.AllUserScopes(),
 	}, nil
 }
 
@@ -233,10 +155,9 @@ func (m *AuthMiddleware) bypassAuth(ctx context.Context) (*models.SignedInIdenti
 	}
 
 	return &models.SignedInIdentity{
-		UserID:  user.ID,
-		TokenID: 0,
-		Type:    models.IdentityTypeUser,
-		Scopes:  models.AllUserScopes(),
+		UserID: user.ID,
+		Type:   models.IdentityTypeUser,
+		Scopes: models.AllUserScopes(),
 	}, nil
 }
 

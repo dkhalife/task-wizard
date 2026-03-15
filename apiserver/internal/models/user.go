@@ -14,7 +14,6 @@ type User struct {
 	UpdatedAt   time.Time `json:"-" gorm:"column:updated_at;default:NULL;autoUpdateTime"`
 	Disabled    bool      `json:"-" gorm:"column:disabled;default:false"`
 
-	AppTokens            []AppToken           `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
 	NotificationSettings NotificationSettings `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
 	Labels               []Label              `json:"-" gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE;"`
 	Tasks                []Task               `json:"-" gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE;"`
@@ -24,14 +23,12 @@ type IdentityType string
 
 const (
 	IdentityTypeUser IdentityType = "user"
-	IdentityTypeApp  IdentityType = "app"
 )
 
 type SignedInIdentity struct {
-	UserID  int
-	TokenID int
-	Type    IdentityType
-	Scopes  []ApiTokenScope
+	UserID int
+	Type   IdentityType
+	Scopes []ApiTokenScope
 }
 
 type ApiTokenScope string
@@ -43,7 +40,6 @@ const (
 	ApiTokenScopeLabelWrite ApiTokenScope = "label:write"
 	ApiTokenScopeUserRead   ApiTokenScope = "user:read"
 	ApiTokenScopeUserWrite  ApiTokenScope = "user:write"
-	ApiTokenScopeTokenWrite ApiTokenScope = "token:write"
 	ApiTokenScopeDavRead    ApiTokenScope = "dav:read"
 	ApiTokenScopeDavWrite   ApiTokenScope = "dav:write"
 )
@@ -56,23 +52,7 @@ func AllUserScopes() []ApiTokenScope {
 		ApiTokenScopeLabelWrite,
 		ApiTokenScopeUserRead,
 		ApiTokenScopeUserWrite,
-		ApiTokenScopeTokenWrite,
+		ApiTokenScopeDavRead,
+		ApiTokenScopeDavWrite,
 	}
-}
-
-type AppToken struct {
-	ID        int       `json:"id" gorm:"primary_key"`
-	UserID    int       `json:"user_id" gorm:"column:user_id;not null"`
-	Name      string    `json:"name" gorm:"column:name;not null"`
-	Token     string    `json:"token" gorm:"column:token;index;not null"`
-	Scopes    []string  `json:"scopes" gorm:"column:scopes;serializer:json"`
-	CreatedAt time.Time `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
-	ExpiresAt time.Time `json:"expires_at" gorm:"column:expires_at;default:CURRENT_TIMESTAMP"`
-	User      User      `json:"-" gorm:"foreignKey:UserID"`
-}
-
-type CreateAppTokenRequest struct {
-	Name       string          `json:"name" binding:"required"`
-	Scopes     []ApiTokenScope `json:"scopes" binding:"required"`
-	Expiration int             `json:"expiration" binding:"required"`
 }

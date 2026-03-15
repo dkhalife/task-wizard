@@ -10,10 +10,8 @@ import (
 type Config struct {
 	Database      DatabaseConfig  `mapstructure:"database" yaml:"database"`
 	Entra         EntraConfig     `mapstructure:"entra" yaml:"entra"`
-	Jwt           JwtConfig       `mapstructure:"jwt" yaml:"jwt"`
 	Server        ServerConfig    `mapstructure:"server" yaml:"server"`
 	SchedulerJobs SchedulerConfig `mapstructure:"scheduler_jobs" yaml:"scheduler_jobs"`
-	EmailConfig   EmailConfig     `mapstructure:"email" yaml:"email"`
 }
 
 type DatabaseConfig struct {
@@ -35,10 +33,6 @@ type EntraConfig struct {
 	Issuer   string `mapstructure:"issuer" yaml:"issuer"`
 }
 
-type JwtConfig struct {
-	Secret string `mapstructure:"secret" yaml:"secret"`
-}
-
 type ServerConfig struct {
 	HostName             string        `mapstructure:"host_name" yaml:"host_name"`
 	Port                 int           `mapstructure:"port" yaml:"port"`
@@ -54,18 +48,9 @@ type ServerConfig struct {
 }
 
 type SchedulerConfig struct {
-	DueFrequency            time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
-	OverdueFrequency        time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
-	TokenExpirationReminder time.Duration `mapstructure:"token_expiration_reminder" yaml:"token_expiration_reminder" default:"72h"`
-	NotificationCleanup     time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
-	TokenExpirationCleanup  time.Duration `mapstructure:"token_expiration_cleanup" yaml:"token_expiration_cleanup" default:"24h"`
-}
-
-type EmailConfig struct {
-	Host     string `mapstructure:"host"`
-	Port     int    `mapstructure:"port"`
-	Email    string `mapstructure:"email"`
-	Password string `mapstructure:"password"`
+	DueFrequency        time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
+	OverdueFrequency    time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
+	NotificationCleanup time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
 }
 
 func LoadConfig(configFile string) *Config {
@@ -90,11 +75,6 @@ func LoadConfig(configFile string) *Config {
 	_ = viper.BindEnv("entra.client_id", "TW_ENTRA_CLIENT_ID")
 	_ = viper.BindEnv("entra.audience", "TW_ENTRA_AUDIENCE")
 	_ = viper.BindEnv("entra.issuer", "TW_ENTRA_ISSUER")
-	_ = viper.BindEnv("jwt.secret", "TW_JWT_SECRET")
-	_ = viper.BindEnv("email.host", "TW_EMAIL_HOST")
-	_ = viper.BindEnv("email.port", "TW_EMAIL_PORT")
-	_ = viper.BindEnv("email.email", "TW_EMAIL_SENDER")
-	_ = viper.BindEnv("email.password", "TW_EMAIL_PASSWORD")
 	_ = viper.BindEnv("database.type", "TW_DATABASE_TYPE")
 	_ = viper.BindEnv("database.host", "TW_DATABASE_HOST")
 	_ = viper.BindEnv("database.port", "TW_DATABASE_PORT")
@@ -111,10 +91,6 @@ func LoadConfig(configFile string) *Config {
 	err = viper.Unmarshal(&config)
 	if err != nil {
 		panic(err)
-	}
-
-	if config.Jwt.Secret == "secret" {
-		panic("JWT secret must be changed from the default 'secret'. Set TW_JWT_SECRET or update config.yaml")
 	}
 
 	return &config

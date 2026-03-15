@@ -10,7 +10,6 @@ import { fetchLabels } from './store/labelsSlice'
 import { AppDispatch, store } from './store/store'
 import { connect } from 'react-redux'
 import { fetchUser } from './store/userSlice'
-import { fetchTokens } from './store/tokensSlice'
 import { StatusList } from './components/StatusList'
 import { fetchTasks, initGroups } from './store/tasksSlice'
 import { FIVE_MINUTES_MS } from '@/constants/time'
@@ -23,7 +22,6 @@ type AppProps = {
   fetchUser: () => Promise<any>
   fetchTasks: () => Promise<any>
   initGroups: () => void
-  fetchTokens: () => Promise<any>
 }
 
 class AppImpl extends React.Component<AppProps> {
@@ -50,7 +48,6 @@ class AppImpl extends React.Component<AppProps> {
       await this.props.fetchUser()
       await this.props.fetchLabels()
       await this.props.fetchTasks()
-      await this.props.fetchTokens()
       await this.props.initGroups()
 
       this.initializedAuthenticated = true
@@ -77,10 +74,6 @@ class AppImpl extends React.Component<AppProps> {
     if (!state.tasks.lastFetched || now - state.tasks.lastFetched > FIVE_MINUTES_MS) {
       await this.props.fetchTasks()
       groupsOutdated = true
-    }
-
-    if (!state.tokens.lastFetched || now - state.tokens.lastFetched > FIVE_MINUTES_MS) {
-      await this.props.fetchTokens()
     }
 
     if (groupsOutdated) {
@@ -145,7 +138,6 @@ const mapDispatchToProps = (dispatch: AppDispatch) => ({
   fetchLabels: () => dispatch(fetchLabels()),
   fetchTasks: () => dispatch(fetchTasks()),
   initGroups: () => dispatch(initGroups()),
-  fetchTokens: () => dispatch(fetchTokens()),
 })
 
 const ConnectedApp = connect(

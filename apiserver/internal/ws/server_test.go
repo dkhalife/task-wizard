@@ -46,7 +46,6 @@ func (s *WSServerTestSuite) SetupTest() {
 
 	cfg := &config.Config{
 		Entra:  config.EntraConfig{Enabled: false},
-		Jwt:    config.JwtConfig{Secret: "test-secret"},
 		Server: config.ServerConfig{Registration: true},
 	}
 

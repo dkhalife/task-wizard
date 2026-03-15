@@ -5,10 +5,6 @@ import {
   unregisterWebSocketListeners as unregisterLabelsWs,
 } from './labelsSlice'
 import {
-  registerWebSocketListeners as registerTokensWs,
-  unregisterWebSocketListeners as unregisterTokensWs,
-} from './tokensSlice'
-import {
   registerWebSocketListeners as registerNotificationsWs,
   unregisterWebSocketListeners as unregisterNotificationsWs,
 } from './userSlice'
@@ -46,7 +42,6 @@ const wsSlice = createSlice({
 
       const mgr = WebSocketManager.getInstance()
       registerLabelsWs(mgr)
-      registerTokensWs(mgr)
       registerNotificationsWs(mgr)
       registerTasksWs(mgr)
     },
@@ -57,7 +52,6 @@ const wsSlice = createSlice({
 
       const mgr = WebSocketManager.getInstance()
       unregisterLabelsWs(mgr)
-      unregisterTokensWs(mgr)
       unregisterNotificationsWs(mgr)
       unregisterTasksWs(mgr)
     },

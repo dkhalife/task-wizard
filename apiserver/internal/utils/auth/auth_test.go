@@ -14,10 +14,9 @@ func TestCurrentIdentity_Present(t *testing.T) {
 	c, _ := gin.CreateTestContext(w)
 
 	expected := &models.SignedInIdentity{
-		UserID:  42,
-		TokenID: 0,
-		Type:    models.IdentityTypeUser,
-		Scopes:  models.AllUserScopes(),
+		UserID: 42,
+		Type:   models.IdentityTypeUser,
+		Scopes: models.AllUserScopes(),
 	}
 	c.Set(IdentityKey, expected)
 
