@@ -14,7 +14,7 @@ type IUserRepo interface {
 	CreateUser(c context.Context, user *models.User) error
 	GetUser(c context.Context, id int) (*models.User, error)
 	FindByEntraID(c context.Context, directoryID string, objectID string) (*models.User, error)
-	EnsureUser(c context.Context, directoryID string, objectID string, displayName string, email string) (*models.User, error)
+	EnsureUser(c context.Context, directoryID string, objectID string, displayName string) (*models.User, error)
 	UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error
 	DeleteNotificationsForUser(c context.Context, userID int) error
 	GetLastCreatedOrModifiedForUserResources(c context.Context, userID int) (string, error)
@@ -70,7 +70,7 @@ func (r *UserRepository) FindByEntraID(c context.Context, directoryID string, ob
 	return user, nil
 }
 
-func (r *UserRepository) EnsureUser(c context.Context, directoryID string, objectID string, displayName string, email string) (*models.User, error) {
+func (r *UserRepository) EnsureUser(c context.Context, directoryID string, objectID string, displayName string) (*models.User, error) {
 	user, err := r.FindByEntraID(c, directoryID, objectID)
 	if err == nil {
 		return user, nil
@@ -84,7 +84,6 @@ func (r *UserRepository) EnsureUser(c context.Context, directoryID string, objec
 		DirectoryID: directoryID,
 		ObjectID:    objectID,
 		DisplayName: displayName,
-		Email:       email,
 	}
 
 	if err := r.CreateUser(c, newUser); err != nil {

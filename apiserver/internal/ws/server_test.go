@@ -22,8 +22,8 @@ type mockWSUserRepo struct {
 	uRepo.IUserRepo
 }
 
-func (m *mockWSUserRepo) EnsureUser(c context.Context, directoryID string, objectID string, displayName string, email string) (*models.User, error) {
-	return &models.User{ID: 1, DirectoryID: directoryID, ObjectID: objectID, DisplayName: displayName, Email: email}, nil
+func (m *mockWSUserRepo) EnsureUser(c context.Context, directoryID string, objectID string, displayName string) (*models.User, error) {
+	return &models.User{ID: 1, DirectoryID: directoryID, ObjectID: objectID, DisplayName: displayName}, nil
 }
 
 func (m *mockWSUserRepo) GetUser(c context.Context, id int) (*models.User, error) {

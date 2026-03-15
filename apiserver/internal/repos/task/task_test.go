@@ -27,7 +27,6 @@ func (s *TaskTestSuite) SetupTest() {
 
 	s.testUser = &models.User{
 		ID:        1,
-		Email:     "test@example.com",
 		CreatedAt: time.Now(),
 	}
 
@@ -220,9 +219,7 @@ func (s *TaskTestSuite) TestGetTasks() {
 	s.Require().NoError(err)
 
 	// Create another user with their own tasks
-	anotherUser := &models.User{
-		Email: "another@example.com",
-	}
+	anotherUser := &models.User{}
 
 	err = s.DB.Create(anotherUser).Error
 	s.Require().NoError(err)
@@ -290,9 +287,7 @@ func (s *TaskTestSuite) TestIsTaskOwner() {
 	s.Require().NoError(err)
 
 	// Test with incorrect owner
-	anotherUser := &models.User{
-		Email: "another@example.com",
-	}
+	anotherUser := &models.User{}
 	err = s.DB.Create(anotherUser).Error
 	s.Require().NoError(err)
 
@@ -602,7 +597,7 @@ func (s *TaskTestSuite) TestGetCompletedTasks() {
 	s.Require().NoError(err)
 	s.Require().Equal(int64(5), count)
 
-	anotherUser := &models.User{Email: "other@example.com"}
+	anotherUser := &models.User{}
 	err = s.DB.Create(anotherUser).Error
 	s.Require().NoError(err)
 	otherTask := &models.Task{Title: "Other", CreatedBy: anotherUser.ID, IsActive: false}

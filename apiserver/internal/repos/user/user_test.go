@@ -39,7 +39,6 @@ func (s *UserTestSuite) TestCreateUser() {
 		DirectoryID: "test-dir",
 		ObjectID:    "test-obj",
 		DisplayName: "Test User",
-		Email:       "test@example.com",
 		CreatedAt:   time.Now(),
 	}
 
@@ -50,7 +49,6 @@ func (s *UserTestSuite) TestCreateUser() {
 	var fetchedUser models.User
 	err = s.DB.First(&fetchedUser, user.ID).Error
 	s.Require().NoError(err)
-	s.Equal(user.Email, fetchedUser.Email)
 	s.Equal(user.DirectoryID, fetchedUser.DirectoryID)
 	s.Equal(user.ObjectID, fetchedUser.ObjectID)
 
@@ -69,7 +67,6 @@ func (s *UserTestSuite) TestCreateUserRegistrationDisabled() {
 	user := &models.User{
 		DirectoryID: "test-dir",
 		ObjectID:    "test-obj",
-		Email:       "test@example.com",
 	}
 
 	err := s.repo.CreateUser(ctx, user)
@@ -83,7 +80,6 @@ func (s *UserTestSuite) TestGetUser() {
 	testUser := &models.User{
 		DirectoryID: "test-dir",
 		ObjectID:    "test-obj",
-		Email:       "test@example.com",
 		CreatedAt:   time.Now(),
 	}
 
@@ -93,7 +89,7 @@ func (s *UserTestSuite) TestGetUser() {
 	user, err := s.repo.GetUser(ctx, testUser.ID)
 	s.Require().NoError(err)
 	s.NotNil(user)
-	s.Equal(testUser.Email, user.Email)
+	s.Equal(testUser.ID, user.ID)
 }
 
 func (s *UserTestSuite) TestFindByEntraID() {
@@ -103,7 +99,6 @@ func (s *UserTestSuite) TestFindByEntraID() {
 		DirectoryID: "dir-123",
 		ObjectID:    "obj-456",
 		DisplayName: "Entra User",
-		Email:       "entra@example.com",
 		CreatedAt:   time.Now(),
 	}
 
@@ -127,7 +122,7 @@ func (s *UserTestSuite) TestFindByEntraIDNotFound() {
 func (s *UserTestSuite) TestEnsureUserCreatesNew() {
 	ctx := context.Background()
 
-	user, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User", "new@example.com")
+	user, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User")
 	s.Require().NoError(err)
 	s.NotNil(user)
 	s.NotZero(user.ID)
@@ -143,14 +138,13 @@ func (s *UserTestSuite) TestEnsureUserReturnsExisting() {
 		DirectoryID: "existing-dir",
 		ObjectID:    "existing-obj",
 		DisplayName: "Existing User",
-		Email:       "existing@example.com",
 		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(existing).Error
 	s.Require().NoError(err)
 
-	user, err := s.repo.EnsureUser(ctx, "existing-dir", "existing-obj", "Different Name", "different@example.com")
+	user, err := s.repo.EnsureUser(ctx, "existing-dir", "existing-obj", "Different Name")
 	s.Require().NoError(err)
 	s.Equal(existing.ID, user.ID)
 	s.Equal("Existing User", user.DisplayName)
@@ -161,7 +155,7 @@ func (s *UserTestSuite) TestEnsureUserRegistrationDisabled() {
 
 	s.cfg.Server.Registration = false
 
-	_, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User", "new@example.com")
+	_, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User")
 	s.Require().Error(err)
 	s.Contains(err.Error(), "registration is disabled")
 }
@@ -172,7 +166,6 @@ func (s *UserTestSuite) TestUpdateNotificationSettings() {
 	testUser := &models.User{
 		DirectoryID: "test-dir",
 		ObjectID:    "test-obj",
-		Email:       "test@example.com",
 		CreatedAt:   time.Now(),
 	}
 

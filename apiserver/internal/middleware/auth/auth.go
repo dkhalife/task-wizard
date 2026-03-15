@@ -28,13 +28,12 @@ type AuthMiddleware struct {
 }
 
 type accessTokenClaims struct {
-	Issuer            string `json:"iss"`
-	Audience          string `json:"aud"`
-	ExpiresAt         int64  `json:"exp"`
-	TenantID          string `json:"tid"`
-	ObjectID          string `json:"oid"`
-	Name              string `json:"name"`
-	PreferredUsername string `json:"preferred_username"`
+	Issuer    string `json:"iss"`
+	Audience  string `json:"aud"`
+	ExpiresAt int64  `json:"exp"`
+	TenantID  string `json:"tid"`
+	ObjectID  string `json:"oid"`
+	Name      string `json:"name"`
 }
 
 func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddleware, error) {
@@ -152,7 +151,7 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 		return nil, fmt.Errorf("missing tid or oid in token claims")
 	}
 
-	user, err := m.userRepo.EnsureUser(ctx, claims.TenantID, claims.ObjectID, claims.Name, claims.PreferredUsername)
+	user, err := m.userRepo.EnsureUser(ctx, claims.TenantID, claims.ObjectID, claims.Name)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve user identity: %s", err.Error())
 	}
@@ -165,7 +164,7 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 }
 
 func (m *AuthMiddleware) bypassAuth(ctx context.Context) (*models.SignedInIdentity, error) {
-	user, err := m.userRepo.EnsureUser(ctx, "dev-directory", "dev-object", "Dev User", "dev@localhost")
+	user, err := m.userRepo.EnsureUser(ctx, "dev-directory", "dev-object", "Dev User")
 	if err != nil {
 		return nil, fmt.Errorf("failed to ensure dev user: %s", err.Error())
 	}
