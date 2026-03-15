@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"dkhalife.com/tasks/core/config"
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	models "dkhalife.com/tasks/core/internal/models"
 	cRepo "dkhalife.com/tasks/core/internal/repos/caldav"
@@ -29,14 +30,16 @@ type CalDAVAPIHandler struct {
 	cRepo *cRepo.CalDavRepository
 	nRepo *nRepo.NotificationRepository
 	ws    *ws.WSServer
+	cfg   *config.Config
 }
 
-func CalDAVAPI(tRepo *tRepo.TaskRepository, cRepo *cRepo.CalDavRepository, nRepo *nRepo.NotificationRepository, wsServer *ws.WSServer) *CalDAVAPIHandler {
+func CalDAVAPI(tRepo *tRepo.TaskRepository, cRepo *cRepo.CalDavRepository, nRepo *nRepo.NotificationRepository, wsServer *ws.WSServer, cfg *config.Config) *CalDAVAPIHandler {
 	return &CalDAVAPIHandler{
 		tRepo: tRepo,
 		cRepo: cRepo,
 		nRepo: nRepo,
 		ws:    wsServer,
+		cfg:   cfg,
 	}
 }
 
@@ -321,8 +324,27 @@ func (h *CalDAVAPIHandler) handleRootRedirect(c *gin.Context) {
 	}
 }
 
+func (h *CalDAVAPIHandler) handleOAuthDiscovery(c *gin.Context) {
+	if !h.cfg.Entra.Enabled {
+		c.JSON(http.StatusNotFound, gin.H{"error": "OAuth is not configured"})
+		return
+	}
+
+	base := "https://login.microsoftonline.com/" + h.cfg.Entra.TenantID + "/oauth2/v2.0"
+	c.JSON(http.StatusOK, gin.H{
+		"authorization_endpoint": base + "/authorize",
+		"token_endpoint":         base + "/token",
+		"client_id":              h.cfg.Entra.ClientID,
+		"scopes": []string{
+			string(models.ApiTokenScopeDavRead),
+			string(models.ApiTokenScopeDavWrite),
+		},
+	})
+}
+
 func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *authMW.AuthMiddleware) {
 	davRoutes := router.Group("dav")
+	davRoutes.GET("/.well-known/oauth", h.handleOAuthDiscovery)
 	davRoutes.Use(middleware.BasicAuthToJWTAdapter())
 	davRoutes.Use(auth.MiddlewareFunc())
 	{

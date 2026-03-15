@@ -22,6 +22,8 @@ type AuthMiddleware struct {
 	keySet   oidc.KeySet
 	issuer   string
 	audience string
+	tenantID string
+	clientID string
 	userRepo uRepo.IUserRepo
 }
 
@@ -51,6 +53,8 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddl
 	}
 	m.issuer = issuer
 	m.audience = cfg.Entra.Audience
+	m.tenantID = cfg.Entra.TenantID
+	m.clientID = cfg.Entra.ClientID
 
 	provider, err := oidc.NewProvider(context.Background(), issuer)
 	if err != nil {
@@ -74,7 +78,7 @@ func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
 		identity, err := m.authenticate(c)
 		if err != nil {
 			if strings.HasPrefix(c.Request.URL.Path, "/dav") {
-				c.Header("WWW-Authenticate", `Basic realm="Task Wizard"`)
+				c.Header("WWW-Authenticate", m.wwwAuthenticateHeader())
 			}
 
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
@@ -86,6 +90,18 @@ func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
 		c.Set(authUtils.IdentityKey, identity)
 		c.Next()
 	}
+}
+
+func (m *AuthMiddleware) wwwAuthenticateHeader() string {
+	if !m.enabled || m.tenantID == "" {
+		return `Basic realm="Task Wizard"`
+	}
+
+	base := "https://login.microsoftonline.com/" + m.tenantID + "/oauth2/v2.0"
+	return fmt.Sprintf(
+		`Bearer realm="Task Wizard", authorization_uri="%s/authorize", token_uri="%s/token"`,
+		base, base,
+	)
 }
 
 func (m *AuthMiddleware) authenticate(c *gin.Context) (*models.SignedInIdentity, error) {
