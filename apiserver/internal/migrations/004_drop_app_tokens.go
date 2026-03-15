@@ -71,7 +71,14 @@ func (m *DropAppTokensMigration) Down(ctx context.Context, db *gorm.DB) error {
 			return fmt.Errorf("unsupported dialect: %s", dialect)
 		}
 
-		if err := dbCtx.Exec("CREATE INDEX idx_app_tokens_token ON app_tokens(token(255))").Error; err != nil {
+		var idxCol string
+		switch dialect {
+		case "sqlite":
+			idxCol = "token"
+		case "mysql":
+			idxCol = "token(255)"
+		}
+		if err := dbCtx.Exec("CREATE INDEX idx_app_tokens_token ON app_tokens(" + idxCol + ")").Error; err != nil {
 			return err
 		}
 	}

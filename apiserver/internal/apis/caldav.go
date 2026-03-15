@@ -19,7 +19,6 @@ import (
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/utils/auth"
 	"dkhalife.com/tasks/core/internal/utils/caldav"
-	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
@@ -343,9 +342,12 @@ func (h *CalDAVAPIHandler) handleOAuthDiscovery(c *gin.Context) {
 }
 
 func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *authMW.AuthMiddleware) {
+	if !h.cfg.Entra.Enabled {
+		return
+	}
+
 	davRoutes := router.Group("dav")
 	davRoutes.GET("/.well-known/oauth", h.handleOAuthDiscovery)
-	davRoutes.Use(middleware.BasicAuthToJWTAdapter())
 	davRoutes.Use(auth.MiddlewareFunc())
 	{
 		davRoutes.HEAD("/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavRead), h.handleHead)

@@ -91,10 +91,6 @@ func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
 }
 
 func (m *AuthMiddleware) wwwAuthenticateHeader() string {
-	if !m.enabled || m.tenantID == "" {
-		return `Basic realm="Task Wizard"`
-	}
-
 	base := "https://login.microsoftonline.com/" + m.tenantID + "/oauth2/v2.0"
 	return fmt.Sprintf(
 		`Bearer realm="Task Wizard", authorization_uri="%s/authorize", token_uri="%s/token"`,
