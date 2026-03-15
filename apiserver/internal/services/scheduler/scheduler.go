@@ -5,24 +5,21 @@ import (
 	"time"
 
 	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/services/housekeeper"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/services/notifications"
 )
 
 type Scheduler struct {
-	stopChan        chan bool
-	notifier        *notifications.Notifier
-	appTokenCleaner *housekeeper.AppTokenCleaner
-	config          config.SchedulerConfig
+	stopChan chan bool
+	notifier *notifications.Notifier
+	config   config.SchedulerConfig
 }
 
-func NewScheduler(cfg *config.Config, n *notifications.Notifier, atk *housekeeper.AppTokenCleaner) *Scheduler {
+func NewScheduler(cfg *config.Config, n *notifications.Notifier) *Scheduler {
 	return &Scheduler{
-		stopChan:        make(chan bool),
-		notifier:        n,
-		appTokenCleaner: atk,
-		config:          cfg.SchedulerJobs,
+		stopChan: make(chan bool),
+		notifier: n,
+		config:   cfg.SchedulerJobs,
 	}
 }
 
@@ -33,8 +30,6 @@ func (s *Scheduler) Start(c context.Context) {
 	go s.runScheduler(c, "NOTIFICATION_SCHEDULER", s.notifier.GenerateOverdueNotifications, s.config.OverdueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_SENDER", s.notifier.LoadAndSendNotificationJob, s.config.DueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_CLEANUP", s.notifier.CleanupNotifications, s.config.NotificationCleanup)
-	go s.runScheduler(c, "TOKEN_EXPIRATION_REMINDER", s.appTokenCleaner.SendTokenExpirationReminder, s.config.TokenExpirationReminder)
-	go s.runScheduler(c, "TOKEN_EXPIRATION_CLEANUP", s.appTokenCleaner.CleanupExpiredTokens, s.config.TokenExpirationCleanup)
 }
 
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {

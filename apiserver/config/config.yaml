@@ -8,8 +8,6 @@ entra:
   client_id: ""
   audience: ""
   issuer: ""
-jwt:
-  secret: "secret"
 server:
   host_name: example.com
   port: 2021
@@ -23,6 +21,4 @@ server:
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h
-  token_expiration_reminder: 72h
   notification_cleanup: 10m
-  token_expiration_cleanup: 24h

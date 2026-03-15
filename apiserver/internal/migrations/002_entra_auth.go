@@ -71,6 +71,17 @@ func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
 		return err
 	}
 
+	switch dialect {
+	case "mysql":
+		if err := dbCtx.Exec("ALTER TABLE users ALTER COLUMN password SET DEFAULT ''").Error; err != nil {
+			return err
+		}
+	case "sqlite":
+		if err := dbCtx.Exec("UPDATE users SET password = '' WHERE password IS NULL").Error; err != nil {
+			return err
+		}
+	}
+
 	return nil
 }
 
@@ -86,6 +97,10 @@ func (m *EntraAuthMigration) Down(ctx context.Context, db *gorm.DB) error {
 	}
 
 	if dialect == "mysql" {
+		if err := dbCtx.Exec("ALTER TABLE users ALTER COLUMN password DROP DEFAULT").Error; err != nil {
+			return err
+		}
+
 		for _, col := range []string{"directory_id_idx", "object_id_idx"} {
 			if migrator.HasColumn("users", col) {
 				if err := dbCtx.Exec("ALTER TABLE users DROP COLUMN " + col).Error; err != nil {

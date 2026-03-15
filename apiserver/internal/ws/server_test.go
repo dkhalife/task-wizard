@@ -22,12 +22,12 @@ type mockWSUserRepo struct {
 	uRepo.IUserRepo
 }
 
-func (m *mockWSUserRepo) EnsureUser(c context.Context, directoryID string, objectID string, displayName string, email string) (*models.User, error) {
-	return &models.User{ID: 1, DirectoryID: directoryID, ObjectID: objectID, DisplayName: displayName, Email: email}, nil
+func (m *mockWSUserRepo) EnsureUser(c context.Context, directoryID string, objectID string) (*models.User, error) {
+	return &models.User{ID: 1, DirectoryID: directoryID, ObjectID: objectID}, nil
 }
 
 func (m *mockWSUserRepo) GetUser(c context.Context, id int) (*models.User, error) {
-	return &models.User{ID: id, DisplayName: "Test User"}, nil
+	return &models.User{ID: id}, nil
 }
 
 // WSServerTestSuite defines test suite for websocket server.
@@ -46,7 +46,6 @@ func (s *WSServerTestSuite) SetupTest() {
 
 	cfg := &config.Config{
 		Entra:  config.EntraConfig{Enabled: false},
-		Jwt:    config.JwtConfig{Secret: "test-secret"},
 		Server: config.ServerConfig{Registration: true},
 	}
 

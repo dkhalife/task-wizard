@@ -12,6 +12,7 @@ This repo started as a fork of [DoneTick](https://github.com/donetick/donetick) 
 
 Task Wizard's primary goal is to allow users to own and protect their data and the following principles are ways to accomplish that:
 
+* **Zero PII storage** — the server never stores names, emails, or any personally identifiable information. Authentication is handled entirely by Microsoft Entra ID; the backend only persists an opaque directory/object ID pair to associate tasks with a user
 * All the user data sent by this frontend only ever goes to a single backend
 * 🔜 When data is stored, it is encrypted with a user key
 * The code is continuously scanned by a CI that runs CodeQL
@@ -30,9 +31,7 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 📧 Notifications for important deadlines you don't want to miss
 
-🗝️ Fine-grained access tokens for endless integration possibilities
-
-🌐 Authenticated CalDAV endpoint at `/dav/tasks` with app token as the password
+🌐 CalDAV endpoint at `/dav/tasks` with OAuth 2.0 Bearer token authentication
 
 ## ⌨️ Keyboard Shortcuts
 
@@ -53,8 +52,6 @@ To set up authentication:
 3. Set `entra.enabled` to `true`
 
 For development without Azure AD, set `entra.enabled` to `false` to enable dev bypass mode (all requests are treated as authenticated).
-
-App tokens (used for CalDAV and API integrations) are independently signed with `jwt.secret` and remain functional regardless of Entra configuration.
 
 ## 🚀 Installation
 
@@ -96,7 +93,7 @@ Make sure to replace `/path/to/host` with your preferred root directory for conf
 
 In the [config](./apiserver/config/) directory are a couple of starter configuration files for prod and dev environments. The server expects a config.yaml in the config directory and will load settings from it when started.
 
-**Note:** You can set `email.host`, `email.port`, `email.email`, `email.password`, `jwt.secret`, Entra ID settings, and database credentials using environment variables for improved security and flexibility. The server will fail to start if `jwt.secret` is left as `"secret"`, so be sure to set `TW_JWT_SECRET` or edit `config.yaml`.
+**Note:** You can set Entra ID settings and database credentials using environment variables for improved security and flexibility.
 
 ### Database Configuration
 
@@ -145,7 +142,6 @@ Configure Entra ID authentication with environment variables or `config.yaml`:
 - `TW_ENTRA_TENANT_ID` - Azure AD tenant ID
 - `TW_ENTRA_CLIENT_ID` - Azure AD application (client) ID
 - `TW_ENTRA_AUDIENCE` - Expected token audience
-- `TW_JWT_SECRET` - Secret for signing app tokens (must be changed from default)
 
 ### Configuration Reference
 
@@ -166,7 +162,6 @@ The configuration files are yaml mappings with the following values:
 | `entra.tenant_id`                        | (empty)                                             | The Azure AD tenant ID for authentication.                                  |
 | `entra.client_id`                        | (empty)                                             | The Azure AD application (client) ID.                                       |
 | `entra.audience`                         | (empty)                                             | The expected audience for Entra ID tokens.                                  |
-| `jwt.secret`                             | `"secret"`                                          | The secret key used for signing app tokens. **Must be changed from default or set `TW_JWT_SECRET`.** |
 | `server.host_name`                       | `localhost`                                         | The hostname to use for external links.                                     |
 | `server.port`                            | `2021`                                              | The port on which the server listens.                                       |
 | `server.read_timeout`                    | `2s`                                                | The maximum duration for reading the entire request.                        |
@@ -181,12 +176,7 @@ The configuration files are yaml mappings with the following values:
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
 | `scheduler_jobs.notification_cleanup`    | `10m`                                               | The interval for cleaning up sent notifications.                            |
-| `scheduler_jobs.token_expiration_cleanup`| `24h`                                               | The interval for cleaning up expired tokens.                                |
-|`scheduler_jobs.token_expiration_reminder`| `72h`                                               | How long before an app token expiration to send a reminder for it.          |
-| `email.host`                             | (empty)                                             | The email server host.                                                      |
-| `email.port`                             | (empty)                                             | The email server port.                                                      |
-| `email.email`                            | (empty)                                             | The email address used for sending emails.                                  |
-| `email.password`                         | (empty)                                             | The password for authenticating with the email server.                      |
+
 
 ## 🛠️ Development
 

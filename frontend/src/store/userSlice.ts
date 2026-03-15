@@ -20,7 +20,6 @@ export interface UserState {
 
 const initialState: UserState = {
   profile: {
-    display_name: '',
     notifications: {
       provider: {
         provider: 'none'

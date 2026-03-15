@@ -1,10 +1,8 @@
 package middleware
 
 import (
-	"encoding/base64"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
@@ -52,28 +50,5 @@ func RequestLogger() gin.HandlerFunc {
 		log := logging.FromContext(c)
 		log.Infof("IP:%s Method:%s UA:%q Route:%s Status:%d",
 			c.ClientIP(), c.Request.Method, c.Request.UserAgent(), c.Request.URL.Path, c.Writer.Status())
-	}
-}
-
-func BasicAuthToJWTAdapter() gin.HandlerFunc {
-	return func(c *gin.Context) {
-		authHeader := c.GetHeader("Authorization")
-
-		if strings.HasPrefix(authHeader, "Basic ") {
-			b64 := strings.TrimPrefix(authHeader, "Basic ")
-			decoded, err := base64.StdEncoding.DecodeString(b64)
-			if err == nil {
-				parts := strings.SplitN(string(decoded), ":", 2)
-				token := parts[0]
-
-				if len(parts) == 2 {
-					token = parts[1]
-				}
-
-				c.Request.Header.Set("Authorization", "Bearer "+token)
-			}
-		}
-
-		c.Next()
 	}
 }

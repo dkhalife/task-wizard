@@ -13,7 +13,6 @@ import (
 	auth "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/migrations"
 	database "dkhalife.com/tasks/core/internal/utils/database"
-	"dkhalife.com/tasks/core/internal/utils/email"
 	utils "dkhalife.com/tasks/core/internal/utils/middleware"
 	ws "dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-contrib/cors"
@@ -30,7 +29,6 @@ import (
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
-	"dkhalife.com/tasks/core/internal/services/housekeeper"
 	lService "dkhalife.com/tasks/core/internal/services/labels"
 	logging "dkhalife.com/tasks/core/internal/services/logging"
 	notifier "dkhalife.com/tasks/core/internal/services/notifications"
@@ -73,12 +71,10 @@ func main() {
 
 		// add services
 		fx.Provide(notifier.NewNotifier),
-		fx.Provide(housekeeper.NewAppTokenCleaner),
 
 		// Rate limiter
 		fx.Provide(utils.NewRateLimiter),
 
-		fx.Provide(email.NewEmailSender),
 		fx.Provide(newServer),
 		fx.Provide(ws.NewWSServer),
 		fx.Provide(scheduler.NewScheduler),

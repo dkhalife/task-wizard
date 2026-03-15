@@ -6,7 +6,6 @@ import (
 )
 
 var IdentityKey = "user_id"
-var AppTokenKey = "token_id"
 
 func CurrentIdentity(c *gin.Context) *models.SignedInIdentity {
 	data, ok := c.Get(IdentityKey)

@@ -7,7 +7,6 @@ import {
   Option,
 } from '@mui/joy'
 import React from 'react'
-import { APITokenSettings } from './APITokenSettings'
 import { NotificationSettings } from '../Notifications/NotificationSettings'
 import { ThemeToggle } from './ThemeToggle'
 import { FeatureFlagSettings } from './FeatureFlagSettings'
@@ -80,7 +79,6 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
         </div>
         <NotificationSettings />
         <DesktopNotificationToggle />
-        <APITokenSettings />
         <FeatureFlagSettings />
         <Box
           sx={{
