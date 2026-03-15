@@ -38,7 +38,6 @@ func (s *UserTestSuite) TestCreateUser() {
 	user := &models.User{
 		DirectoryID: "test-dir",
 		ObjectID:    "test-obj",
-		DisplayName: "Test User",
 		CreatedAt:   time.Now(),
 	}
 
@@ -98,7 +97,6 @@ func (s *UserTestSuite) TestFindByEntraID() {
 	testUser := &models.User{
 		DirectoryID: "dir-123",
 		ObjectID:    "obj-456",
-		DisplayName: "Entra User",
 		CreatedAt:   time.Now(),
 	}
 
@@ -109,7 +107,6 @@ func (s *UserTestSuite) TestFindByEntraID() {
 	s.Require().NoError(err)
 	s.NotNil(user)
 	s.Equal(testUser.ID, user.ID)
-	s.Equal("Entra User", user.DisplayName)
 }
 
 func (s *UserTestSuite) TestFindByEntraIDNotFound() {
@@ -122,13 +119,12 @@ func (s *UserTestSuite) TestFindByEntraIDNotFound() {
 func (s *UserTestSuite) TestEnsureUserCreatesNew() {
 	ctx := context.Background()
 
-	user, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User")
+	user, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj")
 	s.Require().NoError(err)
 	s.NotNil(user)
 	s.NotZero(user.ID)
 	s.Equal("new-dir", user.DirectoryID)
 	s.Equal("new-obj", user.ObjectID)
-	s.Equal("New User", user.DisplayName)
 }
 
 func (s *UserTestSuite) TestEnsureUserReturnsExisting() {
@@ -137,17 +133,15 @@ func (s *UserTestSuite) TestEnsureUserReturnsExisting() {
 	existing := &models.User{
 		DirectoryID: "existing-dir",
 		ObjectID:    "existing-obj",
-		DisplayName: "Existing User",
 		CreatedAt:   time.Now(),
 	}
 
 	err := s.DB.Create(existing).Error
 	s.Require().NoError(err)
 
-	user, err := s.repo.EnsureUser(ctx, "existing-dir", "existing-obj", "Different Name")
+	user, err := s.repo.EnsureUser(ctx, "existing-dir", "existing-obj")
 	s.Require().NoError(err)
 	s.Equal(existing.ID, user.ID)
-	s.Equal("Existing User", user.DisplayName)
 }
 
 func (s *UserTestSuite) TestEnsureUserRegistrationDisabled() {
@@ -155,7 +149,7 @@ func (s *UserTestSuite) TestEnsureUserRegistrationDisabled() {
 
 	s.cfg.Server.Registration = false
 
-	_, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj", "New User")
+	_, err := s.repo.EnsureUser(ctx, "new-dir", "new-obj")
 	s.Require().Error(err)
 	s.Contains(err.Error(), "registration is disabled")
 }

@@ -6,7 +6,6 @@ import (
 
 type User struct {
 	ID          int       `json:"id" gorm:"primary_key;not null"`
-	DisplayName string    `json:"display_name" gorm:"column:display_name;not null"`
 	DirectoryID string    `json:"-" gorm:"column:directory_id;not null;default:''"`
 	ObjectID    string    `json:"-" gorm:"column:object_id;not null;default:''"`
 	CreatedAt   time.Time `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`

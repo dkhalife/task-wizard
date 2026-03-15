@@ -52,15 +52,6 @@ func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 	log := logging.FromContext(c)
 
-	user, err := h.userRepo.GetUser(c, currentIdentity.UserID)
-	if err != nil {
-		log.Errorf("failed to get user: %s", err.Error())
-		c.JSON(http.StatusInternalServerError, gin.H{
-			"error": "Failed to get user",
-		})
-		return
-	}
-
 	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, currentIdentity.UserID)
 	if err != nil {
 		log.Errorf("failed to get notification settings: %s", err.Error())
@@ -72,7 +63,6 @@ func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
-			"display_name":  user.DisplayName,
 			"notifications": notificationSettings,
 		},
 	})
