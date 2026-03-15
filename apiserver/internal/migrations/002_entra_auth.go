@@ -49,16 +49,21 @@ func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
 	}
 
 	if !migrator.HasIndex("users", "idx_users_entra_id") {
-		var indexSQL string
 		switch dialect {
 		case "sqlite":
-			indexSQL = "CREATE UNIQUE INDEX idx_users_entra_id ON users(directory_id, object_id) WHERE directory_id != '' AND object_id != ''"
+			if err := dbCtx.Exec("CREATE UNIQUE INDEX idx_users_entra_id ON users(directory_id, object_id) WHERE directory_id != '' AND object_id != ''").Error; err != nil {
+				return err
+			}
 		case "mysql":
-			indexSQL = "CREATE UNIQUE INDEX idx_users_entra_id ON users ((IF(directory_id = '', NULL, directory_id)), (IF(object_id = '', NULL, object_id)))"
-		}
-
-		if err := dbCtx.Exec(indexSQL).Error; err != nil {
-			return err
+			for _, stmt := range []string{
+				"ALTER TABLE users ADD COLUMN directory_id_idx VARCHAR(255) GENERATED ALWAYS AS (IF(directory_id = '', NULL, directory_id)) VIRTUAL",
+				"ALTER TABLE users ADD COLUMN object_id_idx VARCHAR(255) GENERATED ALWAYS AS (IF(object_id = '', NULL, object_id)) VIRTUAL",
+				"CREATE UNIQUE INDEX idx_users_entra_id ON users (directory_id_idx, object_id_idx)",
+			} {
+				if err := dbCtx.Exec(stmt).Error; err != nil {
+					return err
+				}
+			}
 		}
 	}
 
@@ -72,10 +77,21 @@ func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
 func (m *EntraAuthMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
 	migrator := dbCtx.Migrator()
+	dialect := db.Dialector.Name()
 
 	if migrator.HasIndex("users", "idx_users_entra_id") {
 		if err := migrator.DropIndex("users", "idx_users_entra_id"); err != nil {
 			return err
+		}
+	}
+
+	if dialect == "mysql" {
+		for _, col := range []string{"directory_id_idx", "object_id_idx"} {
+			if migrator.HasColumn("users", col) {
+				if err := dbCtx.Exec("ALTER TABLE users DROP COLUMN " + col).Error; err != nil {
+					return err
+				}
+			}
 		}
 	}
 
