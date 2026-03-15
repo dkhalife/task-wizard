@@ -2,11 +2,13 @@ package auth
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
@@ -20,9 +22,21 @@ import (
 
 type AuthMiddleware struct {
 	enabled  bool
-	verifier *oidc.IDTokenVerifier
+	keySet   oidc.KeySet
+	issuer   string
+	audience string
 	userRepo uRepo.IUserRepo
 	secret   string
+}
+
+type accessTokenClaims struct {
+	Issuer            string `json:"iss"`
+	Audience          string `json:"aud"`
+	ExpiresAt         int64  `json:"exp"`
+	TenantID          string `json:"tid"`
+	ObjectID          string `json:"oid"`
+	Name              string `json:"name"`
+	PreferredUsername string `json:"preferred_username"`
 }
 
 func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddleware, error) {
@@ -40,15 +54,22 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddl
 	if issuer == "" {
 		issuer = "https://login.microsoftonline.com/" + cfg.Entra.TenantID + "/v2.0"
 	}
+	m.issuer = issuer
+	m.audience = cfg.Entra.Audience
 
 	provider, err := oidc.NewProvider(context.Background(), issuer)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create OIDC provider: %s", err.Error())
 	}
 
-	m.verifier = provider.Verifier(&oidc.Config{
-		ClientID: cfg.Entra.Audience,
-	})
+	var providerClaims struct {
+		JWKSURL string `json:"jwks_uri"`
+	}
+	if err := provider.Claims(&providerClaims); err != nil {
+		return nil, fmt.Errorf("failed to extract JWKS URI: %s", err.Error())
+	}
+
+	m.keySet = oidc.NewRemoteKeySet(context.Background(), providerClaims.JWKSURL)
 
 	return m, nil
 }
@@ -86,7 +107,7 @@ func (m *AuthMiddleware) authenticate(c *gin.Context) (*models.SignedInIdentity,
 		return identity, nil
 	}
 
-	return m.verifyEntraToken(c, token)
+	return m.verifyAccessToken(c.Request.Context(), token)
 }
 
 func extractBearerToken(c *gin.Context) string {
@@ -165,32 +186,36 @@ func (m *AuthMiddleware) verifyAppToken(c *gin.Context, rawToken string) (*model
 	}, nil
 }
 
-func (m *AuthMiddleware) verifyEntraToken(c *gin.Context, rawToken string) (*models.SignedInIdentity, error) {
-	log := logging.FromContext(c)
-
-	idToken, err := m.verifier.Verify(c.Request.Context(), rawToken)
+func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string) (*models.SignedInIdentity, error) {
+	payload, err := m.keySet.VerifySignature(ctx, rawToken)
 	if err != nil {
-		return nil, fmt.Errorf("token verification failed: %s", err.Error())
+		return nil, fmt.Errorf("token signature verification failed: %s", err.Error())
 	}
 
-	var claims map[string]interface{}
-	if err := idToken.Claims(&claims); err != nil {
-		return nil, fmt.Errorf("failed to extract claims: %s", err.Error())
+	var claims accessTokenClaims
+	if err := json.Unmarshal(payload, &claims); err != nil {
+		return nil, fmt.Errorf("failed to parse token claims: %s", err.Error())
 	}
 
-	tid, _ := claims["tid"].(string)
-	oid, _ := claims["oid"].(string)
-	if tid == "" || oid == "" {
+	if claims.Issuer != m.issuer {
+		return nil, fmt.Errorf("invalid token issuer")
+	}
+
+	if claims.Audience != m.audience {
+		return nil, fmt.Errorf("invalid token audience")
+	}
+
+	if time.Now().Unix() > claims.ExpiresAt {
+		return nil, fmt.Errorf("token has expired")
+	}
+
+	if claims.TenantID == "" || claims.ObjectID == "" {
 		return nil, fmt.Errorf("missing tid or oid in token claims")
 	}
 
-	name, _ := claims["name"].(string)
-	email, _ := claims["preferred_username"].(string)
-
-	user, err := m.userRepo.EnsureUser(c.Request.Context(), tid, oid, name, email)
+	user, err := m.userRepo.EnsureUser(ctx, claims.TenantID, claims.ObjectID, claims.Name, claims.PreferredUsername)
 	if err != nil {
-		log.Errorw("failed to ensure user", "err", err)
-		return nil, fmt.Errorf("failed to resolve user identity")
+		return nil, fmt.Errorf("failed to resolve user identity: %s", err.Error())
 	}
 
 	return &models.SignedInIdentity{
@@ -221,36 +246,7 @@ func (m *AuthMiddleware) VerifyWSToken(ctx context.Context, rawToken string) (*m
 		return m.bypassAuth(ctx)
 	}
 
-	idToken, err := m.verifier.Verify(ctx, rawToken)
-	if err != nil {
-		return nil, fmt.Errorf("invalid token: %s", err.Error())
-	}
-
-	var claims map[string]interface{}
-	if err := idToken.Claims(&claims); err != nil {
-		return nil, fmt.Errorf("failed to extract claims: %s", err.Error())
-	}
-
-	tid, _ := claims["tid"].(string)
-	oid, _ := claims["oid"].(string)
-	if tid == "" || oid == "" {
-		return nil, fmt.Errorf("missing tid or oid in token claims")
-	}
-
-	name, _ := claims["name"].(string)
-	email, _ := claims["preferred_username"].(string)
-
-	user, err := m.userRepo.EnsureUser(ctx, tid, oid, name, email)
-	if err != nil {
-		return nil, fmt.Errorf("failed to resolve user: %s", err.Error())
-	}
-
-	return &models.SignedInIdentity{
-		UserID:  user.ID,
-		TokenID: 0,
-		Type:    models.IdentityTypeUser,
-		Scopes:  models.AllUserScopes(),
-	}, nil
+	return m.verifyAccessToken(ctx, rawToken)
 }
 
 func ScopeMiddleware(requiredScope models.ApiTokenScope) gin.HandlerFunc {
