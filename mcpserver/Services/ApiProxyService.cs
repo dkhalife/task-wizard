@@ -1,5 +1,6 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace TaskWizard.McpServer.Services;
 
@@ -8,7 +9,7 @@ public class ApiProxyService(IHttpClientFactory httpClientFactory, IHttpContextA
     private static readonly JsonSerializerOptions JsonOptions = new()
     {
         PropertyNamingPolicy = JsonNamingPolicy.SnakeCaseLower,
-        WriteIndented = true
+        DefaultIgnoreCondition = JsonIgnoreCondition.WhenWritingNull,
     };
 
     private HttpClient CreateClient()
@@ -36,8 +37,19 @@ public class ApiProxyService(IHttpClientFactory httpClientFactory, IHttpContextA
         }
 
         var response = await client.SendAsync(request);
-        response.EnsureSuccessStatusCode();
-        return await response.Content.ReadAsStringAsync();
+        var responseBody = await response.Content.ReadAsStringAsync();
+
+        if (!response.IsSuccessStatusCode)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                error = true,
+                status = (int)response.StatusCode,
+                body = responseBody,
+            });
+        }
+
+        return responseBody;
     }
 
     // Tasks

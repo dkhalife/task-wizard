@@ -8,7 +8,14 @@ var builder = WebApplication.CreateBuilder(args);
 
 var tenantId = Environment.GetEnvironmentVariable("TW_ENTRA_TENANT_ID") ?? "";
 var audience = Environment.GetEnvironmentVariable("TW_ENTRA_AUDIENCE") ?? "";
-var issuer = Environment.GetEnvironmentVariable("TW_ENTRA_ISSUER")
+
+if (string.IsNullOrWhiteSpace(tenantId))
+    throw new InvalidOperationException("TW_ENTRA_TENANT_ID must be set to a valid Entra tenant ID.");
+
+if (string.IsNullOrWhiteSpace(audience))
+    throw new InvalidOperationException("TW_ENTRA_AUDIENCE must be set to a valid Entra audience.");
+
+var authority = Environment.GetEnvironmentVariable("TW_ENTRA_ISSUER")
     ?? $"https://login.microsoftonline.com/{tenantId}/v2.0";
 var apiUrl = Environment.GetEnvironmentVariable("TW_API_URL") ?? "http://localhost:2021";
 
@@ -28,7 +35,7 @@ builder.Services.AddAuthentication(options =>
 })
 .AddJwtBearer(options =>
 {
-    options.Authority = $"https://login.microsoftonline.com/{tenantId}/v2.0";
+    options.Authority = authority;
     options.TokenValidationParameters = new TokenValidationParameters
     {
         ValidateIssuer = true,
@@ -36,14 +43,14 @@ builder.Services.AddAuthentication(options =>
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
         ValidAudience = audience,
-        ValidIssuer = issuer,
+        ValidIssuer = authority,
     };
 })
 .AddMcp(options =>
 {
     options.ResourceMetadata = new()
     {
-        AuthorizationServers = { $"https://login.microsoftonline.com/{tenantId}/v2.0" },
+        AuthorizationServers = { authority },
     };
 });
 
