@@ -22,6 +22,14 @@ COPY --from=builder /app/publish .
 
 ENV ASPNETCORE_URLS="http://+:3001"
 
+# Entra authentication (always required)
+# ENV TW_ENTRA_TENANT_ID=""
+# ENV TW_ENTRA_AUDIENCE=""
+# ENV TW_ENTRA_ISSUER=""
+
+# Go API server URL for proxying requests
+ENV TW_API_URL="http://apiserver:2021"
+
 EXPOSE 3001
 
 ENTRYPOINT ["dotnet", "TaskWizardMcpServer.dll"]
