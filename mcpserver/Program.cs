@@ -8,12 +8,16 @@ var builder = WebApplication.CreateBuilder(args);
 
 var tenantId = Environment.GetEnvironmentVariable("TW_ENTRA_TENANT_ID") ?? "";
 var audience = Environment.GetEnvironmentVariable("TW_ENTRA_AUDIENCE") ?? "";
+var mcpResource = Environment.GetEnvironmentVariable("TW_MCP_RESOURCE") ?? "";
 
 if (string.IsNullOrWhiteSpace(tenantId))
     throw new InvalidOperationException("TW_ENTRA_TENANT_ID must be set to a valid Entra tenant ID.");
 
 if (string.IsNullOrWhiteSpace(audience))
     throw new InvalidOperationException("TW_ENTRA_AUDIENCE must be set to a valid Entra audience.");
+
+if (string.IsNullOrWhiteSpace(mcpResource))
+    throw new InvalidOperationException("TW_MCP_RESOURCE must be set to the canonical URL of this MCP server (e.g. https://mcp.example.com).");
 
 var authority = Environment.GetEnvironmentVariable("TW_ENTRA_ISSUER")
     ?? $"https://login.microsoftonline.com/{tenantId}/v2.0";
@@ -50,7 +54,16 @@ builder.Services.AddAuthentication(options =>
 {
     options.ResourceMetadata = new()
     {
+        Resource = mcpResource,
         AuthorizationServers = { authority },
+        ScopesSupported = {
+            $"{audience}/user:read",
+            $"{audience}/label:read",
+            $"{audience}/label:write",
+            $"{audience}/task:read",
+            $"{audience}/task:write",
+        },
+        BearerMethodsSupported = { "header" },
     };
 });
 
