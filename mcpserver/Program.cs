@@ -57,11 +57,11 @@ builder.Services.AddAuthentication(options =>
         Resource = mcpResource,
         AuthorizationServers = { authority },
         ScopesSupported = {
-            $"{audience}/user:read",
-            $"{audience}/label:read",
-            $"{audience}/label:write",
-            $"{audience}/task:read",
-            $"{audience}/task:write",
+            $"{audience}/User.Read",
+            $"{audience}/Labels.Read",
+            $"{audience}/Labels.Write",
+            $"{audience}/Tasks.Read",
+            $"{audience}/Tasks.Write",
         },
         BearerMethodsSupported = { "header" },
     };
