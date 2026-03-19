@@ -32,14 +32,14 @@ type SignedInIdentity struct {
 type ApiTokenScope string
 
 const (
-	ApiTokenScopeTaskRead   ApiTokenScope = "task:read"
-	ApiTokenScopeTaskWrite  ApiTokenScope = "task:write"
-	ApiTokenScopeLabelRead  ApiTokenScope = "label:read"
-	ApiTokenScopeLabelWrite ApiTokenScope = "label:write"
-	ApiTokenScopeUserRead   ApiTokenScope = "user:read"
-	ApiTokenScopeUserWrite  ApiTokenScope = "user:write"
-	ApiTokenScopeDavRead    ApiTokenScope = "dav:read"
-	ApiTokenScopeDavWrite   ApiTokenScope = "dav:write"
+	ApiTokenScopeTaskRead   ApiTokenScope = "Tasks.Read"
+	ApiTokenScopeTaskWrite  ApiTokenScope = "Tasks.Write"
+	ApiTokenScopeLabelRead  ApiTokenScope = "Labels.Read"
+	ApiTokenScopeLabelWrite ApiTokenScope = "Labels.Write"
+	ApiTokenScopeUserRead   ApiTokenScope = "User.Read"
+	ApiTokenScopeUserWrite  ApiTokenScope = "User.Write"
+	ApiTokenScopeDavRead    ApiTokenScope = "Dav.Read"
+	ApiTokenScopeDavWrite   ApiTokenScope = "Dav.Write"
 )
 
 func AllUserScopes() []ApiTokenScope {
