@@ -1,0 +1,15 @@
+{
+  "client_id" : "28ea7654-5dea-4997-aa57-cf0d01b3d8d7",
+  "authorization_user_agent" : "DEFAULT",
+  "account_mode" : "SINGLE",
+  "redirect_uri" : "msauth://com.dkhalife.tasks/Td6Sn1vVl6dRUyqdcjJskmNwtss%3D",
+  "authorities" : [
+    {
+      "type": "AAD",
+      "audience": {
+        "type": "AzureADMyOrg",
+        "tenant_id": "a8292176-9d5a-4891-8ee2-a5db434dac1c"
+      }
+    }
+  ]
+}

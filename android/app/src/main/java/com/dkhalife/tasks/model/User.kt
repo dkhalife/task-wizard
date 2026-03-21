@@ -1,0 +1,22 @@
+package com.dkhalife.tasks.model
+
+data class UserProfile(
+    val notifications: NotificationSettings = NotificationSettings()
+)
+
+data class NotificationSettings(
+    val provider: NotificationProvider = NotificationProvider(),
+    val triggers: NotificationTriggerOptions = NotificationTriggerOptions()
+)
+
+data class NotificationProvider(
+    val provider: String = "none",
+    val url: String = "",
+    val method: String = "",
+    val token: String = ""
+)
+
+data class NotificationUpdateRequest(
+    val provider: NotificationProvider,
+    val triggers: NotificationTriggerOptions
+)

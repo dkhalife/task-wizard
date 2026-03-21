@@ -1,0 +1,62 @@
+package com.dkhalife.tasks
+
+import android.app.Application
+import com.dkhalife.tasks.auth.AuthManager
+import com.microsoft.identity.client.IPublicClientApplication
+import com.microsoft.identity.client.ISingleAccountPublicClientApplication
+import com.microsoft.identity.client.PublicClientApplication
+import com.microsoft.identity.client.exception.MsalException
+import dagger.hilt.android.HiltAndroidApp
+import javax.inject.Inject
+
+@HiltAndroidApp
+class TaskWizardApplication : Application() {
+
+    @Inject
+    lateinit var authManager: AuthManager
+
+    override fun onCreate() {
+        super.onCreate()
+        initializeMsal()
+    }
+
+    private fun initializeMsal() {
+        PublicClientApplication.createSingleAccountPublicClientApplication(
+            this,
+            R.raw.auth_config_single_account,
+            object : IPublicClientApplication.ISingleAccountApplicationCreatedListener {
+                override fun onCreated(application: ISingleAccountPublicClientApplication) {
+                    authManager.registerSingleAccountApp(application)
+                    loadCurrentAccount(application)
+                }
+
+                override fun onError(exception: MsalException) {
+                    android.util.Log.e(TAG, "Failed to initialize MSAL", exception)
+                }
+            }
+        )
+    }
+
+    private fun loadCurrentAccount(app: ISingleAccountPublicClientApplication) {
+        app.getCurrentAccountAsync(object : ISingleAccountPublicClientApplication.CurrentAccountCallback {
+            override fun onAccountLoaded(activeAccount: com.microsoft.identity.client.IAccount?) {
+                authManager.updateAccount(activeAccount)
+            }
+
+            override fun onAccountChanged(
+                priorAccount: com.microsoft.identity.client.IAccount?,
+                currentAccount: com.microsoft.identity.client.IAccount?
+            ) {
+                authManager.updateAccount(currentAccount)
+            }
+
+            override fun onError(exception: MsalException) {
+                android.util.Log.e(TAG, "Failed to load current account", exception)
+            }
+        })
+    }
+
+    companion object {
+        private const val TAG = "TaskWizardApplication"
+    }
+}

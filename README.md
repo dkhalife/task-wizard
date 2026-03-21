@@ -1,4 +1,4 @@
-[![api build](https://github.com/dkhalife/task-wizard/actions/workflows/api-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/api-build.yml) [![frontend build](https://github.com/dkhalife/task-wizard/actions/workflows/frontend-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/frontend-build.yml) [![mcp build](https://github.com/dkhalife/task-wizard/actions/workflows/mcp-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/mcp-build.yml) [![codecov](https://codecov.io/gh/dkhalife/task-wizard/graph/badge.svg?token=UQ4DTE3WI1)](https://codecov.io/gh/dkhalife/task-wizard) [![CodeQL](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql) [![Dependabot Updates](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates)
+[![api build](https://github.com/dkhalife/task-wizard/actions/workflows/api-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/api-build.yml) [![frontend build](https://github.com/dkhalife/task-wizard/actions/workflows/frontend-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/frontend-build.yml) [![android build](https://github.com/dkhalife/task-wizard/actions/workflows/android-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/android-build.yml) [![mcp build](https://github.com/dkhalife/task-wizard/actions/workflows/mcp-build.yml/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/mcp-build.yml) [![codecov](https://codecov.io/gh/dkhalife/task-wizard/graph/badge.svg?token=UQ4DTE3WI1)](https://codecov.io/gh/dkhalife/task-wizard) [![CodeQL](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/github-code-scanning/codeql) [![Dependabot Updates](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates/badge.svg)](https://github.com/dkhalife/task-wizard/actions/workflows/dependabot/dependabot-updates)
 
 # Task Wizard
 
@@ -30,6 +30,8 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 🔁 Recurring patterns for those chores you don't want to forget
 
 📧 Notifications for important deadlines you don't want to miss
+
+📱 Native Android app with real-time sync
 
 🌐 CalDAV endpoint at `/dav/tasks` with OAuth 2.0 Bearer token authentication
 
@@ -188,6 +190,16 @@ GitHub codespaces to jump into a remote development environment without installi
 * [GoLang](https://go.dev)
 * [NodeJS](https://nodejs.org) 20+
 * [yarn](https://yarnpkg.com)
+* [Android Studio](https://developer.android.com/studio) (for Android development)
+
+### 📱 Android App
+
+The Android app lives in the `android/` directory:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
 
 ## 🤝 Contributing
 
