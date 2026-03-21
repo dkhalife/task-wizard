@@ -363,6 +363,12 @@ func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *authMW.AuthMidd
 		davRoutes.PUT("/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavWrite), h.handlePut)
 	}
 
-	router.Handle("PROPFIND", "/", authMiddleware, h.handleRootRedirect)
-	router.Handle("REPORT", "/", authMiddleware, h.handleRootRedirect)
+	// Rewrite path before auth so WWW-Authenticate is emitted for /dav paths
+	davPathRewrite := func(c *gin.Context) {
+		c.Request.URL.Path = "/dav/tasks/"
+		c.Next()
+	}
+
+	router.Handle("PROPFIND", "/", davPathRewrite, authMiddleware, h.handleRootRedirect)
+	router.Handle("REPORT", "/", davPathRewrite, authMiddleware, h.handleRootRedirect)
 }
