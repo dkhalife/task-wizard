@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dkhalife.tasks.model.*
 import com.dkhalife.tasks.repo.LabelRepository
+import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +13,8 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LabelViewModel @Inject constructor(
-    private val labelRepository: LabelRepository
+    private val labelRepository: LabelRepository,
+    private val webSocketManager: WebSocketManager
 ) : ViewModel() {
 
     val labels: StateFlow<List<Label>> = labelRepository.labels
@@ -25,6 +27,17 @@ class LabelViewModel @Inject constructor(
 
     init {
         refreshLabels()
+        collectWebSocketMessages()
+    }
+
+    private fun collectWebSocketMessages() {
+        viewModelScope.launch {
+            webSocketManager.messages.collect { message ->
+                when (message.action) {
+                    "label_created", "label_updated", "label_deleted" -> refreshLabels()
+                }
+            }
+        }
     }
 
     fun refreshLabels() {

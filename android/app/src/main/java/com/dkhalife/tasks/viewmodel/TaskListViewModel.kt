@@ -29,6 +29,29 @@ class TaskListViewModel @Inject constructor(
     init {
         refreshTasks()
         webSocketManager.connect()
+        collectWebSocketMessages()
+    }
+
+    private fun collectWebSocketMessages() {
+        viewModelScope.launch {
+            webSocketManager.messages.collect { message ->
+                when (message.action) {
+                    "task_created", "task_updated", "task_skipped" -> refreshTasks()
+                    "task_completed" -> {
+                        refreshTasks()
+                        refreshCompletedTasks()
+                    }
+                    "task_uncompleted" -> {
+                        refreshTasks()
+                        refreshCompletedTasks()
+                    }
+                    "task_deleted" -> {
+                        refreshTasks()
+                        refreshCompletedTasks()
+                    }
+                }
+            }
+        }
     }
 
     fun refreshTasks() {
