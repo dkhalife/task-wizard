@@ -31,7 +31,16 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="com.dkhalife.tasks"
-                    android:path="/auth"
+                    android:path="/Td6Sn1vVl6dRUyqdcjJskmNwtss="
+                    android:scheme="msauth" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:host="com.dkhalife.tasks"
+                    android:path="/sOIkLOwynQaOvaTd0Nz5bdDlRgg="
                     android:scheme="msauth" />
             </intent-filter>
         </activity>

@@ -1,7 +1,8 @@
 {
   "client_id" : "28ea7654-5dea-4997-aa57-cf0d01b3d8d7",
   "authorization_user_agent" : "DEFAULT",
-  "redirect_uri" : "msauth://com.dkhalife.tasks/eHLxP68x2bBdmf6NSvCqO2rgP0w%3D",
+  "account_mode" : "SINGLE",
+  "redirect_uri" : "msauth://com.dkhalife.tasks/Td6Sn1vVl6dRUyqdcjJskmNwtss%3D",
   "authorities" : [
     {
       "type": "AAD",
