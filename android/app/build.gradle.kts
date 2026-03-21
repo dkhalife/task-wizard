@@ -24,10 +24,9 @@ fun calculateVersion(): Pair<Int, String> {
     val dateFormat = DateTimeFormatter.ofPattern("yyMMdd")
     val dateString = today.format(dateFormat)
     val dailyRevision = runNumber % 100
-    val versionCode = runNumber
     val versionName = "$dateString.$dailyRevision.$runAttempt"
 
-    return Pair(versionCode, versionName)
+    return Pair(runNumber, versionName)
 }
 
 android {
