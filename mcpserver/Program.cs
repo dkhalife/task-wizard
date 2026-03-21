@@ -8,6 +8,7 @@ var builder = WebApplication.CreateBuilder(args);
 
 var tenantId = Environment.GetEnvironmentVariable("TW_ENTRA_TENANT_ID") ?? "";
 var audience = Environment.GetEnvironmentVariable("TW_ENTRA_AUDIENCE") ?? "";
+var clientId = Environment.GetEnvironmentVariable("TW_ENTRA_CLIENT_ID") ?? "";
 var mcpResource = Environment.GetEnvironmentVariable("TW_MCP_RESOURCE") ?? "";
 
 if (string.IsNullOrWhiteSpace(tenantId))
@@ -15,6 +16,9 @@ if (string.IsNullOrWhiteSpace(tenantId))
 
 if (string.IsNullOrWhiteSpace(audience))
     throw new InvalidOperationException("TW_ENTRA_AUDIENCE must be set to a valid Entra audience.");
+
+if (string.IsNullOrWhiteSpace(clientId))
+    throw new InvalidOperationException("TW_ENTRA_CLIENT_ID must be set to the Entra app registration's client ID.");
 
 if (string.IsNullOrWhiteSpace(mcpResource))
     throw new InvalidOperationException("TW_MCP_RESOURCE must be set to the canonical URL of this MCP server (e.g. https://mcp.example.com).");
@@ -46,7 +50,7 @@ builder.Services.AddAuthentication(options =>
         ValidateAudience = true,
         ValidateLifetime = true,
         ValidateIssuerSigningKey = true,
-        ValidAudience = audience,
+        ValidAudiences = new[] { audience, clientId },
         ValidIssuer = authority,
     };
 })
