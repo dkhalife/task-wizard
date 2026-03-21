@@ -48,9 +48,10 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
     }
 
     private fun notifyUserChanged(isSignedIn: Boolean) {
-        synchronized(userChangeListeners) {
-            userChangeListeners.forEach { it.onUserChanged(isSignedIn) }
+        val snapshot = synchronized(userChangeListeners) {
+            userChangeListeners.toList()
         }
+        snapshot.forEach { it.onUserChanged(isSignedIn) }
     }
 
     fun registerSingleAccountApp(app: ISingleAccountPublicClientApplication) {
