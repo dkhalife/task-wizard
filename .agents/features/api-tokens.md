@@ -5,7 +5,7 @@ Fine-grained access tokens that allow external integrations to interact with Tas
 ## Capabilities
 
 - Create named API tokens with an expiration date
-- Scoped permissions: Tasks.Read, Tasks.Write, Labels.Read, Labels.Write, Dav.Read, Dav.Write, User.Read, User.Write, Tokens.Write
+- Scoped permissions: Tasks.Read, Tasks.Write, Labels.Read, Labels.Write, User.Read, User.Write, Tokens.Write
 - Write scopes automatically include their corresponding read scope
 - Tokens are validated the same way as JWT sessions but carry scope restrictions
 - List and delete existing tokens from the settings UI

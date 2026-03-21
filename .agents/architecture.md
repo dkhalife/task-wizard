@@ -56,12 +56,12 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 
 | Layer | Directory | Purpose |
 |-------|-----------|---------|
-| HTTP Handlers | `internal/apis/` | REST + CalDAV route handlers |
+| HTTP Handlers | `internal/apis/` | REST route handlers |
 | Middleware | `internal/middleware/` | JWT auth, scope enforcement |
 | Models | `internal/models/` | GORM data models |
 | Repositories | `internal/repos/` | Database access layer |
 | Services | `internal/services/` | Business logic, scheduler, notifications, housekeeping |
-| Utilities | `internal/utils/` | Auth helpers, email, CalDAV parsing, DB setup |
+| Utilities | `internal/utils/` | Auth helpers, email, DB setup |
 | WebSocket | `internal/ws/` | Real-time push to connected clients |
 | Migrations | `internal/migrations/` | Schema versioning |
 | Config | `config/` | YAML-based configuration with env var overrides |
@@ -81,7 +81,7 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 - **Repository pattern** for data access abstraction
 - **Service layer** for business logic separation
 - **Dependency injection** (Uber FX) for wiring
-- **Scope-based authorization** on API tokens (e.g. `task:read`, `label:write`, `dav:read`)
+- **Scope-based authorization** on API tokens (e.g. `task:read`, `label:write`)
 - **Background scheduler** for notifications, token cleanup, password reset expiration
 - **Smart transport** in the frontend — uses WebSocket for real-time updates, HTTP for requests
 - **Feature flags** to toggle behaviors like WebSocket transport and auto-refresh
