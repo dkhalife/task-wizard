@@ -20,7 +20,6 @@ class WebSocketManager @Inject constructor(
     private val gson: Gson
 ) {
     private var webSocket: WebSocket? = null
-    private var isConnected = false
     private var reconnectAttempt = 0
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -48,7 +47,6 @@ class WebSocketManager @Inject constructor(
     fun disconnect() {
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
-        isConnected = false
     }
 
     fun sendAction(action: String, data: Any? = null): String {
@@ -64,7 +62,6 @@ class WebSocketManager @Inject constructor(
 
     private fun createListener() = object : WebSocketListener() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
-            isConnected = true
             reconnectAttempt = 0
         }
 
@@ -82,12 +79,10 @@ class WebSocketManager @Inject constructor(
         }
 
         override fun onFailure(webSocket: WebSocket, t: Throwable, response: Response?) {
-            isConnected = false
             scheduleReconnect()
         }
 
         override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-            isConnected = false
             if (code != 1000) {
                 scheduleReconnect()
             }
