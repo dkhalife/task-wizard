@@ -24,7 +24,6 @@ import (
 	"gorm.io/gorm"
 
 	apis "dkhalife.com/tasks/core/internal/apis"
-	cRepo "dkhalife.com/tasks/core/internal/repos/caldav"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
@@ -79,8 +78,6 @@ func main() {
 		fx.Provide(ws.NewWSServer),
 		fx.Provide(scheduler.NewScheduler),
 
-		// Labels:
-		fx.Provide(cRepo.NewCalDavRepository),
 		fx.Provide(lRepo.NewLabelRepository),
 		fx.Provide(lService.NewLabelService),
 		fx.Provide(lService.NewLabelsMessageHandler),
@@ -90,7 +87,6 @@ func main() {
 		fx.Provide(tService.NewTasksMessageHandler),
 		fx.Provide(apis.LabelsAPI),
 		fx.Provide(apis.LogsAPI),
-		fx.Provide(apis.CalDAVAPI),
 
 		fx.Provide(frontend.NewHandler),
 		fx.Provide(backend.NewHandler),
@@ -99,7 +95,6 @@ func main() {
 			apis.TaskRoutes,
 			apis.UserRoutes,
 			apis.LabelRoutes,
-			apis.CalDAVRoutes,
 			apis.LogRoutes,
 			ws.Routes,
 			tService.TaskMessages,

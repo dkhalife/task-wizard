@@ -75,10 +75,6 @@ func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		identity, err := m.authenticate(c)
 		if err != nil {
-			if strings.HasPrefix(c.Request.URL.Path, "/dav") {
-				c.Header("WWW-Authenticate", m.wwwAuthenticateHeader())
-			}
-
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": err.Error(),
 			})
@@ -88,14 +84,6 @@ func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
 		c.Set(authUtils.IdentityKey, identity)
 		c.Next()
 	}
-}
-
-func (m *AuthMiddleware) wwwAuthenticateHeader() string {
-	base := "https://login.microsoftonline.com/" + m.tenantID + "/oauth2/v2.0"
-	return fmt.Sprintf(
-		`Bearer realm="Task Wizard", authorization_uri="%s/authorize", token_uri="%s/token"`,
-		base, base,
-	)
 }
 
 func (m *AuthMiddleware) authenticate(c *gin.Context) (*models.SignedInIdentity, error) {

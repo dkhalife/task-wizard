@@ -38,8 +38,6 @@ const (
 	ApiTokenScopeLabelWrite ApiTokenScope = "Labels.Write"
 	ApiTokenScopeUserRead   ApiTokenScope = "User.Read"
 	ApiTokenScopeUserWrite  ApiTokenScope = "User.Write"
-	ApiTokenScopeDavRead    ApiTokenScope = "Dav.Read"
-	ApiTokenScopeDavWrite   ApiTokenScope = "Dav.Write"
 )
 
 func AllUserScopes() []ApiTokenScope {
@@ -50,7 +48,5 @@ func AllUserScopes() []ApiTokenScope {
 		ApiTokenScopeLabelWrite,
 		ApiTokenScopeUserRead,
 		ApiTokenScopeUserWrite,
-		ApiTokenScopeDavRead,
-		ApiTokenScopeDavWrite,
 	}
 }
