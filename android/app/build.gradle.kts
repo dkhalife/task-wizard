@@ -1,3 +1,5 @@
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
 import java.util.Properties
 
 plugins {
@@ -18,8 +20,8 @@ fun calculateVersion(): Pair<Int, String> {
     val runNumber = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
     val runAttempt = System.getenv("GITHUB_RUN_ATTEMPT")?.toIntOrNull() ?: 1
 
-    val today = java.time.LocalDate.now()
-    val dateFormat = java.time.format.DateTimeFormatter.ofPattern("yyMMdd")
+    val today = LocalDate.now()
+    val dateFormat = DateTimeFormatter.ofPattern("yyMMdd")
     val dateString = today.format(dateFormat)
     val dailyRevision = runNumber % 100
     val versionCode = runNumber
