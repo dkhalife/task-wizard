@@ -73,6 +73,14 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
 
     fun isLoaded(): Boolean = isAccountLoaded
 
+    override fun getCachedAccessToken(): String? {
+        val token = cachedAccessToken
+        if (token != null && System.currentTimeMillis() < cachedExpiryTimeMs - TOKEN_SKEW_MS) {
+            return token
+        }
+        return null
+    }
+
     override suspend fun getAccessToken(): String? {
         val token = cachedAccessToken
         if (token != null && System.currentTimeMillis() < cachedExpiryTimeMs - TOKEN_SKEW_MS) {

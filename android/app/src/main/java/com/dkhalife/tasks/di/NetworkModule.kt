@@ -28,8 +28,10 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(tokenProvider: AuthTokenProvider): OkHttpClient {
+        val authInterceptor = AuthInterceptor(tokenProvider)
         val builder = OkHttpClient.Builder()
-            .addInterceptor(AuthInterceptor(tokenProvider))
+            .addInterceptor(authInterceptor)
+            .authenticator(authInterceptor)
 
         if (BuildConfig.DEBUG) {
             builder.addInterceptor(HttpLoggingInterceptor().apply {
