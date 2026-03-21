@@ -152,6 +152,63 @@ jobs:
           tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
           platforms: linux/amd64
 
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: ${{ runner.os }}-gradle-${{ hashFiles('android/**/*.gradle*', 'android/**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x android/gradlew
+
+      - name: Decode Keystore
+        env:
+          ENCODED_STRING: ${{ secrets.SIGNING_KEY_STORE_BASE64 }}
+        run: |
+          echo $ENCODED_STRING > keystore-b64.txt
+          base64 -d keystore-b64.txt > "$RUNNER_TEMP/key.jks"
+
+      - name: Build Android bundle
+        env:
+          RELEASE_STORE_FILE: ${{ runner.temp }}/key.jks
+          RELEASE_STORE_PASSWORD: ${{ secrets.SIGNING_KEY_STORE_PASSWORD }}
+          RELEASE_KEY_ALIAS: signing_key
+          RELEASE_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
+          GITHUB_RUN_NUMBER: ${{ github.run_number }}
+          GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          cd android
+          ./gradlew bundleRelease
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v3
+        id: gcp-auth
+        with:
+          workload_identity_provider: projects/1037008586878/locations/global/workloadIdentityPools/github/providers/github
+          service_account: github-release@task-wizard-490917.iam.gserviceaccount.com
+
+      - name: Release Android to internal track
+        uses: r0adkll/upload-google-play@v1
+        with:
+          serviceAccountJson: ${{ steps.gcp-auth.outputs.credentials_file_path }}
+          packageName: com.dkhalife.tasks
+          releaseFiles: android/app/build/outputs/bundle/release/*.aab
+          track: internal
+
   release-production:
     runs-on: ubuntu-latest
     environment: stable
