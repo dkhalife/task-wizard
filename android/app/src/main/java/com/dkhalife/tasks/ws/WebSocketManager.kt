@@ -90,11 +90,11 @@ class WebSocketManager @Inject constructor(
     }
 
     private fun scheduleReconnect() {
-        val delay = minOf(30_000L, 1000L * (1L shl reconnectAttempt))
+        val backoffMs = minOf(30_000L, 1000L * (1L shl reconnectAttempt))
         reconnectAttempt++
 
         scope.launch {
-            delay(delay)
+            delay(backoffMs)
             connect()
         }
     }
