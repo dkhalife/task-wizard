@@ -1,6 +1,6 @@
 # Task Wizard — Architecture Summary
 
-Task Wizard is a self-hosted, privacy-focused task management application. It is composed of three main services.
+Task Wizard is a self-hosted, privacy-focused task management application. It is composed of four main components.
 
 ## System Components
 
@@ -17,7 +17,15 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 - **Transport**: HTTP REST
 - **Role**: Single-page application for task management, label organization, notification configuration, API token management, and user settings.
 
-### 3. MCP Server (`mcpserver/`)
+### 3. Android App (`android/`)
+- **Language**: Kotlin
+- **Framework**: Jetpack Compose, Material 3
+- **DI**: Hilt
+- **Network**: Retrofit (REST), OkHttp (WebSocket)
+- **Auth**: MSAL (Microsoft Entra ID)
+- **Role**: Native Android client for task and label management with real-time WebSocket sync.
+
+### 4. MCP Server (`mcpserver/`)
 - **Language**: C# (.NET 9)
 - **Framework**: ASP.NET Core with ModelContextProtocol
 - **Role**: Exposes task and label management as MCP (Model Context Protocol) tools so AI assistants can interact with Task Wizard programmatically. Currently uses in-memory stub data.
@@ -31,10 +39,10 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 │  (React)  │ ◄──── WebSocket ── │  (Go / Gin)  │
 └───────────┘                    └──────┬───────┘
                                        │ GORM
-                                       ▼
-                                 ┌────────────┐
-                                 │  SQLite /   │
-                                 │  MySQL      │
+┌───────────┐    HTTP REST             ▼
+│  Android  │ ──────────────────► ┌────────────┐
+│ (Kotlin)  │ ◄──── WebSocket ── │  SQLite /   │
+└───────────┘                    │  MySQL      │
                                  └────────────┘
 
 ┌───────────┐  MCP (HTTP)

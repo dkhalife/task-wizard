@@ -31,6 +31,8 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 📧 Notifications for important deadlines you don't want to miss
 
+📱 Native Android app with real-time sync
+
 🌐 CalDAV endpoint at `/dav/tasks` with OAuth 2.0 Bearer token authentication
 
 ## ⌨️ Keyboard Shortcuts
@@ -188,6 +190,16 @@ GitHub codespaces to jump into a remote development environment without installi
 * [GoLang](https://go.dev)
 * [NodeJS](https://nodejs.org) 20+
 * [yarn](https://yarnpkg.com)
+* [Android Studio](https://developer.android.com/studio) (for Android development)
+
+### 📱 Android App
+
+The Android app lives in the `android/` directory:
+
+```bash
+cd android
+./gradlew assembleDebug
+```
 
 ## 🤝 Contributing
 
