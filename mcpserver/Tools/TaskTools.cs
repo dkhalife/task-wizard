@@ -8,7 +8,7 @@ namespace TaskWizard.McpServer.Tools;
 [McpServerToolType]
 public class TaskTools(ApiProxyService api)
 {
-    [McpServerTool, Description("List all tasks")]
+    [McpServerTool, Description("List all active (not completed) tasks")]
     public Task<string> ListTasks() =>
         api.GetAllTasks();
 
@@ -64,7 +64,7 @@ public class TaskTools(ApiProxyService api)
             Labels = labels?.ToList() ?? []
         });
 
-    [McpServerTool, Description("Update an existing task")]
+    [McpServerTool, Description("Update an existing task. WARNING: Any optional property not provided will be cleared/reset on the task (e.g. omitting nextDueDate removes the due date). Always supply all current values you want to keep.")]
     public Task<string> UpdateTask(
         [Description("Task ID")] int id,
         [Description("Task title")] string title,
@@ -99,4 +99,14 @@ public class TaskTools(ApiProxyService api)
     [McpServerTool, Description("Skip a task (advance to next due date without completing)")]
     public Task<string> SkipTask([Description("Task ID")] int id) =>
         api.SkipTask(id);
+
+    [McpServerTool, Description("List active tasks due before a specific timestamp")]
+    public Task<string> ListTasksDueBefore(
+        [Description("UTC timestamp in RFC 3339 / ISO 8601 format (e.g. 2025-01-15T00:00:00Z)")] string before) =>
+        api.GetTasksDueBefore(before);
+
+    [McpServerTool, Description("List active tasks tagged with a given label")]
+    public Task<string> ListTasksByLabel(
+        [Description("Label ID")] int labelId) =>
+        api.GetTasksByLabel(labelId);
 }
