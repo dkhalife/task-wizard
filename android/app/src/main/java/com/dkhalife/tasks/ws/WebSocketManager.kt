@@ -21,6 +21,11 @@ class WebSocketManager @Inject constructor(
 ) {
     private var webSocket: WebSocket? = null
     private var reconnectAttempt = 0
+    private var reconnectJob: Job? = null
+
+    @Volatile
+    private var intentionalDisconnect = false
+
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _messages = MutableSharedFlow<WSResponse>(extraBufferCapacity = 64)
@@ -32,7 +37,11 @@ class WebSocketManager @Inject constructor(
         .build()
 
     fun connect() {
+        intentionalDisconnect = false
         scope.launch {
+            webSocket?.close(1000, "Reconnecting")
+            webSocket = null
+
             val token = tokenProvider.getAccessToken() ?: return@launch
 
             val request = Request.Builder()
@@ -45,6 +54,9 @@ class WebSocketManager @Inject constructor(
     }
 
     fun disconnect() {
+        intentionalDisconnect = true
+        reconnectJob?.cancel()
+        reconnectJob = null
         webSocket?.close(1000, "Client disconnect")
         webSocket = null
     }
@@ -90,12 +102,17 @@ class WebSocketManager @Inject constructor(
     }
 
     private fun scheduleReconnect() {
+        if (intentionalDisconnect) return
+
         val backoffMs = minOf(30_000L, 1000L * (1L shl reconnectAttempt))
         reconnectAttempt++
 
-        scope.launch {
+        reconnectJob?.cancel()
+        reconnectJob = scope.launch {
             delay(backoffMs)
-            connect()
+            if (!intentionalDisconnect) {
+                connect()
+            }
         }
     }
 }
