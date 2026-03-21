@@ -346,9 +346,15 @@ func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *authMW.AuthMidd
 		return
 	}
 
+	authMiddleware := auth.MiddlewareFunc()
+
+	router.GET("/.well-known/caldav", func(c *gin.Context) {
+		c.Redirect(http.StatusMovedPermanently, "/dav/tasks/")
+	})
+
 	davRoutes := router.Group("dav")
 	davRoutes.GET("/.well-known/oauth", h.handleOAuthDiscovery)
-	davRoutes.Use(auth.MiddlewareFunc())
+	davRoutes.Use(authMiddleware)
 	{
 		davRoutes.HEAD("/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavRead), h.handleHead)
 		davRoutes.Handle("PROPFIND", "/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavRead), h.handlePropfind)
@@ -357,6 +363,6 @@ func CalDAVRoutes(router *gin.Engine, h *CalDAVAPIHandler, auth *authMW.AuthMidd
 		davRoutes.PUT("/tasks/*path", authMW.ScopeMiddleware(models.ApiTokenScopeDavWrite), h.handlePut)
 	}
 
-	router.Handle("PROPFIND", "/", h.handleRootRedirect)
-	router.Handle("REPORT", "/", h.handleRootRedirect)
+	router.Handle("PROPFIND", "/", authMiddleware, h.handleRootRedirect)
+	router.Handle("REPORT", "/", authMiddleware, h.handleRootRedirect)
 }
