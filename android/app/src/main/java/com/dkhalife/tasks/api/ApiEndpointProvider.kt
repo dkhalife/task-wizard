@@ -14,7 +14,7 @@ class ApiEndpointProvider @Inject constructor(
         val host = normalizeHost(
             sharedPreferences.getString(KEY_SERVER_ENDPOINT, DEFAULT_HOST) ?: DEFAULT_HOST
         )
-        val scheme = if (host.contains(':')) "http" else "https"
+        val scheme = if (host.contains(':') && !host.endsWith(":443")) "http" else "https"
         return "$scheme://$host"
     }
 
@@ -22,7 +22,7 @@ class ApiEndpointProvider @Inject constructor(
         val host = normalizeHost(
             sharedPreferences.getString(KEY_SERVER_ENDPOINT, DEFAULT_HOST) ?: DEFAULT_HOST
         )
-        val scheme = if (host.contains(':')) "ws" else "wss"
+        val scheme = if (host.contains(':') && !host.endsWith(":443")) "ws" else "wss"
         return "$scheme://$host/ws"
     }
 
