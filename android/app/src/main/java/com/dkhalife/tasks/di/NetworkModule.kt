@@ -1,5 +1,6 @@
 package com.dkhalife.tasks.di
 
+import com.dkhalife.tasks.BuildConfig
 import com.dkhalife.tasks.api.ApiEndpointProvider
 import com.dkhalife.tasks.api.AuthInterceptor
 import com.dkhalife.tasks.api.TaskWizardApi
@@ -27,12 +28,17 @@ object NetworkModule {
     @Provides
     @Singleton
     fun provideOkHttpClient(tokenProvider: AuthTokenProvider): OkHttpClient {
-        return OkHttpClient.Builder()
+        val builder = OkHttpClient.Builder()
             .addInterceptor(AuthInterceptor(tokenProvider))
-            .addInterceptor(HttpLoggingInterceptor().apply {
+
+        if (BuildConfig.DEBUG) {
+            builder.addInterceptor(HttpLoggingInterceptor().apply {
                 level = HttpLoggingInterceptor.Level.BODY
+                redactHeader("Authorization")
             })
-            .build()
+        }
+
+        return builder.build()
     }
 
     @Provides
