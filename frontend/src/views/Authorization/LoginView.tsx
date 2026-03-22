@@ -8,6 +8,7 @@ import {
   Button,
 } from '@mui/joy'
 import React from 'react'
+import { Link } from 'react-router-dom'
 import { initializeMsal, loginSilently, loginWithRedirect } from '@/utils/msal'
 import { setTitle } from '@/utils/dom'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
@@ -97,6 +98,17 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
               Sign in
             </Button>
           </Sheet>
+          <Typography
+            level='body-xs'
+            sx={{ mt: 2, textAlign: 'center' }}
+          >
+            <Link
+              to={NavigationPaths.Privacy}
+              style={{ color: 'inherit' }}
+            >
+              Privacy Policy
+            </Link>
+          </Typography>
         </Box>
       </Container>
     )

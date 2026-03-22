@@ -7,6 +7,7 @@ import { LoginView } from '@/views/Authorization/LoginView'
 import { TaskHistory } from '@/views/History/TaskHistory'
 import { LabelView } from '@/views/Labels/LabelView'
 import { NotFound } from '@/views/NotFound'
+import { PrivacyPolicy } from '@/views/PrivacyPolicy'
 import { Settings } from '@/views/Settings/Settings'
 import { MyTasks } from '@/views/Tasks/MyTasks'
 import { TaskEdit } from '@/views/Tasks/TaskEdit'
@@ -171,6 +172,10 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
             <Route
               path='/labels/'
               element={<LabelView />}
+            />
+            <Route
+              path='/privacy'
+              element={<PrivacyPolicy />}
             />
           </Route>
         </Routes>
