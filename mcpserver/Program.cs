@@ -80,8 +80,12 @@ builder.Services
 
 var app = builder.Build();
 
-app.UseHsts();
-app.UseHttpsRedirection();
+if (!app.Environment.IsDevelopment())
+{
+    app.UseHsts();
+    app.UseHttpsRedirection();
+}
+
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapMcp().RequireAuthorization();

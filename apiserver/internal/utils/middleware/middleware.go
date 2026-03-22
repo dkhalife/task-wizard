@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
@@ -44,13 +45,29 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 	}
 }
 
+func effectiveScheme(c *gin.Context) string {
+	if forwarded := c.GetHeader("X-Forwarded-Proto"); forwarded != "" {
+		scheme := forwarded
+		if i := strings.IndexByte(scheme, ','); i >= 0 {
+			scheme = scheme[:i]
+		}
+		return strings.ToLower(strings.TrimSpace(scheme))
+	}
+
+	if c.Request.TLS != nil {
+		return "https"
+	}
+
+	return "http"
+}
+
 func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 	hostName := cfg.Server.HostName
 	port := cfg.Server.Port
 
 	return func(c *gin.Context) {
-		proto := c.GetHeader("X-Forwarded-Proto")
-		if proto == "http" {
+		scheme := effectiveScheme(c)
+		if scheme == "http" {
 			target := fmt.Sprintf("https://%s", hostName)
 			if port != 443 {
 				target = fmt.Sprintf("%s:%d", target, port)
@@ -61,7 +78,10 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 			return
 		}
 
-		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		if scheme == "https" {
+			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
+		}
+
 		c.Next()
 	}
 }
