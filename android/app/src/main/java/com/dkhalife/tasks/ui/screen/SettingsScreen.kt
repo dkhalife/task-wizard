@@ -5,11 +5,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.viewmodel.AuthViewModel
 
 @Composable
 fun SettingsScreen(
-    authViewModel: AuthViewModel
+    authViewModel: AuthViewModel,
+    themeMode: ThemeMode,
+    onThemeModeChanged: (ThemeMode) -> Unit
 ) {
     val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
 
@@ -30,6 +33,27 @@ fun SettingsScreen(
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+            }
+        }
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Theme", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    ThemeMode.entries.forEachIndexed { index, mode ->
+                        SegmentedButton(
+                            selected = themeMode == mode,
+                            onClick = { onThemeModeChanged(mode) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = ThemeMode.entries.size
+                            )
+                        ) {
+                            Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
+                        }
+                    }
+                }
             }
         }
 
