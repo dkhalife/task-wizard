@@ -33,6 +33,7 @@ import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
 import java.util.Locale
+import kotlinx.coroutines.delay
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -170,6 +171,9 @@ private fun TaskItem(
     onDelete: () -> Unit,
     onClick: () -> Unit
 ) {
+    val ldt = remember(task.nextDueDate) { parseDueDate(task.nextDueDate) }
+    val now by rememberTickingNow()
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -197,8 +201,8 @@ private fun TaskItem(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.padding(bottom = 4.dp)
                 ) {
-                    DueDateChip(task.nextDueDate)
-                    RecurrenceChip(task)
+                    DueDateChip(ldt, now)
+                    RecurrenceChip(task, ldt)
                     if (hasActiveNotification(task)) {
                         NotificationChip()
                     }
@@ -245,16 +249,8 @@ private fun TaskItem(
 }
 
 @Composable
-private fun DueDateChip(dateStr: String?) {
-    val ldt = remember(dateStr) {
-        dateStr?.let {
-            try {
-                ZonedDateTime.parse(it).withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
-            } catch (_: Exception) { null }
-        }
-    }
-    val now = LocalDateTime.now()
-    val text = if (dateStr == null) "No Due Date" else formatDueDate(dateStr)
+private fun DueDateChip(ldt: LocalDateTime?, now: LocalDateTime) {
+    val text = if (ldt == null) "No Due Date" else formatDueDate(ldt, now)
     val (bgColor, fgColor) = when {
         ldt == null -> Pair(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
         ldt.isBefore(now) -> Pair(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
@@ -272,14 +268,7 @@ private fun DueDateChip(dateStr: String?) {
 }
 
 @Composable
-private fun RecurrenceChip(task: Task) {
-    val nextDueLdt = remember(task.nextDueDate) {
-        task.nextDueDate?.let {
-            try {
-                ZonedDateTime.parse(it).withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
-            } catch (_: Exception) { null }
-        }
-    }
+private fun RecurrenceChip(task: Task, nextDueLdt: LocalDateTime?) {
     val text = getRecurrenceText(task, nextDueLdt)
     val isOnce = task.frequency.type == FrequencyType.ONCE
     Surface(
@@ -352,22 +341,29 @@ private fun LabelChip(name: String, color: String) {
     }
 }
 
-private fun formatDueDate(dateStr: String): String {
-    return try {
-        val ldt = ZonedDateTime.parse(dateStr)
-            .withZoneSameInstant(ZoneId.systemDefault())
-            .toLocalDateTime()
-        val now = LocalDateTime.now()
-        val today = LocalDate.now()
-        val timeStr = ldt.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH))
-        when {
-            ldt.isBefore(now) -> "${formatDistance(ldt, now)} ago"
-            ldt.toLocalDate() == today -> "Today at $timeStr"
-            ldt.toLocalDate() == today.plusDays(1) -> "Tomorrow at $timeStr"
-            else -> "in ${formatDistance(now, ldt)}"
-        }
-    } catch (_: Exception) {
-        dateStr
+private fun parseDueDate(dateStr: String?): LocalDateTime? =
+    dateStr?.let {
+        try {
+            ZonedDateTime.parse(it).withZoneSameInstant(ZoneId.systemDefault()).toLocalDateTime()
+        } catch (_: Exception) { null }
+    }
+
+@Composable
+private fun rememberTickingNow(): State<LocalDateTime> = produceState(LocalDateTime.now()) {
+    while (true) {
+        delay(60_000L)
+        value = LocalDateTime.now()
+    }
+}
+
+private fun formatDueDate(ldt: LocalDateTime, now: LocalDateTime): String {
+    val today = now.toLocalDate()
+    val timeStr = ldt.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH))
+    return when {
+        ldt.isBefore(now) -> "${formatDistance(ldt, now)} ago"
+        ldt.toLocalDate() == today -> "Today at $timeStr"
+        ldt.toLocalDate() == today.plusDays(1) -> "Tomorrow at $timeStr"
+        else -> "in ${formatDistance(now, ldt)}"
     }
 }
 
@@ -407,10 +403,10 @@ private fun getRecurrenceText(task: Task, nextDueLdt: LocalDateTime?): String {
                         IntervalUnit.WEEKS -> "Weekly"
                         IntervalUnit.MONTHS -> "Monthly"
                         IntervalUnit.YEARS -> "Yearly"
-                        else -> "Every $every ${frequency.unit}"
+                        else -> "Custom"
                     }
                 } else {
-                    "Every $every ${frequency.unit}"
+                    frequency.unit?.let { "Every $every $it" } ?: "Custom"
                 }
             }
             RepeatOn.DAYS_OF_THE_WEEK -> {
