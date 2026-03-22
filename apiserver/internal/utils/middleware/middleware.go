@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"net/http"
 	"strconv"
 
@@ -39,6 +40,28 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 		c.Header("X-RateLimit-Limit", strconv.FormatInt(context.Limit, 10))
 		c.Header("X-RateLimit-Remaining", strconv.FormatInt(context.Remaining, 10))
 		c.Header("X-RateLimit-Reset", strconv.FormatInt(context.Reset, 10))
+		c.Next()
+	}
+}
+
+func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
+	hostName := cfg.Server.HostName
+	port := cfg.Server.Port
+
+	return func(c *gin.Context) {
+		proto := c.GetHeader("X-Forwarded-Proto")
+		if proto == "http" {
+			target := fmt.Sprintf("https://%s", hostName)
+			if port != 443 {
+				target = fmt.Sprintf("%s:%d", target, port)
+			}
+			target = fmt.Sprintf("%s%s", target, c.Request.URL.RequestURI())
+			c.Redirect(http.StatusMovedPermanently, target)
+			c.Abort()
+			return
+		}
+
+		c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
 		c.Next()
 	}
 }
