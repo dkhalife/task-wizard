@@ -6,6 +6,8 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
@@ -26,13 +28,15 @@ import java.time.format.DateTimeFormatter
 @Composable
 fun TaskListScreen(
     taskGroups: List<TaskGroup>,
+    expandedGroups: Set<String>,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     onCompleteTask: (Int) -> Unit,
     onSkipTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
     onTaskClick: (Int) -> Unit,
-    onCreateTask: () -> Unit
+    onCreateTask: () -> Unit,
+    onToggleGroup: (String) -> Unit
 ) {
     Scaffold(
         floatingActionButton = {
@@ -66,10 +70,18 @@ fun TaskListScreen(
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     taskGroups.forEach { group ->
+                        val isExpanded = expandedGroups.contains(group.key)
+
                         item(key = "header_${group.key}") {
-                            GroupHeader(group = group)
+                            GroupHeader(
+                                group = group,
+                                isExpanded = isExpanded,
+                                onToggle = { onToggleGroup(group.key) }
+                            )
                         }
-                        items(group.tasks, key = { it.id }) { task ->
+
+                        if (isExpanded) {
+                            items(group.tasks, key = { it.id }) { task ->
                             TaskItem(
                                 task = task,
                                 onComplete = { onCompleteTask(task.id) },
@@ -77,6 +89,7 @@ fun TaskListScreen(
                                 onDelete = { onDeleteTask(task.id) },
                                 onClick = { onTaskClick(task.id) }
                             )
+                        }
                         }
                     }
                 }
@@ -86,10 +99,11 @@ fun TaskListScreen(
 }
 
 @Composable
-private fun GroupHeader(group: TaskGroup) {
+private fun GroupHeader(group: TaskGroup, isExpanded: Boolean, onToggle: () -> Unit) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
+            .clickable(onClick = onToggle)
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -113,6 +127,15 @@ private fun GroupHeader(group: TaskGroup) {
             text = "(${group.tasks.size})",
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.weight(1f))
+
+        Icon(
+            imageVector = if (isExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+            contentDescription = if (isExpanded) "Collapse" else "Expand",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(20.dp)
         )
     }
 }

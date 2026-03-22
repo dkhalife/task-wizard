@@ -2,6 +2,7 @@ package com.dkhalife.tasks.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.TaskGrouping
@@ -21,6 +22,7 @@ import javax.inject.Inject
 class TaskListViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val labelRepository: LabelRepository,
+    private val groupingRepository: GroupingRepository,
     private val webSocketManager: WebSocketManager
 ) : ViewModel() {
 
@@ -39,6 +41,9 @@ class TaskListViewModel @Inject constructor(
     private val _taskGroups = MutableStateFlow<List<TaskGroup>>(emptyList())
     val taskGroups: StateFlow<List<TaskGroup>> = _taskGroups
 
+    private val _expandedGroups = MutableStateFlow(groupingRepository.getExpandedGroups())
+    val expandedGroups: StateFlow<Set<String>> = _expandedGroups
+
     init {
         refreshTasks()
         labelRepository.let {
@@ -51,6 +56,19 @@ class TaskListViewModel @Inject constructor(
 
     fun setTaskGrouping(grouping: TaskGrouping) {
         _taskGrouping.value = grouping
+        _expandedGroups.value = emptySet()
+        groupingRepository.setExpandedGroups(emptySet())
+    }
+
+    fun toggleGroupExpanded(groupKey: String) {
+        val current = _expandedGroups.value.toMutableSet()
+        if (current.contains(groupKey)) {
+            current.remove(groupKey)
+        } else {
+            current.add(groupKey)
+        }
+        _expandedGroups.value = current
+        groupingRepository.setExpandedGroups(current)
     }
 
     private fun observeGrouping() {

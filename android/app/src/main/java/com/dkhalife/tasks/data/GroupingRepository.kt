@@ -17,4 +17,12 @@ class GroupingRepository @Inject constructor(
     fun setTaskGrouping(grouping: TaskGrouping) {
         sharedPreferences.edit { putString(AppPreferences.KEY_TASK_GROUPING, grouping.name) }
     }
+
+    fun getExpandedGroups(): Set<String> {
+        return sharedPreferences.getStringSet(AppPreferences.KEY_EXPANDED_GROUPS, emptySet()) ?: emptySet()
+    }
+
+    fun setExpandedGroups(expanded: Set<String>) {
+        sharedPreferences.edit { putStringSet(AppPreferences.KEY_EXPANDED_GROUPS, expanded) }
+    }
 }

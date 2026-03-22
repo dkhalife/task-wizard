@@ -83,6 +83,7 @@ fun AppNavigation(
                 val viewModel: TaskListViewModel = hiltViewModel()
                 val isRefreshing by viewModel.isRefreshing.collectAsState()
                 val taskGroups by viewModel.taskGroups.collectAsState()
+                val expandedGroups by viewModel.expandedGroups.collectAsState()
 
                 LaunchedEffect(taskGrouping) {
                     viewModel.setTaskGrouping(taskGrouping)
@@ -90,13 +91,15 @@ fun AppNavigation(
 
                 TaskListScreen(
                     taskGroups = taskGroups,
+                    expandedGroups = expandedGroups,
                     isRefreshing = isRefreshing,
                     onRefresh = { viewModel.refreshTasks() },
                     onCompleteTask = { viewModel.completeTask(it) },
                     onSkipTask = { viewModel.skipTask(it) },
                     onDeleteTask = { viewModel.deleteTask(it) },
                     onTaskClick = { navController.navigate(Routes.taskFormEdit(it)) },
-                    onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) }
+                    onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
+                    onToggleGroup = { viewModel.toggleGroupExpanded(it) }
                 )
             }
 
