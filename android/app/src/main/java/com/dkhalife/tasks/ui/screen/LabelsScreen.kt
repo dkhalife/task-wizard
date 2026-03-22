@@ -189,7 +189,7 @@ private fun LabelDialog(
                             color = presetColor,
                             modifier = Modifier.size(32.dp),
                         ) {
-                            if (color == preset) {
+                            if (color.equals(preset, ignoreCase = true)) {
                                 Box(
                                     modifier = Modifier.fillMaxSize(),
                                     contentAlignment = Alignment.Center
