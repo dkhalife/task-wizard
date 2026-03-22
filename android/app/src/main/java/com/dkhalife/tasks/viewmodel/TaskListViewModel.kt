@@ -46,8 +46,8 @@ class TaskListViewModel @Inject constructor(
 
     init {
         refreshTasks()
-        labelRepository.let {
-            viewModelScope.launch { it.refreshLabels() }
+        viewModelScope.launch {
+            labelRepository.refreshLabels().onFailure { _error.value = it.message }
         }
         webSocketManager.connect()
         collectWebSocketMessages()

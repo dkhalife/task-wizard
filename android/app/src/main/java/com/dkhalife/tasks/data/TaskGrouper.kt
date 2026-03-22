@@ -86,8 +86,21 @@ object TaskGrouper {
 
     fun groupByLabel(tasks: List<Task>, labels: List<Label>): List<TaskGroup> {
         val groups = mutableListOf<TaskGroup>()
+        val seenLabelIds = mutableSetOf<Int>()
 
-        for (label in labels) {
+        val allLabels = buildList {
+            addAll(labels)
+            for (task in tasks) {
+                for (label in task.labels) {
+                    if (label.id !in seenLabelIds && labels.none { it.id == label.id }) {
+                        add(label)
+                    }
+                    seenLabelIds.add(label.id)
+                }
+            }
+        }
+
+        for (label in allLabels) {
             val matching = tasks.filter { task ->
                 task.labels.any { it.id == label.id }
             }
@@ -110,6 +123,14 @@ object TaskGrouper {
     }
 
     private fun sortByDueDate(tasks: List<Task>): List<Task> {
-        return tasks.sortedWith(compareBy(nullsLast()) { it.nextDueDate })
+        return tasks.sortedWith(compareBy(nullsLast()) { task ->
+            task.nextDueDate?.let {
+                try {
+                    ZonedDateTime.parse(it).toInstant()
+                } catch (_: Exception) {
+                    null
+                }
+            }
+        })
     }
 }
