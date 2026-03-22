@@ -6,6 +6,7 @@ import com.dkhalife.tasks.model.Task
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import java.time.ZonedDateTime
 import java.time.temporal.TemporalAdjusters
 
@@ -57,7 +58,9 @@ object TaskGrouper {
             }
 
             val dueDate = try {
-                ZonedDateTime.parse(dueDateStr).toLocalDateTime()
+                ZonedDateTime.parse(dueDateStr)
+                    .withZoneSameInstant(ZoneId.systemDefault())
+                    .toLocalDateTime()
             } catch (_: Exception) {
                 anyTime.add(task)
                 continue
