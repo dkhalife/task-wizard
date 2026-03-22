@@ -2,6 +2,7 @@ package com.dkhalife.tasks.ui.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -10,6 +11,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.model.*
 import java.time.ZoneId
@@ -135,6 +137,24 @@ fun TaskFormScreen(
     var hasDueDate by remember(existingTask) { mutableStateOf(existingTask?.nextDueDate != null) }
     var dueDate by remember(existingTask) { mutableStateOf(parseIsoDateTime(existingTask?.nextDueDate)) }
 
+    var repeatOn by remember(existingTask) {
+        mutableStateOf(existingTask?.frequency?.on ?: RepeatOn.INTERVAL)
+    }
+    var intervalEvery by remember(existingTask) {
+        mutableStateOf(existingTask?.frequency?.every?.toString() ?: "1")
+    }
+    var intervalUnit by remember(existingTask) {
+        mutableStateOf(existingTask?.frequency?.unit ?: IntervalUnit.WEEKS)
+    }
+    var selectedDays by remember(existingTask) {
+        val today = ZonedDateTime.now(ZoneId.systemDefault()).dayOfWeek.value % 7
+        mutableStateOf(existingTask?.frequency?.days?.toSet() ?: setOf(today))
+    }
+    var selectedMonths by remember(existingTask) {
+        val thisMonth = ZonedDateTime.now(ZoneId.systemDefault()).monthValue - 1
+        mutableStateOf(existingTask?.frequency?.months?.toSet() ?: setOf(thisMonth))
+    }
+
     val isRecurring = frequencyType != FrequencyType.ONCE
     val isEditing = existingTask != null
 
@@ -225,15 +245,177 @@ fun TaskFormScreen(
             if (hasDueDate) {
                 Text("Repeat", style = MaterialTheme.typography.titleSmall)
 
-                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
-                    val options = listOf(FrequencyType.ONCE, FrequencyType.DAILY, FrequencyType.WEEKLY, FrequencyType.MONTHLY)
-                    options.forEachIndexed { index, option ->
-                        SegmentedButton(
-                            selected = frequencyType == option,
-                            onClick = { frequencyType = option },
-                            shape = SegmentedButtonDefaults.itemShape(index, options.size)
-                        ) {
-                            Text(option.replaceFirstChar { it.uppercase() })
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = isRecurring,
+                        onCheckedChange = { checked ->
+                            frequencyType = if (checked) FrequencyType.DAILY else FrequencyType.ONCE
+                        }
+                    )
+                    Text("Repeat this task", style = MaterialTheme.typography.bodyMedium)
+                }
+
+                if (isRecurring) {
+                    // Row 1: Daily, Weekly, Monthly
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        val row1 = listOf(FrequencyType.DAILY, FrequencyType.WEEKLY, FrequencyType.MONTHLY)
+                        row1.forEachIndexed { index, option ->
+                            SegmentedButton(
+                                selected = frequencyType == option,
+                                onClick = { frequencyType = option },
+                                shape = SegmentedButtonDefaults.itemShape(index, row1.size)
+                            ) {
+                                Text(option.replaceFirstChar { it.uppercase() })
+                            }
+                        }
+                    }
+
+                    // Row 2: Yearly, Custom
+                    SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                        val row2 = listOf(FrequencyType.YEARLY, FrequencyType.CUSTOM)
+                        row2.forEachIndexed { index, option ->
+                            SegmentedButton(
+                                selected = frequencyType == option,
+                                onClick = { frequencyType = option },
+                                shape = SegmentedButtonDefaults.itemShape(index, row2.size)
+                            ) {
+                                Text(option.replaceFirstChar { it.uppercase() })
+                            }
+                        }
+                    }
+
+                    if (frequencyType == FrequencyType.CUSTOM) {
+                        // Sub-mode selector
+                        SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                            val subModes = listOf(RepeatOn.INTERVAL, RepeatOn.DAYS_OF_THE_WEEK, RepeatOn.DAY_OF_THE_MONTHS)
+                            val subModeLabels = listOf("Interval", "Days of the week", "Day of the months")
+                            subModes.forEachIndexed { index, mode ->
+                                SegmentedButton(
+                                    selected = repeatOn == mode,
+                                    onClick = { repeatOn = mode },
+                                    shape = SegmentedButtonDefaults.itemShape(index, subModes.size)
+                                ) {
+                                    Text(subModeLabels[index])
+                                }
+                            }
+                        }
+
+                        when (repeatOn) {
+                            RepeatOn.INTERVAL -> {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text("Every", style = MaterialTheme.typography.bodyMedium)
+                                    OutlinedTextField(
+                                        value = intervalEvery,
+                                        onValueChange = { v ->
+                                            if (v.isEmpty() || v.toIntOrNull()?.let { it in 1..365 } == true) {
+                                                intervalEvery = v
+                                            }
+                                        },
+                                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                                        singleLine = true,
+                                        modifier = Modifier.width(80.dp)
+                                    )
+                                    var unitExpanded by remember { mutableStateOf(false) }
+                                    ExposedDropdownMenuBox(
+                                        expanded = unitExpanded,
+                                        onExpandedChange = { unitExpanded = it },
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        OutlinedTextField(
+                                            value = intervalUnit.replaceFirstChar { it.uppercase() },
+                                            onValueChange = {},
+                                            readOnly = true,
+                                            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
+                                            modifier = Modifier.menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable)
+                                        )
+                                        ExposedDropdownMenu(
+                                            expanded = unitExpanded,
+                                            onDismissRequest = { unitExpanded = false }
+                                        ) {
+                                            listOf(
+                                                IntervalUnit.HOURS,
+                                                IntervalUnit.DAYS,
+                                                IntervalUnit.WEEKS,
+                                                IntervalUnit.MONTHS,
+                                                IntervalUnit.YEARS
+                                            ).forEach { unit ->
+                                                DropdownMenuItem(
+                                                    text = { Text(unit.replaceFirstChar { it.uppercase() }) },
+                                                    onClick = {
+                                                        intervalUnit = unit
+                                                        unitExpanded = false
+                                                    },
+                                                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
+                                                )
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            RepeatOn.DAYS_OF_THE_WEEK -> {
+                                val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    dayNames.forEachIndexed { i, name ->
+                                        FilterChip(
+                                            selected = i in selectedDays,
+                                            onClick = {
+                                                selectedDays = if (i in selectedDays) {
+                                                    if (selectedDays.size > 1) selectedDays - i else selectedDays
+                                                } else {
+                                                    selectedDays + i
+                                                }
+                                            },
+                                            label = { Text(name) }
+                                        )
+                                    }
+                                }
+                            }
+
+                            RepeatOn.DAY_OF_THE_MONTHS -> {
+                                val dayOfMonth = dueDate?.dayOfMonth ?: 1
+                                val ordinalSuffix = when {
+                                    dayOfMonth in 11..13 -> "th"
+                                    dayOfMonth % 10 == 1 -> "st"
+                                    dayOfMonth % 10 == 2 -> "nd"
+                                    dayOfMonth % 10 == 3 -> "rd"
+                                    else -> "th"
+                                }
+                                Text(
+                                    "on the $dayOfMonth$ordinalSuffix of the following month(s)",
+                                    style = MaterialTheme.typography.bodyMedium
+                                )
+                                val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
+                                FlowRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    monthNames.forEachIndexed { i, name ->
+                                        FilterChip(
+                                            selected = i in selectedMonths,
+                                            onClick = {
+                                                selectedMonths = if (i in selectedMonths) {
+                                                    if (selectedMonths.size > 1) selectedMonths - i else selectedMonths
+                                                } else {
+                                                    selectedMonths + i
+                                                }
+                                            },
+                                            label = { Text(name) }
+                                        )
+                                    }
+                                }
+                            }
                         }
                     }
                 }
@@ -251,7 +433,28 @@ fun TaskFormScreen(
 
             Button(
                 onClick = {
-                    val frequency = Frequency(type = frequencyType)
+                    val frequency = when (frequencyType) {
+                        FrequencyType.CUSTOM -> when (repeatOn) {
+                            RepeatOn.INTERVAL -> Frequency(
+                                type = FrequencyType.CUSTOM,
+                                on = RepeatOn.INTERVAL,
+                                every = intervalEvery.toIntOrNull()?.coerceAtLeast(1) ?: 1,
+                                unit = intervalUnit
+                            )
+                            RepeatOn.DAYS_OF_THE_WEEK -> Frequency(
+                                type = FrequencyType.CUSTOM,
+                                on = RepeatOn.DAYS_OF_THE_WEEK,
+                                days = selectedDays.sorted()
+                            )
+                            RepeatOn.DAY_OF_THE_MONTHS -> Frequency(
+                                type = FrequencyType.CUSTOM,
+                                on = RepeatOn.DAY_OF_THE_MONTHS,
+                                months = selectedMonths.sorted()
+                            )
+                            else -> Frequency(type = frequencyType)
+                        }
+                        else -> Frequency(type = frequencyType)
+                    }
                     onSave(title, dueDate?.toIsoString(), frequency, selectedLabelIds.toList(), isRolling)
                 },
                 enabled = title.isNotBlank() && !isSaving,
