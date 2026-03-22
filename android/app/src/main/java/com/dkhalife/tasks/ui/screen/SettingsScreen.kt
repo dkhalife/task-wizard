@@ -5,6 +5,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.viewmodel.AuthViewModel
 
@@ -12,7 +13,9 @@ import com.dkhalife.tasks.viewmodel.AuthViewModel
 fun SettingsScreen(
     authViewModel: AuthViewModel,
     themeMode: ThemeMode,
-    onThemeModeChanged: (ThemeMode) -> Unit
+    onThemeModeChanged: (ThemeMode) -> Unit,
+    taskGrouping: TaskGrouping,
+    onTaskGroupingChanged: (TaskGrouping) -> Unit
 ) {
     val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
 
@@ -51,6 +54,32 @@ fun SettingsScreen(
                             )
                         ) {
                             Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
+                        }
+                    }
+                }
+            }
+        }
+
+        Card(modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.padding(16.dp)) {
+                Text("Task grouping", style = MaterialTheme.typography.titleMedium)
+                Spacer(modifier = Modifier.height(8.dp))
+                SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    TaskGrouping.entries.forEachIndexed { index, grouping ->
+                        SegmentedButton(
+                            selected = taskGrouping == grouping,
+                            onClick = { onTaskGroupingChanged(grouping) },
+                            shape = SegmentedButtonDefaults.itemShape(
+                                index = index,
+                                count = TaskGrouping.entries.size
+                            )
+                        ) {
+                            Text(
+                                when (grouping) {
+                                    TaskGrouping.DUE_DATE -> "Due date"
+                                    TaskGrouping.LABEL -> "Label"
+                                }
+                            )
                         }
                     }
                 }

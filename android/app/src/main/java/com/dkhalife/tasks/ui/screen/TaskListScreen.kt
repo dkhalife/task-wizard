@@ -6,7 +6,6 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.Delete
@@ -18,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.model.Task
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
@@ -25,7 +25,7 @@ import java.time.format.DateTimeFormatter
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun TaskListScreen(
-    tasks: List<Task>,
+    taskGroups: List<TaskGroup>,
     isRefreshing: Boolean,
     onRefresh: () -> Unit,
     onCompleteTask: (Int) -> Unit,
@@ -48,7 +48,7 @@ fun TaskListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (tasks.isEmpty() && !isRefreshing) {
+            if (taskGroups.isEmpty() && !isRefreshing) {
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
@@ -65,18 +65,55 @@ fun TaskListScreen(
                     contentPadding = PaddingValues(16.dp),
                     verticalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    items(tasks, key = { it.id }) { task ->
-                        TaskItem(
-                            task = task,
-                            onComplete = { onCompleteTask(task.id) },
-                            onSkip = { onSkipTask(task.id) },
-                            onDelete = { onDeleteTask(task.id) },
-                            onClick = { onTaskClick(task.id) }
-                        )
+                    taskGroups.forEach { group ->
+                        item(key = "header_${group.key}") {
+                            GroupHeader(group = group)
+                        }
+                        items(group.tasks, key = { it.id }) { task ->
+                            TaskItem(
+                                task = task,
+                                onComplete = { onCompleteTask(task.id) },
+                                onSkip = { onSkipTask(task.id) },
+                                onDelete = { onDeleteTask(task.id) },
+                                onClick = { onTaskClick(task.id) }
+                            )
+                        }
                     }
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun GroupHeader(group: TaskGroup) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            shape = MaterialTheme.shapes.extraSmall,
+            color = group.color.copy(alpha = 0.2f),
+            modifier = Modifier.size(12.dp)
+        ) {}
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = group.name,
+            style = MaterialTheme.typography.titleSmall,
+            color = group.color
+        )
+
+        Spacer(modifier = Modifier.width(8.dp))
+
+        Text(
+            text = "(${group.tasks.size})",
+            style = MaterialTheme.typography.labelSmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
     }
 }
 

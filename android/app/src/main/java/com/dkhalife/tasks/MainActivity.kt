@@ -6,6 +6,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dkhalife.tasks.data.GroupingRepository
+import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.ThemeRepository
 import com.dkhalife.tasks.ui.navigation.AppNavigation
@@ -21,12 +23,16 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var themeRepository: ThemeRepository
 
+    @Inject
+    lateinit var groupingRepository: GroupingRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         setContent {
             var themeMode by remember { mutableStateOf(themeRepository.getThemeMode()) }
+            var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
 
             TaskWizardTheme(themeMode = themeMode) {
                 val authViewModel: AuthViewModel = hiltViewModel()
@@ -41,6 +47,11 @@ class MainActivity : ComponentActivity() {
                         onThemeModeChanged = { mode ->
                             themeRepository.setThemeMode(mode)
                             themeMode = mode
+                        },
+                        taskGrouping = taskGrouping,
+                        onTaskGroupingChanged = { grouping ->
+                            groupingRepository.setTaskGrouping(grouping)
+                            taskGrouping = grouping
                         }
                     )
                 } else {

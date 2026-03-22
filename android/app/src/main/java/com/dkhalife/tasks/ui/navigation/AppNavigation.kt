@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.model.*
 import com.dkhalife.tasks.ui.screen.*
@@ -38,7 +39,9 @@ object Routes {
 @Composable
 fun AppNavigation(
     themeMode: ThemeMode,
-    onThemeModeChanged: (ThemeMode) -> Unit
+    onThemeModeChanged: (ThemeMode) -> Unit,
+    taskGrouping: TaskGrouping,
+    onTaskGroupingChanged: (TaskGrouping) -> Unit
 ) {
     val navController = rememberNavController()
     val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
@@ -78,11 +81,15 @@ fun AppNavigation(
         ) {
             composable(Screen.Tasks.route) {
                 val viewModel: TaskListViewModel = hiltViewModel()
-                val tasks by viewModel.tasks.collectAsState()
                 val isRefreshing by viewModel.isRefreshing.collectAsState()
+                val taskGroups by viewModel.taskGroups.collectAsState()
+
+                LaunchedEffect(taskGrouping) {
+                    viewModel.setTaskGrouping(taskGrouping)
+                }
 
                 TaskListScreen(
-                    tasks = tasks,
+                    taskGroups = taskGroups,
                     isRefreshing = isRefreshing,
                     onRefresh = { viewModel.refreshTasks() },
                     onCompleteTask = { viewModel.completeTask(it) },
@@ -113,7 +120,9 @@ fun AppNavigation(
                 SettingsScreen(
                     authViewModel = authViewModel,
                     themeMode = themeMode,
-                    onThemeModeChanged = onThemeModeChanged
+                    onThemeModeChanged = onThemeModeChanged,
+                    taskGrouping = taskGrouping,
+                    onTaskGroupingChanged = onTaskGroupingChanged
                 )
             }
 
