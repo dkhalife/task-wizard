@@ -620,3 +620,184 @@ func (s *TaskTestSuite) TestGetCompletedTasks() {
 	s.Require().NoError(err)
 	s.Len(tasks, 0)
 }
+
+func (s *TaskTestSuite) TestGetTasksDueBefore() {
+	ctx := context.Background()
+
+	now := time.Now().UTC()
+	past := now.Add(-48 * time.Hour)
+	soon := now.Add(24 * time.Hour)
+	later := now.Add(72 * time.Hour)
+	cutoff := now.Add(48 * time.Hour)
+
+	tasks := []*models.Task{
+		{
+			Title:       "Past Task",
+			CreatedBy:   s.testUser.ID,
+			NextDueDate: &past,
+			IsActive:    true,
+			Frequency:   models.Frequency{Type: models.RepeatOnce},
+		},
+		{
+			Title:       "Soon Task",
+			CreatedBy:   s.testUser.ID,
+			NextDueDate: &soon,
+			IsActive:    true,
+			Frequency:   models.Frequency{Type: models.RepeatOnce},
+		},
+		{
+			Title:       "Later Task",
+			CreatedBy:   s.testUser.ID,
+			NextDueDate: &later,
+			IsActive:    true,
+			Frequency:   models.Frequency{Type: models.RepeatOnce},
+		},
+		{
+			ID:          40,
+			Title:       "Inactive Before Cutoff",
+			CreatedBy:   s.testUser.ID,
+			NextDueDate: &soon,
+			IsActive:    true,
+			Frequency:   models.Frequency{Type: models.RepeatOnce},
+		},
+	}
+
+	for _, task := range tasks {
+		err := s.DB.Create(task).Error
+		s.Require().NoError(err)
+	}
+
+	err := s.DB.Model(&models.Task{}).Where("id = ?", 40).Update("is_active", false).Error
+	s.Require().NoError(err)
+
+	anotherUser := &models.User{}
+	err = s.DB.Create(anotherUser).Error
+	s.Require().NoError(err)
+
+	otherTask := &models.Task{
+		Title:       "Other User Task",
+		CreatedBy:   anotherUser.ID,
+		NextDueDate: &soon,
+		IsActive:    true,
+	}
+	err = s.DB.Create(otherTask).Error
+	s.Require().NoError(err)
+
+	// Create a label and attach to "Soon Task" to verify preloading
+	label := &models.Label{Name: "Urgent", Color: "#FF0000", CreatedBy: s.testUser.ID}
+	err = s.DB.Create(label).Error
+	s.Require().NoError(err)
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", tasks[1].ID, label.ID).Error
+	s.Require().NoError(err)
+
+	result, err := s.repo.GetTasksDueBefore(ctx, s.testUser.ID, cutoff)
+	s.Require().NoError(err)
+	s.Require().Len(result, 2)
+
+	// Ordered by next_due_date ASC
+	s.Equal("Past Task", result[0].Title)
+	s.Equal("Soon Task", result[1].Title)
+
+	// Labels are preloaded
+	s.Require().Len(result[1].Labels, 1)
+	s.Equal("Urgent", result[1].Labels[0].Name)
+}
+
+func (s *TaskTestSuite) TestGetTasksByLabel() {
+	ctx := context.Background()
+
+	now := time.Now().UTC()
+	due1 := now.Add(48 * time.Hour)
+	due2 := now.Add(24 * time.Hour)
+
+	label := &models.Label{Name: "Work", Color: "#00FF00", CreatedBy: s.testUser.ID}
+	err := s.DB.Create(label).Error
+	s.Require().NoError(err)
+
+	otherLabel := &models.Label{Name: "Personal", Color: "#0000FF", CreatedBy: s.testUser.ID}
+	err = s.DB.Create(otherLabel).Error
+	s.Require().NoError(err)
+
+	taskWithLabel1 := &models.Task{
+		Title:       "Work Task A",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	err = s.DB.Create(taskWithLabel1).Error
+	s.Require().NoError(err)
+
+	taskWithLabel2 := &models.Task{
+		Title:       "Work Task B",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due2,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	err = s.DB.Create(taskWithLabel2).Error
+	s.Require().NoError(err)
+
+	taskWithOtherLabel := &models.Task{
+		Title:       "Personal Task",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	err = s.DB.Create(taskWithOtherLabel).Error
+	s.Require().NoError(err)
+
+	inactiveTask := &models.Task{
+		ID:          50,
+		Title:       "Inactive Work Task",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	err = s.DB.Create(inactiveTask).Error
+	s.Require().NoError(err)
+	err = s.DB.Model(&models.Task{}).Where("id = ?", 50).Update("is_active", false).Error
+	s.Require().NoError(err)
+
+	// Assign labels
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", taskWithLabel1.ID, label.ID).Error
+	s.Require().NoError(err)
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", taskWithLabel2.ID, label.ID).Error
+	s.Require().NoError(err)
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", taskWithOtherLabel.ID, otherLabel.ID).Error
+	s.Require().NoError(err)
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", inactiveTask.ID, label.ID).Error
+	s.Require().NoError(err)
+
+	// Also give taskWithLabel1 a second label to verify all labels preload
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", taskWithLabel1.ID, otherLabel.ID).Error
+	s.Require().NoError(err)
+
+	// Another user with same label name shouldn't appear
+	anotherUser := &models.User{}
+	err = s.DB.Create(anotherUser).Error
+	s.Require().NoError(err)
+	otherUserTask := &models.Task{
+		Title:       "Other User Work",
+		CreatedBy:   anotherUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+	}
+	err = s.DB.Create(otherUserTask).Error
+	s.Require().NoError(err)
+	err = s.DB.Exec("INSERT INTO task_labels (task_id, label_id) VALUES (?, ?)", otherUserTask.ID, label.ID).Error
+	s.Require().NoError(err)
+
+	result, err := s.repo.GetTasksByLabel(ctx, s.testUser.ID, label.ID)
+	s.Require().NoError(err)
+	s.Require().Len(result, 2)
+
+	// Ordered by next_due_date ASC
+	s.Equal("Work Task B", result[0].Title)
+	s.Equal("Work Task A", result[1].Title)
+
+	// All labels are preloaded (not just the filtered one)
+	s.Require().Len(result[1].Labels, 2)
+}

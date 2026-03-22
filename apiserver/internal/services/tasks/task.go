@@ -52,6 +52,36 @@ func (s *TaskService) GetUserTasks(ctx context.Context, userID int) (int, interf
 	}
 }
 
+func (s *TaskService) GetTasksDueBefore(ctx context.Context, userID int, before time.Time) (int, interface{}) {
+	log := logging.FromContext(ctx)
+	tasks, err := s.t.GetTasksDueBefore(ctx, userID, before)
+	if err != nil {
+		log.Errorf("error getting tasks due before %s: %s", before.String(), err.Error())
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error getting tasks",
+		}
+	}
+
+	return http.StatusOK, gin.H{
+		"tasks": tasks,
+	}
+}
+
+func (s *TaskService) GetTasksByLabel(ctx context.Context, userID int, labelID int) (int, interface{}) {
+	log := logging.FromContext(ctx)
+	tasks, err := s.t.GetTasksByLabel(ctx, userID, labelID)
+	if err != nil {
+		log.Errorf("error getting tasks by label %d: %s", labelID, err.Error())
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error getting tasks",
+		}
+	}
+
+	return http.StatusOK, gin.H{
+		"tasks": tasks,
+	}
+}
+
 func (s *TaskService) GetCompletedTasks(ctx context.Context, userID, limit, page int) (int, interface{}) {
 	log := logging.FromContext(ctx)
 	offset := (page - 1) * limit

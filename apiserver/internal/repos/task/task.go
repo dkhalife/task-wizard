@@ -54,6 +54,35 @@ func (r *TaskRepository) GetTasks(c context.Context, userID int) ([]*models.Task
 	return tasks, nil
 }
 
+func (r *TaskRepository) GetTasksDueBefore(c context.Context, userID int, before time.Time) ([]*models.Task, error) {
+	var tasks []*models.Task
+
+	if err := r.db.WithContext(c).
+		Where("created_by = ? AND is_active = 1 AND next_due_date < ?", userID, before).
+		Order("next_due_date ASC").
+		Preload("Labels").
+		Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
+func (r *TaskRepository) GetTasksByLabel(c context.Context, userID int, labelID int) ([]*models.Task, error) {
+	var tasks []*models.Task
+
+	if err := r.db.WithContext(c).
+		Where("created_by = ? AND is_active = 1", userID).
+		Joins("JOIN task_labels ON task_labels.task_id = tasks.id AND task_labels.label_id = ?", labelID).
+		Order("next_due_date ASC").
+		Preload("Labels").
+		Find(&tasks).Error; err != nil {
+		return nil, err
+	}
+
+	return tasks, nil
+}
+
 func (r *TaskRepository) GetCompletedTasks(c context.Context, userID int, limit int, offset int) ([]*models.Task, error) {
 	var tasks []*models.Task
 

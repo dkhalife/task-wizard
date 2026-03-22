@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"time"
 
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/models"
@@ -25,6 +26,45 @@ func (h *TasksAPIHandler) getTasks(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
 	status, response := h.tService.GetUserTasks(c, currentIdentity.UserID)
+	c.JSON(status, response)
+}
+
+func (h *TasksAPIHandler) getTasksDueBefore(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+
+	raw := c.Query("before")
+	if raw == "" {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "'before' query parameter is required",
+		})
+		return
+	}
+
+	before, err := time.Parse(time.RFC3339, raw)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "'before' must be in RFC 3339 / ISO 8601 format (e.g. 2025-01-15T00:00:00Z)",
+		})
+		return
+	}
+
+	status, response := h.tService.GetTasksDueBefore(c, currentIdentity.UserID, before.UTC())
+	c.JSON(status, response)
+}
+
+func (h *TasksAPIHandler) getTasksByLabel(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+
+	rawID := c.Param("labelId")
+	labelID, err := strconv.Atoi(rawID)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "Invalid label ID",
+		})
+		return
+	}
+
+	status, response := h.tService.GetTasksByLabel(c, currentIdentity.UserID, labelID)
 	c.JSON(status, response)
 }
 
@@ -215,6 +255,8 @@ func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddlew
 	tasksRoutes.Use(auth.MiddlewareFunc())
 	{
 		tasksRoutes.GET("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasks)
+		tasksRoutes.GET("/due", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksDueBefore)
+		tasksRoutes.GET("/label/:labelId", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksByLabel)
 		tasksRoutes.GET("/completed", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getCompletedTasks)
 		tasksRoutes.PUT("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.editTask)
 		tasksRoutes.POST("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.createTask)
