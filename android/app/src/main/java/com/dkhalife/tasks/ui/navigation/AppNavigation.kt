@@ -17,6 +17,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.model.*
 import com.dkhalife.tasks.ui.screen.*
 import com.dkhalife.tasks.viewmodel.*
@@ -35,7 +36,10 @@ object Routes {
 }
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(
+    themeMode: ThemeMode,
+    onThemeModeChanged: (ThemeMode) -> Unit
+) {
     val navController = rememberNavController()
     val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -106,7 +110,11 @@ fun AppNavigation() {
 
             composable(Screen.Settings.route) {
                 val authViewModel: AuthViewModel = hiltViewModel()
-                SettingsScreen(authViewModel = authViewModel)
+                SettingsScreen(
+                    authViewModel = authViewModel,
+                    themeMode = themeMode,
+                    onThemeModeChanged = onThemeModeChanged
+                )
             }
 
             composable(

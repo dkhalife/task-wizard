@@ -6,21 +6,29 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.dkhalife.tasks.data.ThemeMode
+import com.dkhalife.tasks.data.ThemeRepository
 import com.dkhalife.tasks.ui.navigation.AppNavigation
 import com.dkhalife.tasks.ui.screen.SignInScreen
 import com.dkhalife.tasks.ui.theme.TaskWizardTheme
 import com.dkhalife.tasks.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    @Inject
+    lateinit var themeRepository: ThemeRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
         setContent {
-            TaskWizardTheme {
+            var themeMode by remember { mutableStateOf(themeRepository.getThemeMode()) }
+
+            TaskWizardTheme(themeMode = themeMode) {
                 val authViewModel: AuthViewModel = hiltViewModel()
                 val isSignedIn by authViewModel.isSignedIn.collectAsState()
                 val isLoading by authViewModel.isLoading.collectAsState()
@@ -28,7 +36,13 @@ class MainActivity : ComponentActivity() {
                 val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
 
                 if (isSignedIn) {
-                    AppNavigation()
+                    AppNavigation(
+                        themeMode = themeMode,
+                        onThemeModeChanged = { mode ->
+                            themeRepository.setThemeMode(mode)
+                            themeMode = mode
+                        }
+                    )
                 } else {
                     SignInScreen(
                         serverEndpoint = serverEndpoint,
