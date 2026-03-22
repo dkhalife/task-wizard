@@ -136,6 +136,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 		corsCfg.AddAllowHeaders("Authorization")
 		r.Use(cors.New(corsCfg))
 	}
+	r.Use(utils.SecurityHeaders(cfg))
 	r.Use(utils.RequestLogger())
 
 	lc.Append(fx.Hook{

@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"context"
+	"crypto/tls"
 	"errors"
 	"net/http"
 	"net/http/httptest"
@@ -90,4 +91,129 @@ func (s *MiddlewareTestSuite) TestRateLimitMiddlewareStoreFailure() {
 	req, _ := http.NewRequest("GET", "/", nil)
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusInternalServerError, w.Code)
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersAddsHSTS() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersNoHSTSForPlainHTTP() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersHSTSWithDirectTLS() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.TLS = &tls.ConnectionState{}
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTP() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/path", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/path?q=1", nil)
+	req.Header.Set("X-Forwarded-Proto", "http")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Equal("https://example.com/path?q=1", w.Header().Get("Location"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTPNonStandardPort() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     8443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-Proto", "http")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Equal("https://example.com:8443/", w.Header().Get("Location"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersNoRedirectForHTTPS() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
 }
