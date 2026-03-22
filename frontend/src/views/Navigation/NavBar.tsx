@@ -5,6 +5,7 @@ import {
   LocalLibrary,
   Label,
   Settings,
+  Policy,
 } from '@mui/icons-material'
 import {
   IconButton,
@@ -57,7 +58,7 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
   }
 
   render(): React.ReactNode {
-    if (['/login'].includes(this.props.pathname)) {
+    if (['/login', '/privacy'].includes(this.props.pathname)) {
       return null
     }
 
@@ -153,6 +154,11 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
               size='md'
               onClick={this.openDrawer}
             >
+              <NavBarLink
+                to={NavigationPaths.Privacy}
+                icon={<Policy />}
+                label='Privacy Policy'
+              />
               <ListItemButton
                 onClick={this.logout}
                 sx={{

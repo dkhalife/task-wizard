@@ -17,6 +17,7 @@ export const NavigationPaths = {
   TaskCreate: '/tasks/create',
   TaskEdit: (taskId: number) => `/tasks/${taskId}/edit`,
   TaskHistory: (taskId: number) => `/tasks/${taskId}/history`,
+  Privacy: '/privacy',
 }
 
 export interface WithNavigate {

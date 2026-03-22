@@ -86,7 +86,7 @@ class AppImpl extends React.Component<AppProps> {
     const silentOk = await loginSilently()
     if (silentOk) {
       await this.initializeAuthenticated()
-    } else if (isAuthEnabled() && this.props.pathname !== NavigationPaths.Login) {
+    } else if (isAuthEnabled() && this.props.pathname !== NavigationPaths.Login && this.props.pathname !== NavigationPaths.Privacy) {
       this.props.navigate(NavigationPaths.Login)
     }
 
