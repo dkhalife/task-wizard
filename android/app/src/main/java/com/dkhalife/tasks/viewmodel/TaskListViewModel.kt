@@ -10,6 +10,8 @@ import com.dkhalife.tasks.model.Label
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.repo.LabelRepository
 import com.dkhalife.tasks.repo.TaskRepository
+import com.dkhalife.tasks.utils.SoundEffect
+import com.dkhalife.tasks.utils.SoundManager
 import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
@@ -25,7 +27,8 @@ class TaskListViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val labelRepository: LabelRepository,
     private val groupingRepository: GroupingRepository,
-    private val webSocketManager: WebSocketManager
+    private val webSocketManager: WebSocketManager,
+    private val soundManager: SoundManager
 ) : ViewModel() {
 
     val tasks: StateFlow<List<Task>> = taskRepository.tasks
@@ -134,6 +137,9 @@ class TaskListViewModel @Inject constructor(
     fun completeTask(id: Int, endRecurrence: Boolean = false) {
         viewModelScope.launch {
             taskRepository.completeTask(id, endRecurrence)
+                .onSuccess {
+                    soundManager.playSound(SoundEffect.TASK_COMPLETE)
+                }
                 .onFailure { _error.value = it.message }
         }
     }
