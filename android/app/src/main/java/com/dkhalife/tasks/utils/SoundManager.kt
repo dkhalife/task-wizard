@@ -27,7 +27,11 @@ class SoundManager @Inject constructor(
         SoundEffect.entries.forEach { effect ->
             try {
                 val mediaPlayer = MediaPlayer.create(context, effect.resourceId)
-                mediaPlayers[effect] = mediaPlayer
+                if (mediaPlayer != null) {
+                    mediaPlayers[effect] = mediaPlayer
+                } else {
+                    Log.e("SoundManager", "Failed to preload sound ${effect.name}: MediaPlayer.create returned null")
+                }
             } catch (e: Exception) {
                 Log.e("SoundManager", "Failed to preload sound ${effect.name}", e)
             }
@@ -37,7 +41,12 @@ class SoundManager @Inject constructor(
     fun playSound(effect: SoundEffect) {
         try {
             val mediaPlayer = mediaPlayers[effect] ?: MediaPlayer.create(context, effect.resourceId)
-            
+
+            if (mediaPlayer == null) {
+                Log.e("SoundManager", "Failed to create player for ${effect.name}: MediaPlayer.create returned null")
+                return
+            }
+
             if (!mediaPlayers.containsKey(effect)) {
                 mediaPlayers[effect] = mediaPlayer
             }

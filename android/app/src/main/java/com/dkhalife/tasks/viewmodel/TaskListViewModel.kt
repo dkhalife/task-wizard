@@ -172,5 +172,6 @@ class TaskListViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         webSocketManager.disconnect()
+        soundManager.release()
     }
 }
