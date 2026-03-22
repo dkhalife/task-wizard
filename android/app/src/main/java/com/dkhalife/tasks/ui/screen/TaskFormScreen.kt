@@ -137,6 +137,9 @@ fun TaskFormScreen(
     var hasDueDate by remember(existingTask) { mutableStateOf(existingTask?.nextDueDate != null) }
     var dueDate by remember(existingTask) { mutableStateOf(parseIsoDateTime(existingTask?.nextDueDate)) }
 
+    var hasEndDate by remember(existingTask) { mutableStateOf(existingTask?.endDate != null) }
+    var endDate by remember(existingTask) { mutableStateOf(parseIsoDateTime(existingTask?.endDate)) }
+
     var repeatOn by remember(existingTask) {
         mutableStateOf(existingTask?.frequency?.on ?: RepeatOn.INTERVAL)
     }
@@ -421,13 +424,80 @@ fun TaskFormScreen(
                 }
             }
 
+            // ── Scheduling Preferences ─────────────────────────────────
             if (isRecurring) {
+                Text("Scheduling Preferences", style = MaterialTheme.typography.titleSmall)
+                Text(
+                    "How should the next occurrence be calculated?",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text("Rolling deadline", style = MaterialTheme.typography.bodyLarge)
-                    Switch(checked = isRolling, onCheckedChange = { isRolling = it })
+                    RadioButton(
+                        selected = !isRolling,
+                        onClick = { isRolling = false }
+                    )
+                    Column {
+                        Text("Reschedule from due date", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "The next task will be scheduled from the original due date, even if the previous task was completed late",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.Top,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    RadioButton(
+                        selected = isRolling,
+                        onClick = { isRolling = true }
+                    )
+                    Column {
+                        Text("Reschedule from completion date", style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            "The next task will be scheduled from the actual completion date of the previous task",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+
+                // ── End Date ───────────────────────────────────────────
+                Text("End Date", style = MaterialTheme.typography.titleSmall)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = hasEndDate,
+                        onCheckedChange = { checked ->
+                            hasEndDate = checked
+                            if (!checked) endDate = null
+                            else if (endDate == null) {
+                                endDate = (dueDate ?: ZonedDateTime.now(ZoneId.systemDefault()))
+                                    .plusMonths(1)
+                                    .withSecond(0).withNano(0)
+                            }
+                        }
+                    )
+                    Text("Give this task an end date", style = MaterialTheme.typography.bodyMedium)
+                }
+                if (hasEndDate) {
+                    DateTimePickerRow(
+                        label = "Select end date & time",
+                        value = endDate,
+                        onValueSelected = { endDate = it }
+                    )
                 }
             }
 
