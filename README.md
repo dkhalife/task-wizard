@@ -33,8 +33,6 @@ Task Wizard's primary goal is to allow users to own and protect their data and t
 
 📱 Native Android app with real-time sync
 
-🌐 CalDAV endpoint at `/dav/tasks` with OAuth 2.0 Bearer token authentication
-
 ## ⌨️ Keyboard Shortcuts
 
 | Context/Screen                | Shortcut                           | Action or Result                                                   |
