@@ -124,7 +124,7 @@ fun TaskFormScreen(
     existingTask: Task?,
     availableLabels: List<Label>,
     isSaving: Boolean,
-    onSave: (title: String, nextDueDate: String?, frequency: Frequency, selectedLabelIds: List<Int>, isRolling: Boolean) -> Unit,
+    onSave: (title: String, nextDueDate: String?, endDate: String?, frequency: Frequency, notification: NotificationTriggerOptions, selectedLabelIds: List<Int>, isRolling: Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     var title by remember(existingTask) { mutableStateOf(existingTask?.title ?: "") }
@@ -156,6 +156,19 @@ fun TaskFormScreen(
     var selectedMonths by remember(existingTask) {
         val thisMonth = ZonedDateTime.now(ZoneId.systemDefault()).monthValue - 1
         mutableStateOf(existingTask?.frequency?.months?.toSet() ?: setOf(thisMonth))
+    }
+
+    var notificationsEnabled by remember(existingTask) {
+        mutableStateOf(existingTask?.notification?.enabled ?: false)
+    }
+    var notifyDueDate by remember(existingTask) {
+        mutableStateOf(existingTask?.notification?.dueDate ?: true)
+    }
+    var notifyPreDue by remember(existingTask) {
+        mutableStateOf(existingTask?.notification?.preDue ?: false)
+    }
+    var notifyOverdue by remember(existingTask) {
+        mutableStateOf(existingTask?.notification?.overdue ?: false)
     }
 
     val isRecurring = frequencyType != FrequencyType.ONCE
@@ -501,6 +514,84 @@ fun TaskFormScreen(
                 }
             }
 
+            // ── Notifications ─────────────────────────────────────
+            if (hasDueDate) {
+                Text("Notifications", style = MaterialTheme.typography.titleSmall)
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Checkbox(
+                        checked = notificationsEnabled,
+                        onCheckedChange = { notificationsEnabled = it }
+                    )
+                    Text("Notify for this task", style = MaterialTheme.typography.bodyMedium)
+                }
+
+                if (notificationsEnabled) {
+                    Text(
+                        "When should notifications trigger?",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = notifyDueDate,
+                            onCheckedChange = { notifyDueDate = it }
+                        )
+                        Column {
+                            Text("Due Date/Time", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "After the due date and time has passed",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = notifyPreDue,
+                            onCheckedChange = { notifyPreDue = it }
+                        )
+                        Column {
+                            Text("Pre-due", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "A few hours before the due date",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.Top,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Checkbox(
+                            checked = notifyOverdue,
+                            onCheckedChange = { notifyOverdue = it }
+                        )
+                        Column {
+                            Text("Overdue", style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                "When left uncompleted at least one day past its due date",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+
             Button(
                 onClick = {
                     val frequency = when (frequencyType) {
@@ -525,7 +616,25 @@ fun TaskFormScreen(
                         }
                         else -> Frequency(type = frequencyType)
                     }
-                    onSave(title, dueDate?.toIsoString(), frequency, selectedLabelIds.toList(), isRolling)
+                    val notification = if (notificationsEnabled) {
+                        NotificationTriggerOptions(
+                            enabled = true,
+                            dueDate = notifyDueDate,
+                            preDue = notifyPreDue,
+                            overdue = notifyOverdue
+                        )
+                    } else {
+                        NotificationTriggerOptions()
+                    }
+                    onSave(
+                        title,
+                        dueDate?.toIsoString(),
+                        endDate?.toIsoString(),
+                        frequency,
+                        notification,
+                        selectedLabelIds.toList(),
+                        isRolling
+                    )
                 },
                 enabled = title.isNotBlank() && !isSaving,
                 modifier = Modifier.fillMaxWidth()
