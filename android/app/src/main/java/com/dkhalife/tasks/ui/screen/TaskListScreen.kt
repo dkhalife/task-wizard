@@ -387,7 +387,7 @@ private fun formatDistance(from: LocalDateTime, to: LocalDateTime): String {
     }
 }
 
-private fun intervalUnitSuffix(unit: IntervalUnit?): String = when (unit) {
+private fun intervalUnitSuffix(unit: String?): String = when (unit) {
     IntervalUnit.HOURS -> "h"
     IntervalUnit.DAYS -> "d"
     IntervalUnit.WEEKS -> "w"
