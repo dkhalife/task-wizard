@@ -24,7 +24,7 @@ object TaskGroupColors {
     val NEXT_WEEK = Color(0xFF00bcd4)
     val LATER = Color(0xFFd7ccc8)
     val ANY_TIME = Color(0xFF90a4ae)
-    val NONE = Color(0xFFFFFFFF)
+    val NONE = Color.Unspecified
 }
 
 object TaskGrouper {

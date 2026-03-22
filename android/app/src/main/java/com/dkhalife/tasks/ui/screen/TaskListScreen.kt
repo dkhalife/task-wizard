@@ -81,7 +81,7 @@ fun TaskListScreen(
                         }
 
                         if (isExpanded) {
-                            items(group.tasks, key = { it.id }) { task ->
+                            items(group.tasks, key = { "${group.key}_${it.id}" }) { task ->
                             TaskItem(
                                 task = task,
                                 onComplete = { onCompleteTask(task.id) },
@@ -107,9 +107,21 @@ private fun GroupHeader(group: TaskGroup, isExpanded: Boolean, onToggle: () -> U
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        val headerColor = if (group.color == Color.Unspecified) {
+            MaterialTheme.colorScheme.onSurface
+        } else {
+            group.color
+        }
+
+        val indicatorColor = if (group.color == Color.Unspecified) {
+            MaterialTheme.colorScheme.onSurfaceVariant
+        } else {
+            group.color
+        }
+
         Surface(
             shape = MaterialTheme.shapes.extraSmall,
-            color = group.color.copy(alpha = 0.2f),
+            color = indicatorColor.copy(alpha = 0.2f),
             modifier = Modifier.size(12.dp)
         ) {}
 
@@ -118,7 +130,7 @@ private fun GroupHeader(group: TaskGroup, isExpanded: Boolean, onToggle: () -> U
         Text(
             text = group.name,
             style = MaterialTheme.typography.titleSmall,
-            color = group.color
+            color = headerColor
         )
 
         Spacer(modifier = Modifier.width(8.dp))

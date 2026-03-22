@@ -12,9 +12,11 @@ import com.dkhalife.tasks.repo.LabelRepository
 import com.dkhalife.tasks.repo.TaskRepository
 import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -75,7 +77,7 @@ class TaskListViewModel @Inject constructor(
         viewModelScope.launch {
             combine(tasks, _taskGrouping, labelRepository.labels) { tasks, grouping, labels ->
                 computeGroups(tasks, grouping, labels)
-            }.collect { groups ->
+            }.flowOn(Dispatchers.Default).collect { groups ->
                 _taskGroups.value = groups
             }
         }
