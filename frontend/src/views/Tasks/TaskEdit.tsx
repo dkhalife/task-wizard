@@ -478,7 +478,7 @@ class TaskEditImpl extends React.Component<TaskEditProps, TaskEditState> {
             <FormControl error={Boolean(errors.dueDate)}>
               <Typography>
               {isRecurring
-                ? 'When is the next first time this task is due?'
+                ? 'When is the next time this task is due?'
                 : 'When is this task due?'}
               </Typography>
               <Input

@@ -14,7 +14,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.model.*
+import java.time.Instant
 import java.time.ZoneId
+import java.time.ZoneOffset
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -71,10 +73,13 @@ private fun DateTimePickerRow(
                     showDatePicker = false
                     val millis = datePickerState.selectedDateMillis
                     if (millis != null) {
-                        pendingDate = ZonedDateTime.ofInstant(
-                            java.time.Instant.ofEpochMilli(millis),
-                            ZoneId.systemDefault()
-                        )
+                        // selectedDateMillis is UTC midnight for the picked day.
+                        // Extract the LocalDate in UTC, then build a ZonedDateTime
+                        // at midnight in the system timezone to avoid day-offset issues.
+                        val localDate = Instant.ofEpochMilli(millis)
+                            .atZone(ZoneOffset.UTC)
+                            .toLocalDate()
+                        pendingDate = localDate.atStartOfDay(ZoneId.systemDefault())
                         showTimePicker = true
                     }
                 }) { Text("Next") }
@@ -237,6 +242,9 @@ fun TaskFormScreen(
                         if (!checked) {
                             dueDate = null
                             frequencyType = FrequencyType.ONCE
+                            hasEndDate = false
+                            endDate = null
+                            notificationsEnabled = false
                         } else if (dueDate == null) {
                             dueDate = ZonedDateTime.now(ZoneId.systemDefault())
                                 .plusDays(1)
@@ -245,7 +253,7 @@ fun TaskFormScreen(
                     }
                 )
                 Text(
-                    text = if (isRecurring) "When is the next first time this task is due?"
+                    text = if (isRecurring) "When is the next time this task is due?"
                            else "Give this task a due date",
                     style = MaterialTheme.typography.bodyMedium
                 )
@@ -270,6 +278,10 @@ fun TaskFormScreen(
                         checked = isRecurring,
                         onCheckedChange = { checked ->
                             frequencyType = if (checked) FrequencyType.DAILY else FrequencyType.ONCE
+                            if (!checked) {
+                                hasEndDate = false
+                                endDate = null
+                            }
                         }
                     )
                     Text("Repeat this task", style = MaterialTheme.typography.bodyMedium)
@@ -628,10 +640,10 @@ fun TaskFormScreen(
                     }
                     onSave(
                         title,
-                        dueDate?.toIsoString(),
-                        endDate?.toIsoString(),
+                        if (hasDueDate) dueDate?.toIsoString() else null,
+                        if (hasDueDate && isRecurring && hasEndDate) endDate?.toIsoString() else null,
                         frequency,
-                        notification,
+                        if (hasDueDate) notification else NotificationTriggerOptions(),
                         selectedLabelIds.toList(),
                         isRolling
                     )
