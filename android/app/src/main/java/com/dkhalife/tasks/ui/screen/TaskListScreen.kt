@@ -293,12 +293,14 @@ private fun RecurrenceChip(task: Task, nextDueLdt: LocalDateTime?) {
                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.size(12.dp)
                 )
+                if (text.isNotEmpty()) {
+                    Text(
+                        text = text,
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             }
-            Text(
-                text = text,
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
         }
     }
 }
@@ -385,29 +387,28 @@ private fun formatDistance(from: LocalDateTime, to: LocalDateTime): String {
     }
 }
 
+private fun intervalUnitSuffix(unit: String?): String = when (unit) {
+    IntervalUnit.HOURS -> "h"
+    IntervalUnit.DAYS -> "d"
+    IntervalUnit.WEEKS -> "w"
+    IntervalUnit.MONTHS -> "m"
+    IntervalUnit.YEARS -> "y"
+    else -> ""
+}
+
 private fun getRecurrenceText(task: Task, nextDueLdt: LocalDateTime?): String {
     val frequency = task.frequency
     return when (frequency.type) {
-        FrequencyType.ONCE -> "Once"
-        FrequencyType.DAILY -> "Daily"
-        FrequencyType.WEEKLY -> "Weekly"
-        FrequencyType.MONTHLY -> "Monthly"
-        FrequencyType.YEARLY -> "Yearly"
+        FrequencyType.ONCE -> ""
+        FrequencyType.DAILY -> "1d"
+        FrequencyType.WEEKLY -> "1w"
+        FrequencyType.MONTHLY -> "1m"
+        FrequencyType.YEARLY -> "1y"
         FrequencyType.CUSTOM -> when (frequency.on) {
             RepeatOn.INTERVAL -> {
                 val every = frequency.every ?: 1
-                if (every == 1) {
-                    when (frequency.unit) {
-                        IntervalUnit.HOURS -> "Hourly"
-                        IntervalUnit.DAYS -> "Daily"
-                        IntervalUnit.WEEKS -> "Weekly"
-                        IntervalUnit.MONTHS -> "Monthly"
-                        IntervalUnit.YEARS -> "Yearly"
-                        else -> "Custom"
-                    }
-                } else {
-                    frequency.unit?.let { "Every $every $it" } ?: "Custom"
-                }
+                val suffix = intervalUnitSuffix(frequency.unit)
+                if (suffix.isNotEmpty()) "$every$suffix" else "Custom"
             }
             RepeatOn.DAYS_OF_THE_WEEK -> {
                 val dayNames = arrayOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")

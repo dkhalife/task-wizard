@@ -161,13 +161,15 @@ fun AppNavigation(
                     existingTask = existingTask,
                     availableLabels = availableLabels,
                     isSaving = isSaving,
-                    onSave = { title, nextDueDate, frequency, labelIds, isRolling ->
+                    onSave = { title, nextDueDate, endDate, frequency, notification, labelIds, isRolling ->
                         if (taskId > 0) {
                             viewModel.updateTask(UpdateTaskReq(
                                 id = taskId,
                                 title = title,
                                 nextDueDate = nextDueDate,
+                                endDate = endDate,
                                 frequency = frequency,
+                                notification = notification,
                                 labels = labelIds,
                                 isRolling = isRolling
                             ))
@@ -175,7 +177,9 @@ fun AppNavigation(
                             viewModel.createTask(CreateTaskReq(
                                 title = title,
                                 nextDueDate = nextDueDate,
+                                endDate = endDate,
                                 frequency = frequency,
+                                notification = notification,
                                 labels = labelIds,
                                 isRolling = isRolling
                             ))
