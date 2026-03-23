@@ -34,7 +34,9 @@ import com.dkhalife.tasks.ui.screen.TaskListScreen
 import com.dkhalife.tasks.viewmodel.AuthViewModel
 import com.dkhalife.tasks.viewmodel.LabelViewModel
 import com.dkhalife.tasks.viewmodel.TaskFormViewModel
-import com.dkhalife.tasks.viewmodel.TaskListViewModel@Composable
+import com.dkhalife.tasks.viewmodel.TaskListViewModel
+
+@Composable
 fun AppNavigation(
     themeMode: ThemeMode,
     onThemeModeChanged: (ThemeMode) -> Unit,
