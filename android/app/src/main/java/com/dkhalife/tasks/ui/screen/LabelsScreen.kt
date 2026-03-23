@@ -1,24 +1,32 @@
 package com.dkhalife.tasks.ui.screen
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.model.Label
+import com.dkhalife.tasks.ui.components.LabelDialog
+import com.dkhalife.tasks.ui.components.LabelItem
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -96,129 +104,4 @@ fun LabelsScreen(
             }
         )
     }
-}
-
-@Composable
-private fun LabelItem(
-    label: Label,
-    onEdit: () -> Unit,
-    onDelete: () -> Unit
-) {
-    Card(modifier = Modifier.fillMaxWidth()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            val color = try {
-                Color(android.graphics.Color.parseColor(label.color))
-            } catch (_: Exception) {
-                MaterialTheme.colorScheme.primary
-            }
-
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(color)
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            Text(
-                text = label.name,
-                style = MaterialTheme.typography.bodyLarge,
-                modifier = Modifier.weight(1f)
-            )
-
-            IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit")
-            }
-
-            IconButton(onClick = onDelete) {
-                Icon(
-                    Icons.Default.Delete,
-                    contentDescription = "Delete",
-                    tint = MaterialTheme.colorScheme.error
-                )
-            }
-        }
-    }
-}
-
-@Composable
-private fun LabelDialog(
-    existingLabel: Label?,
-    onDismiss: () -> Unit,
-    onSave: (name: String, color: String) -> Unit
-) {
-    var name by remember { mutableStateOf(existingLabel?.name ?: "") }
-    var color by remember { mutableStateOf(existingLabel?.color ?: "#6650a4") }
-
-    val presetColors = listOf("#6650a4", "#625b71", "#7D5260", "#B3261E", "#006D3B", "#0061A4", "#984061", "#7D5700")
-
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(if (existingLabel != null) "Edit Label" else "New Label") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = { name = it },
-                    label = { Text("Name") },
-                    singleLine = true,
-                    modifier = Modifier.fillMaxWidth()
-                )
-
-                Text("Color", style = MaterialTheme.typography.titleSmall)
-
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    presetColors.forEach { preset ->
-                        val presetColor = try {
-                            Color(android.graphics.Color.parseColor(preset))
-                        } catch (_: Exception) {
-                            MaterialTheme.colorScheme.primary
-                        }
-
-                        Surface(
-                            onClick = { color = preset },
-                            shape = CircleShape,
-                            color = presetColor,
-                            modifier = Modifier.size(32.dp),
-                        ) {
-                            if (color.equals(preset, ignoreCase = true)) {
-                                Box(
-                                    modifier = Modifier.fillMaxSize(),
-                                    contentAlignment = Alignment.Center
-                                ) {
-                                    Icon(
-                                        Icons.Default.Check,
-                                        contentDescription = "Selected",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
-            }
-        },
-        confirmButton = {
-            TextButton(
-                onClick = { onSave(name, color) },
-                enabled = name.isNotBlank()
-            ) {
-                Text("Save")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
 }

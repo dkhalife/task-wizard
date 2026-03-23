@@ -1,14 +1,19 @@
 package com.dkhalife.tasks.ui.navigation
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Checklist
-import androidx.compose.material.icons.filled.Label
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Icon
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavType
@@ -19,24 +24,17 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
-import com.dkhalife.tasks.model.*
-import com.dkhalife.tasks.ui.screen.*
-import com.dkhalife.tasks.viewmodel.*
-
-sealed class Screen(val route: String, val title: String, val icon: ImageVector) {
-    data object Tasks : Screen("tasks", "Tasks", Icons.Default.Checklist)
-    data object Labels : Screen("labels", "Labels", Icons.Default.Label)
-    data object Settings : Screen("settings", "Settings", Icons.Default.Settings)
-}
-
-object Routes {
-    const val TASK_FORM = "task_form?taskId={taskId}"
-    const val TASK_FORM_CREATE = "task_form"
-
-    fun taskFormEdit(taskId: Int) = "task_form?taskId=$taskId"
-}
-
-@Composable
+import com.dkhalife.tasks.model.CreateTaskReq
+import com.dkhalife.tasks.model.Task
+import com.dkhalife.tasks.model.UpdateTaskReq
+import com.dkhalife.tasks.ui.screen.LabelsScreen
+import com.dkhalife.tasks.ui.screen.SettingsScreen
+import com.dkhalife.tasks.ui.screen.TaskFormScreen
+import com.dkhalife.tasks.ui.screen.TaskListScreen
+import com.dkhalife.tasks.viewmodel.AuthViewModel
+import com.dkhalife.tasks.viewmodel.LabelViewModel
+import com.dkhalife.tasks.viewmodel.TaskFormViewModel
+import com.dkhalife.tasks.viewmodel.TaskListViewModel@Composable
 fun AppNavigation(
     themeMode: ThemeMode,
     onThemeModeChanged: (ThemeMode) -> Unit,
