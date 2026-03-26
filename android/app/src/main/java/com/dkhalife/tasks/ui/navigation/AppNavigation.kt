@@ -1,5 +1,9 @@
 package com.dkhalife.tasks.ui.navigation
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
@@ -83,7 +87,11 @@ fun AppNavigation(
         NavHost(
             navController = navController,
             startDestination = Screen.Tasks.route,
-            modifier = Modifier.padding(innerPadding)
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn() },
+            exitTransition = { fadeOut() },
+            popEnterTransition = { fadeIn() },
+            popExitTransition = { fadeOut() }
         ) {
             composable(Screen.Tasks.route) {
                 val viewModel: TaskListViewModel = hiltViewModel()
@@ -143,7 +151,11 @@ fun AppNavigation(
                 arguments = listOf(navArgument("taskId") {
                     type = NavType.IntType
                     defaultValue = -1
-                })
+                }),
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                exitTransition = { fadeOut() },
+                popEnterTransition = { fadeIn() },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
             ) { backStackEntry ->
                 val taskId = backStackEntry.arguments?.getInt("taskId") ?: -1
                 val viewModel: TaskFormViewModel = hiltViewModel()

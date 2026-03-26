@@ -3,11 +3,13 @@ package com.dkhalife.tasks.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.AlertDialog
@@ -28,6 +30,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.model.Label
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LabelDialog(
     existingLabel: Label?,
@@ -35,12 +38,18 @@ fun LabelDialog(
     onSave: (name: String, color: String) -> Unit
 ) {
     var name by remember { mutableStateOf(existingLabel?.name ?: "") }
-    var color by remember { mutableStateOf(existingLabel?.color ?: "#6650a4") }
+    var color by remember { mutableStateOf(existingLabel?.color ?: "#1A6B52") }
 
-    val presetColors = listOf("#6650a4", "#625b71", "#7D5260", "#B3261E", "#006D3B", "#0061A4", "#984061", "#7D5700")
+    val presetColors = listOf(
+        "#1A6B52", "#00513D", "#006D3B", "#2E7D32",
+        "#406376", "#274B5E", "#0061A4", "#1565C0",
+        "#6650a4", "#7B1FA2", "#984061", "#AD1457",
+        "#B3261E", "#D84315", "#7D5700", "#F9A825"
+    )
 
     AlertDialog(
         onDismissRequest = onDismiss,
+        shape = RoundedCornerShape(24.dp),
         title = { Text(if (existingLabel != null) "Edit Label" else "New Label") },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
@@ -49,12 +58,16 @@ fun LabelDialog(
                     onValueChange = { name = it },
                     label = { Text("Name") },
                     singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
                 Text("Color", style = MaterialTheme.typography.titleSmall)
 
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
                     presetColors.forEach { preset ->
                         val presetColor = try {
                             Color(android.graphics.Color.parseColor(preset))
@@ -66,7 +79,7 @@ fun LabelDialog(
                             onClick = { color = preset },
                             shape = CircleShape,
                             color = presetColor,
-                            modifier = Modifier.size(32.dp),
+                            modifier = Modifier.size(40.dp),
                         ) {
                             if (color.equals(preset, ignoreCase = true)) {
                                 Box(
@@ -77,7 +90,7 @@ fun LabelDialog(
                                         Icons.Default.Check,
                                         contentDescription = "Selected",
                                         tint = Color.White,
-                                        modifier = Modifier.size(18.dp)
+                                        modifier = Modifier.size(20.dp)
                                     )
                                 }
                             }
