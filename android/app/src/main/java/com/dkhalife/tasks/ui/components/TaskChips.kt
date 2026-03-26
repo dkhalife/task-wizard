@@ -4,9 +4,11 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.NotificationsActive
 import androidx.compose.material.icons.filled.Repeat
+import androidx.compose.material.icons.filled.Schedule
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -23,6 +25,8 @@ import com.dkhalife.tasks.ui.utils.getRecurrenceText
 import java.time.LocalDateTime
 import java.time.temporal.ChronoUnit
 
+private val ChipShape = RoundedCornerShape(8.dp)
+
 @Composable
 fun DueDateChip(ldt: LocalDateTime?, now: LocalDateTime) {
     val text = if (ldt == null) "No Due Date" else formatDueDate(ldt, now)
@@ -32,13 +36,24 @@ fun DueDateChip(ldt: LocalDateTime?, now: LocalDateTime) {
         ChronoUnit.HOURS.between(now, ldt) < 4 -> Pair(MaterialTheme.colorScheme.tertiaryContainer, MaterialTheme.colorScheme.onTertiaryContainer)
         else -> Pair(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
     }
-    Surface(shape = MaterialTheme.shapes.extraSmall, color = bgColor) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.labelSmall,
-            color = fgColor,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
-        )
+    Surface(shape = ChipShape, color = bgColor) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                Icons.Default.Schedule,
+                contentDescription = null,
+                tint = fgColor,
+                modifier = Modifier.size(12.dp)
+            )
+            Text(
+                text = text,
+                style = MaterialTheme.typography.labelSmall,
+                color = fgColor
+            )
+        }
     }
 }
 
@@ -47,13 +62,13 @@ fun RecurrenceChip(task: Task, nextDueLdt: LocalDateTime?) {
     val text = getRecurrenceText(task, nextDueLdt)
     val isOnce = task.frequency.type == FrequencyType.ONCE
     Surface(
-        shape = MaterialTheme.shapes.extraSmall,
+        shape = ChipShape,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(2.dp)
+            horizontalArrangement = Arrangement.spacedBy(3.dp)
         ) {
             if (isOnce) {
                 Text(
@@ -83,7 +98,7 @@ fun RecurrenceChip(task: Task, nextDueLdt: LocalDateTime?) {
 @Composable
 fun NotificationChip() {
     Surface(
-        shape = MaterialTheme.shapes.extraSmall,
+        shape = ChipShape,
         color = MaterialTheme.colorScheme.surfaceVariant
     ) {
         Icon(
@@ -91,7 +106,7 @@ fun NotificationChip() {
             contentDescription = "Notifications active",
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
-                .padding(horizontal = 6.dp, vertical = 3.dp)
+                .padding(horizontal = 6.dp, vertical = 4.dp)
                 .size(12.dp)
         )
     }
@@ -105,14 +120,14 @@ fun LabelChip(name: String, color: String) {
         MaterialTheme.colorScheme.primary
     }
     Surface(
-        shape = MaterialTheme.shapes.small,
-        color = chipColor.copy(alpha = 0.2f)
+        shape = ChipShape,
+        color = chipColor.copy(alpha = 0.15f)
     ) {
         Text(
             text = name,
             style = MaterialTheme.typography.labelSmall,
             color = chipColor,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp)
         )
     }
 }

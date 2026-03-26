@@ -1,12 +1,17 @@
 package com.dkhalife.tasks.ui.components
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.material3.Checkbox
+import androidx.compose.foundation.layout.height
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.RadioButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -68,19 +73,24 @@ fun SchedulingSection(
         }
     }
 
+    Spacer(modifier = Modifier.height(8.dp))
     Text("End Date", style = MaterialTheme.typography.titleSmall)
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
+        horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Checkbox(
+        Text("Give this task an end date", style = MaterialTheme.typography.bodyMedium)
+        Switch(
             checked = hasEndDate,
             onCheckedChange = onHasEndDateChange
         )
-        Text("Give this task an end date", style = MaterialTheme.typography.bodyMedium)
     }
-    if (hasEndDate) {
+    AnimatedVisibility(
+        visible = hasEndDate,
+        enter = expandVertically(),
+        exit = shrinkVertically()
+    ) {
         DateTimePickerRow(
             label = "Select end date & time",
             value = endDate,
