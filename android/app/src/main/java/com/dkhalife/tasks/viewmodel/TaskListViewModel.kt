@@ -1,6 +1,5 @@
 package com.dkhalife.tasks.viewmodel
 
-import android.content.Context
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dkhalife.tasks.data.GroupingRepository
@@ -15,7 +14,6 @@ import com.dkhalife.tasks.utils.SoundEffect
 import com.dkhalife.tasks.utils.SoundManager
 import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
-import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -26,7 +24,6 @@ import javax.inject.Inject
 
 @HiltViewModel
 class TaskListViewModel @Inject constructor(
-    @ApplicationContext private val context: Context,
     private val taskRepository: TaskRepository,
     private val labelRepository: LabelRepository,
     private val groupingRepository: GroupingRepository,
@@ -96,8 +93,8 @@ class TaskListViewModel @Inject constructor(
         labels: List<Label>
     ): List<TaskGroup> {
         return when (grouping) {
-            TaskGrouping.DUE_DATE -> TaskGrouper.groupByDueDate(context, tasks)
-            TaskGrouping.LABEL -> TaskGrouper.groupByLabel(context, tasks, labels)
+            TaskGrouping.DUE_DATE -> TaskGrouper.groupByDueDate(tasks)
+            TaskGrouping.LABEL -> TaskGrouper.groupByLabel(tasks, labels)
         }
     }
 

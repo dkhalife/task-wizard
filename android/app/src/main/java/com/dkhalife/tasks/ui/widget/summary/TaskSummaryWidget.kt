@@ -32,6 +32,7 @@ import com.dkhalife.tasks.MainActivity
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.widget.WidgetSyncEngine
+import com.dkhalife.tasks.ui.utils.taskGroupNameResId
 import com.dkhalife.tasks.ui.widget.WidgetTheme
 import com.google.gson.Gson
 
@@ -54,7 +55,7 @@ class TaskSummaryWidget : GlanceAppWidget() {
         val context = LocalContext.current
         val prefs = currentState<Preferences>()
         val tasks = WidgetSyncEngine.deserializeTasks(Gson(), prefs[WidgetSyncEngine.KEY_TASKS_JSON])
-        val groups = TaskGrouper.groupByDueDate(context, tasks)
+        val groups = TaskGrouper.groupByDueDate(tasks)
 
         val openAppAction = actionStartActivity<MainActivity>()
 
@@ -89,7 +90,8 @@ class TaskSummaryWidget : GlanceAppWidget() {
                             )
                         )
                         Text(
-                            text = group.name,
+                            text = taskGroupNameResId(group.key)
+                                ?.let { context.getString(it) } ?: group.name,
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
                                 fontSize = 10.sp

@@ -108,7 +108,7 @@ fun NotificationChip() {
     ) {
         Icon(
             Icons.Default.NotificationsActive,
-            contentDescription = stringResource(R.string.section_notifications),
+            contentDescription = stringResource(R.string.notifications_active_description),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .padding(horizontal = 6.dp, vertical = 4.dp)

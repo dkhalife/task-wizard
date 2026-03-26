@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.State
 import androidx.compose.runtime.produceState
+import android.text.format.DateFormat
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.FrequencyType
 import com.dkhalife.tasks.model.IntervalUnit
@@ -12,9 +13,8 @@ import com.dkhalife.tasks.model.Task
 import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.ZonedDateTime
-import java.time.format.DateTimeFormatter
 import java.time.temporal.ChronoUnit
-import java.util.Locale
+import java.util.Date
 import kotlinx.coroutines.delay
 
 fun parseDueDate(dateStr: String?): LocalDateTime? =
@@ -34,7 +34,8 @@ fun rememberTickingNow(): State<LocalDateTime> = produceState(LocalDateTime.now(
 
 fun formatDueDate(context: Context, ldt: LocalDateTime, now: LocalDateTime): String {
     val today = now.toLocalDate()
-    val timeStr = ldt.format(DateTimeFormatter.ofPattern("hh:mm a", Locale.ENGLISH))
+    val timeStr = DateFormat.getTimeFormat(context)
+        .format(Date.from(ldt.atZone(ZoneId.systemDefault()).toInstant()))
     return when {
         ldt.isBefore(now) -> context.getString(R.string.due_date_past, formatDistance(context, ldt, now))
         ldt.toLocalDate() == today -> context.getString(R.string.due_date_today_at, timeStr)
@@ -116,3 +117,15 @@ fun getRecurrenceText(context: Context, task: Task, nextDueLdt: LocalDateTime?):
 fun hasActiveNotification(task: Task): Boolean =
     task.notification.enabled &&
         (task.notification.dueDate || task.notification.preDue || task.notification.overdue)
+
+fun taskGroupNameResId(groupKey: String): Int? = when (groupKey) {
+    "overdue" -> R.string.group_overdue
+    "today" -> R.string.group_today
+    "tomorrow" -> R.string.group_tomorrow
+    "this_week" -> R.string.group_this_week
+    "next_week" -> R.string.group_next_week
+    "later" -> R.string.group_later
+    "any_time" -> R.string.group_any_time
+    "none" -> R.string.group_none
+    else -> null
+}
