@@ -60,7 +60,7 @@ fun SettingsScreen(
         val allGranted = permissions.values.all { it }
         if (allGranted) {
             scope.launch {
-                val result = calendarRepository.enableCalendarSync(contentResolver, workManager)
+                val result = calendarRepository.enableCalendarSync(context, contentResolver, workManager)
                 if (result.isSuccess) {
                     onCalendarSyncChanged(true)
                 } else {
@@ -180,7 +180,7 @@ fun SettingsScreen(
                                 }
                                 if (hasPermissions) {
                                     scope.launch {
-                                        val result = calendarRepository.enableCalendarSync(contentResolver, workManager)
+                                        val result = calendarRepository.enableCalendarSync(context, contentResolver, workManager)
                                         if (result.isSuccess) {
                                             onCalendarSyncChanged(true)
                                         } else {
@@ -192,7 +192,7 @@ fun SettingsScreen(
                                 }
                             } else {
                                 scope.launch {
-                                    val result = calendarRepository.disableCalendarSync(contentResolver, workManager)
+                                    val result = calendarRepository.disableCalendarSync(context, contentResolver, workManager)
                                     if (result.isSuccess) {
                                         onCalendarSyncChanged(false)
                                     } else {

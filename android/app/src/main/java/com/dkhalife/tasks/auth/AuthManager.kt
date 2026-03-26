@@ -72,6 +72,8 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
 
     fun isSignedIn(): Boolean = currentAccount != null
 
+    fun getAccountName(): String? = currentAccount?.username
+
     fun isLoaded(): Boolean = isAccountLoaded
 
     override fun getCachedAccessToken(): String? {

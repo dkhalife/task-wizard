@@ -12,7 +12,7 @@ Syncs active tasks with due dates into a read-only local calendar on the device,
 
 ## Architecture
 
-Four modular layers, each reusable independently:
+Five modular layers, each reusable independently:
 
 ### 1. `CalendarProviderClient` (low-level, reusable)
 - Thin wrapper around `ContentResolver` + `CalendarContract`
@@ -26,28 +26,39 @@ Four modular layers, each reusable independently:
 - Stateless — accepts task list and calendar ID, does the rest
 
 ### 3. `CalendarSyncWorker` (WorkManager)
-- `@HiltWorker` `CoroutineWorker` that fetches tasks via `TaskWizardApi`
+- `CoroutineWorker` created via `CalendarSyncWorkerFactory` that fetches tasks via `TaskWizardApi`
 - Passes fetched tasks to `CalendarSyncEngine`
 - Returns `Result.retry()` on failure for automatic backoff
 
 ### 4. `CalendarRepository` (orchestration)
-- `enableCalendarSync()` — creates calendar, schedules periodic WorkManager job
-- `disableCalendarSync()` — cancels worker, deletes calendar
+- `enableCalendarSync()` — registers account via `AccountManager`, creates calendar, schedules periodic WorkManager job
+- `disableCalendarSync()` — cancels worker, deletes calendar, removes account
 - Persists enabled/disabled state in `SharedPreferences`
+
+### 5. Account authenticator (system integration)
+- `CalendarAccountAuthenticator` — stub authenticator required by Android for custom account types
+- `CalendarAuthenticatorService` — bound service exposing the authenticator
+- `res/xml/calendar_authenticator.xml` — declares the `com.dkhalife.tasks` account type
+- Without these, Android will not persist the calendar or make it visible to other apps
 
 ## Key Surfaces
 
 - `data/calendar/CalendarProviderClient.kt` — ContentProvider wrapper
 - `data/calendar/CalendarSyncEngine.kt` — Diff-based sync logic
 - `data/calendar/CalendarSyncWorker.kt` — WorkManager worker
+- `data/calendar/CalendarSyncWorkerFactory.kt` — Custom WorkerFactory for DI
 - `data/calendar/CalendarRepository.kt` — Feature orchestration + preferences
+- `data/calendar/CalendarAccountAuthenticator.kt` — Stub authenticator for account type
+- `data/calendar/CalendarAuthenticatorService.kt` — Service exposing the authenticator
 - `data/AppPreferences.kt` — `KEY_CALENDAR_SYNC` constant
 - `ui/screen/SettingsScreen.kt` — Calendar sync toggle with permission handling
+- `res/xml/calendar_authenticator.xml` — Account type metadata
 
 ## Permissions
 
 - `android.permission.READ_CALENDAR` — required to query existing events for diff sync
 - `android.permission.WRITE_CALENDAR` — required to create calendar and manage events
+- `android.permission.AUTHENTICATE_ACCOUNTS` — required to register the stub account with AccountManager
 - Requested at runtime when user enables the feature
 
 ## Event Mapping
