@@ -27,7 +27,7 @@ fun SignInScreen(
     onEndpointChanged: (String) -> Unit
 ) {
     val activity = LocalContext.current as Activity
-    var endpointField by remember(serverEndpoint) { mutableStateOf(TextFieldValue(serverEndpoint)) }
+    var endpointField by remember { mutableStateOf(TextFieldValue(serverEndpoint)) }
     var visible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) { visible = true }
