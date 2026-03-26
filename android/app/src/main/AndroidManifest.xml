@@ -105,7 +105,8 @@
 
         <service
             android:name=".data.calendar.CalendarAuthenticatorService"
-            android:exported="false">
+            android:exported="true"
+            android:permission="android.permission.BIND_ACCOUNT_AUTHENTICATOR">
             <intent-filter>
                 <action android:name="android.accounts.AccountAuthenticator" />
             </intent-filter>

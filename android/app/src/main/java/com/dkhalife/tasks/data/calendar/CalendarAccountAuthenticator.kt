@@ -14,14 +14,14 @@ class CalendarAccountAuthenticator(context: Context) : AbstractAccountAuthentica
         authTokenType: String?,
         requiredFeatures: Array<out String>?,
         options: Bundle?
-    ): Bundle? = null
+    ): Bundle = unsupportedOperation()
 
     override fun getAuthToken(
         response: AccountAuthenticatorResponse?,
         account: Account?,
         authTokenType: String?,
         options: Bundle?
-    ): Bundle? = null
+    ): Bundle = unsupportedOperation()
 
     override fun getAuthTokenLabel(authTokenType: String?): String? = null
 
@@ -36,18 +36,23 @@ class CalendarAccountAuthenticator(context: Context) : AbstractAccountAuthentica
     override fun editProperties(
         response: AccountAuthenticatorResponse?,
         accountType: String?
-    ): Bundle? = null
+    ): Bundle = unsupportedOperation()
 
     override fun confirmCredentials(
         response: AccountAuthenticatorResponse?,
         account: Account?,
         options: Bundle?
-    ): Bundle? = null
+    ): Bundle = unsupportedOperation()
 
     override fun updateCredentials(
         response: AccountAuthenticatorResponse?,
         account: Account?,
         authTokenType: String?,
         options: Bundle?
-    ): Bundle? = null
+    ): Bundle = unsupportedOperation()
+
+    private fun unsupportedOperation(): Bundle = Bundle().apply {
+        putInt(AccountManager.KEY_ERROR_CODE, AccountManager.ERROR_CODE_UNSUPPORTED_OPERATION)
+        putString(AccountManager.KEY_ERROR_MESSAGE, "Not supported")
+    }
 }
