@@ -10,7 +10,10 @@ import androidx.work.NetworkType
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.dkhalife.tasks.data.AppPreferences
-import com.dkhalife.tasks.ui.widget.TaskGlanceWidgetReceiver
+import com.dkhalife.tasks.ui.widget.TaskListWidgetReceiver
+import com.dkhalife.tasks.ui.widget.duetoday.DueTodayWidgetReceiver
+import com.dkhalife.tasks.ui.widget.labelfilter.LabelFilterWidgetReceiver
+import com.dkhalife.tasks.ui.widget.summary.TaskSummaryWidgetReceiver
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -50,8 +53,15 @@ class TaskSyncScheduler @Inject constructor(
 
     private fun hasActiveWidgets(context: Context): Boolean {
         val widgetManager = AppWidgetManager.getInstance(context)
-        val widgetComponent = ComponentName(context, TaskGlanceWidgetReceiver::class.java)
-        return widgetManager.getAppWidgetIds(widgetComponent).isNotEmpty()
+        val receiverClasses = listOf(
+            TaskListWidgetReceiver::class.java,
+            TaskSummaryWidgetReceiver::class.java,
+            DueTodayWidgetReceiver::class.java,
+            LabelFilterWidgetReceiver::class.java,
+        )
+        return receiverClasses.any { cls ->
+            widgetManager.getAppWidgetIds(ComponentName(context, cls)).isNotEmpty()
+        }
     }
 
     companion object {
