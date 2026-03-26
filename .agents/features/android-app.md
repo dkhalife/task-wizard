@@ -32,3 +32,10 @@ Native Android client for Task Wizard with task and label management.
 - `viewmodel/` — AuthViewModel, TaskListViewModel, TaskFormViewModel, LabelViewModel
 - `ui/screen/` — SignInScreen, TaskListScreen, TaskFormScreen, LabelsScreen, SettingsScreen
 - `ui/navigation/` — AppNavigation (NavHost with bottom bar)
+- `ui/components/` — Reusable Compose components (DateTimePickerRow, GroupHeader, LabelDialog, LabelItem, NotificationsSection, RecurrenceSection, SchedulingSection, TaskChips, TaskItem)
+- `ui/theme/` — Material 3 theme definitions (Color, Theme, Type)
+- `ui/utils/` — UI utility functions (DateTimeUtils, TaskFormatters)
+- `data/` — Local data layer (AppPreferences, GroupingRepository, TaskGrouper, ThemeRepository)
+- `model/` — Data model classes (ApiResponse, AuthConfig, Label, Notification, Recurrence, Task, User)
+- `di/` — Hilt dependency injection modules (AppModule, NetworkModule)
+- `utils/` — Utility classes (SoundManager)

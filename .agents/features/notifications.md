@@ -10,4 +10,4 @@ Users can configure notifications to be reminded about task deadlines.
 - Background scheduler generates and sends notifications at configurable intervals
 - Overdue notifications sent on a separate schedule (default 24h)
 - Sent notifications are automatically cleaned up
-- Desktop browser notifications toggle in settings
+- Desktop browser notification toggle in settings (frontend-only, uses the browser Notifications API with permission request; not a backend-managed provider)

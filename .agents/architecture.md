@@ -15,7 +15,7 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 - **Language**: TypeScript
 - **Framework**: React (class components) with Redux
 - **Transport**: HTTP REST
-- **Role**: Single-page application for task management, label organization, notification configuration, API token management, and user settings.
+- **Role**: Single-page application for task management, label organization, notification configuration, and user settings.
 
 ### 3. Android App (`android/`)
 - **Language**: Kotlin
@@ -28,7 +28,7 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 ### 4. MCP Server (`mcpserver/`)
 - **Language**: C# (.NET 9)
 - **Framework**: ASP.NET Core with ModelContextProtocol
-- **Role**: Exposes task and label management as MCP (Model Context Protocol) tools so AI assistants can interact with Task Wizard programmatically. Currently uses in-memory stub data.
+- **Role**: Exposes task and label management as MCP (Model Context Protocol) tools so AI assistants can interact with Task Wizard programmatically. Proxies all requests to the real API server via `ApiProxyService` (configurable via `TW_API_URL`). Authenticates using Microsoft Entra ID.
 
 
 ## Communication
@@ -57,11 +57,11 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 | Layer | Directory | Purpose |
 |-------|-----------|---------|
 | HTTP Handlers | `internal/apis/` | REST route handlers |
-| Middleware | `internal/middleware/` | JWT auth, scope enforcement |
+| Middleware | `internal/middleware/` | Entra ID token validation, scope enforcement |
 | Models | `internal/models/` | GORM data models |
 | Repositories | `internal/repos/` | Database access layer |
-| Services | `internal/services/` | Business logic, scheduler, notifications, housekeeping |
-| Utilities | `internal/utils/` | Auth helpers, email, DB setup |
+| Services | `internal/services/` | Business logic (tasks, labels, users), scheduler, notifications, logging |
+| Utilities | `internal/utils/` | Entra ID auth helpers, DB setup, test utilities |
 | WebSocket | `internal/ws/` | Real-time push to connected clients |
 | Migrations | `internal/migrations/` | Schema versioning |
 | Config | `config/` | YAML-based configuration with env var overrides |
@@ -71,18 +71,21 @@ Task Wizard is a self-hosted, privacy-focused task management application. It is
 | Layer | Directory | Purpose |
 |-------|-----------|---------|
 | Views | `src/views/` | Page-level React components (Tasks, Labels, Settings, Auth, etc.) |
-| Store | `src/store/` | Redux slices for tasks, labels, user, tokens, feature flags, WebSocket, status |
+| Store | `src/store/` | Redux slices for tasks, labels, user, feature flags, WebSocket, status |
 | API | `src/api/` | HTTP transport abstraction |
 | Models | `src/models/` | TypeScript interfaces and helpers |
 | Components | `src/components/` | Shared UI components (ErrorBoundary, StatusList) |
+| Utilities | `src/utils/` | Utility modules (MSAL auth, WebSocket client, date/color/grouping helpers, sound) |
+| Contexts | `src/contexts/` | React contexts (RouterContext) |
+| Constants | `src/constants/` | App constants (theme config, feature flag definitions, time constants) |
 
 ## Key Architectural Patterns
 
 - **Repository pattern** for data access abstraction
 - **Service layer** for business logic separation
 - **Dependency injection** (Uber FX) for wiring
-- **Scope-based authorization** on API tokens (e.g. `task:read`, `label:write`)
-- **Background scheduler** for notifications, token cleanup, password reset expiration
+- **Scope-based authorization** via Entra ID scopes (e.g. `Tasks.Read`, `Labels.Write`)
+- **Background scheduler** for notification generation, sending, and cleanup
 - **Smart transport** in the frontend — uses WebSocket for real-time updates, HTTP for requests
-- **Feature flags** to toggle behaviors like WebSocket transport and auto-refresh
+- **Feature flags** infrastructure in the frontend (definitions, Redux slice, settings UI) — no flags currently defined
 - **Real-time sync** via WebSocket with per-user connection tracking
