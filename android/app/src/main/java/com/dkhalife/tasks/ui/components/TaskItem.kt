@@ -10,9 +10,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
-import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -64,9 +64,13 @@ fun TaskItem(
 
     LaunchedEffect(dismissState.currentValue) {
         when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.StartToEnd -> onDelete()
+            SwipeToDismissBoxValue.StartToEnd -> {
+                onComplete()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
             SwipeToDismissBoxValue.EndToStart -> {
-                if (task.frequency.type != FrequencyType.ONCE) onSkip() else onDelete()
+                onDelete()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
             SwipeToDismissBoxValue.Settled -> {}
         }
@@ -80,16 +84,16 @@ fun TaskItem(
                 else -> Alignment.CenterEnd
             }
             val icon = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-                else -> if (task.frequency.type != FrequencyType.ONCE) Icons.Default.SkipNext else Icons.Default.Delete
+                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Check
+                else -> Icons.Default.Delete
             }
             val containerColor = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.errorContainer
-                else -> if (task.frequency.type != FrequencyType.ONCE) MaterialTheme.colorScheme.tertiaryContainer else MaterialTheme.colorScheme.errorContainer
+                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
+                else -> MaterialTheme.colorScheme.errorContainer
             }
             val contentColor = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onErrorContainer
-                else -> if (task.frequency.type != FrequencyType.ONCE) MaterialTheme.colorScheme.onTertiaryContainer else MaterialTheme.colorScheme.onErrorContainer
+                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimaryContainer
+                else -> MaterialTheme.colorScheme.onErrorContainer
             }
 
             Card(
