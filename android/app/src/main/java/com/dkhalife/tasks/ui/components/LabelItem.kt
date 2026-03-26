@@ -24,6 +24,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,21 +53,18 @@ fun LabelItem(
         CustomAccessibilityAction("Delete") { onDelete(); true }
     )
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    onEdit()
-                    false
-                }
-                SwipeToDismissBoxValue.EndToStart -> {
-                    onDelete()
-                    true
-                }
-                SwipeToDismissBoxValue.Settled -> false
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                onEdit()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
+            SwipeToDismissBoxValue.EndToStart -> onDelete()
+            SwipeToDismissBoxValue.Settled -> {}
         }
-    )
+    }
 
     SwipeToDismissBox(
         state = dismissState,

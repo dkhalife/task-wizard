@@ -24,6 +24,7 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
@@ -59,21 +60,17 @@ fun TaskItem(
         add(CustomAccessibilityAction("Delete") { onDelete(); true })
     }
 
-    val dismissState = rememberSwipeToDismissBoxState(
-        confirmValueChange = { value ->
-            when (value) {
-                SwipeToDismissBoxValue.StartToEnd -> {
-                    onDelete()
-                    true
-                }
-                SwipeToDismissBoxValue.EndToStart -> {
-                    if (task.frequency.type != FrequencyType.ONCE) onSkip() else onDelete()
-                    true
-                }
-                SwipeToDismissBoxValue.Settled -> false
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> onDelete()
+            SwipeToDismissBoxValue.EndToStart -> {
+                if (task.frequency.type != FrequencyType.ONCE) onSkip() else onDelete()
             }
+            SwipeToDismissBoxValue.Settled -> {}
         }
-    )
+    }
 
     SwipeToDismissBox(
         state = dismissState,
