@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.dkhalife.tasks.data.SwipeSettings
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.calendar.CalendarRepository
@@ -36,6 +37,7 @@ import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.model.UpdateTaskReq
 import com.dkhalife.tasks.ui.screen.LabelsScreen
 import com.dkhalife.tasks.ui.screen.SettingsScreen
+import com.dkhalife.tasks.ui.screen.SwipeActionsSettingsScreen
 import com.dkhalife.tasks.ui.screen.TaskFormScreen
 import com.dkhalife.tasks.ui.screen.TaskListScreen
 import com.dkhalife.tasks.viewmodel.AuthViewModel
@@ -52,9 +54,14 @@ fun AppNavigation(
     calendarSyncEnabled: Boolean,
     onCalendarSyncChanged: (Boolean) -> Unit,
     calendarRepository: CalendarRepository,
+    swipeSettings: SwipeSettings,
+    onSwipeEnabledChanged: (Boolean) -> Unit,
+    onSwipeStartToEndActionChanged: (com.dkhalife.tasks.data.SwipeAction) -> Unit,
+    onSwipeEndToStartActionChanged: (com.dkhalife.tasks.data.SwipeAction) -> Unit,
+    onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
     initialTaskId: Int = -1,
     createTask: Boolean = false
-) {
+){
     val navController = rememberNavController()
     val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
@@ -128,7 +135,8 @@ fun AppNavigation(
                     onDeleteTask = { viewModel.deleteTask(it) },
                     onTaskClick = { navController.navigate(Routes.taskFormEdit(it)) },
                     onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
-                    onToggleGroup = { viewModel.toggleGroupExpanded(it) }
+                    onToggleGroup = { viewModel.toggleGroupExpanded(it) },
+                    swipeSettings = swipeSettings
                 )
             }
 
@@ -157,7 +165,26 @@ fun AppNavigation(
                     onTaskGroupingChanged = onTaskGroupingChanged,
                     calendarSyncEnabled = calendarSyncEnabled,
                     onCalendarSyncChanged = onCalendarSyncChanged,
-                    calendarRepository = calendarRepository
+                    calendarRepository = calendarRepository,
+                    swipeSettings = swipeSettings,
+                    onSwipeEnabledChanged = onSwipeEnabledChanged,
+                    onSwipeDeleteConfirmationChanged = onSwipeDeleteConfirmationChanged,
+                    onNavigateToSwipeSettings = { navController.navigate(Routes.SWIPE_SETTINGS) }
+                )
+            }
+
+            composable(
+                route = Routes.SWIPE_SETTINGS,
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                exitTransition = { fadeOut() },
+                popEnterTransition = { fadeIn() },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+            ) {
+                SwipeActionsSettingsScreen(
+                    swipeSettings = swipeSettings,
+                    onStartToEndActionChanged = onSwipeStartToEndActionChanged,
+                    onEndToStartActionChanged = onSwipeEndToStartActionChanged,
+                    onBack = { navController.popBackStack() }
                 )
             }
 
