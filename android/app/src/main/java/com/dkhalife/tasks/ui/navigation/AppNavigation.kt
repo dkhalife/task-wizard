@@ -1,5 +1,6 @@
 package com.dkhalife.tasks.ui.navigation
 
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
@@ -51,6 +52,7 @@ fun AppNavigation(
     val showBottomBar = bottomScreens.any { it.route == currentRoute }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             if (showBottomBar) {
                 NavigationBar {

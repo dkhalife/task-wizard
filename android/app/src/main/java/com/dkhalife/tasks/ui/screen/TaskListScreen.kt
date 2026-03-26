@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -39,6 +40,9 @@ fun TaskListScreen(
     onToggleGroup: (String) -> Unit
 ) {
     Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Tasks") })
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = onCreateTask) {
                 Icon(Icons.Default.Add, contentDescription = "Create task")
