@@ -61,7 +61,7 @@ class CalendarRepository @Inject constructor(
 
     companion object {
         const val ACCOUNT_NAME = "com.dkhalife.tasks.calendar"
-        private const val CALENDAR_DISPLAY_NAME = "Task Wizard"
-        private val CALENDAR_COLOR = Color.parseColor("#4A90D9")
+        internal const val CALENDAR_DISPLAY_NAME = "Task Wizard"
+        internal val CALENDAR_COLOR = Color.parseColor("#4A90D9")
     }
 }

@@ -17,10 +17,15 @@ class TaskSyncWorker(
             val response = api.getTasks()
             if (response.isSuccessful) {
                 val tasks = response.body()?.tasks ?: emptyList()
+                var anyFailed = false
                 for (engine in engines) {
-                    engine.sync(applicationContext, tasks)
+                    try {
+                        engine.sync(applicationContext, tasks)
+                    } catch (_: Exception) {
+                        anyFailed = true
+                    }
                 }
-                Result.success()
+                if (anyFailed) Result.retry() else Result.success()
             } else {
                 Result.retry()
             }

@@ -1,6 +1,8 @@
 package com.dkhalife.tasks.data.calendar
 
 import android.content.Context
+import android.content.SharedPreferences
+import com.dkhalife.tasks.data.AppPreferences
 import com.dkhalife.tasks.data.sync.SyncEngine
 import com.dkhalife.tasks.model.Task
 import java.time.ZonedDateTime
@@ -9,13 +11,28 @@ import javax.inject.Singleton
 
 @Singleton
 class CalendarSyncEngine @Inject constructor(
-    private val calendarProviderClient: CalendarProviderClient
+    private val calendarProviderClient: CalendarProviderClient,
+    private val sharedPreferences: SharedPreferences
 ) : SyncEngine {
 
     override suspend fun sync(context: Context, tasks: List<Task>) {
-        val calendarId = calendarProviderClient.getCalendarId(
+        if (!sharedPreferences.getBoolean(AppPreferences.KEY_CALENDAR_SYNC, false)) return
+
+        var calendarId = calendarProviderClient.getCalendarId(
             context.contentResolver, CalendarRepository.ACCOUNT_NAME
-        ) ?: return
+        )
+
+        if (calendarId == null) {
+            calendarProviderClient.createCalendar(
+                context.contentResolver,
+                CalendarRepository.ACCOUNT_NAME,
+                CalendarRepository.CALENDAR_DISPLAY_NAME,
+                CalendarRepository.CALENDAR_COLOR
+            )
+            calendarId = calendarProviderClient.getCalendarId(
+                context.contentResolver, CalendarRepository.ACCOUNT_NAME
+            ) ?: return
+        }
 
         val existingEvents = calendarProviderClient.getEventsBySyncData(context.contentResolver, calendarId)
         val taskSyncKeys = mutableSetOf<String>()

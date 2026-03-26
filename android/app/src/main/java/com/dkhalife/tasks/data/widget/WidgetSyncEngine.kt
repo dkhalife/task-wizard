@@ -58,17 +58,6 @@ class WidgetSyncEngine @Inject constructor() : SyncEngine {
             }
         }
 
-        if (bestTask != null) return bestTask
-
-        // All tasks are overdue — pick the most recently due
-        for (task in tasks) {
-            val millis = parseToMillis(task.nextDueDate) ?: continue
-            if (bestMillis == null || millis > bestMillis) {
-                bestTask = task
-                bestMillis = millis
-            }
-        }
-
         return bestTask
     }
 

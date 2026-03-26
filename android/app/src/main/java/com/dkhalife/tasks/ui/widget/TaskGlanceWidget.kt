@@ -7,6 +7,7 @@ import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
+import androidx.glance.LocalContext
 import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
@@ -27,10 +28,11 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.dkhalife.tasks.MainActivity
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.widget.WidgetSyncEngine
 import java.time.ZonedDateTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import java.time.format.FormatStyle
 
 class TaskGlanceWidget : GlanceAppWidget() {
 
@@ -48,6 +50,7 @@ class TaskGlanceWidget : GlanceAppWidget() {
 
     @Composable
     private fun WidgetContent() {
+        val context = LocalContext.current
         val prefs = currentState<androidx.datastore.preferences.core.Preferences>()
         val taskId = prefs[WidgetSyncEngine.KEY_TASK_ID]
         val taskTitle = prefs[WidgetSyncEngine.KEY_TASK_TITLE]
@@ -91,7 +94,7 @@ class TaskGlanceWidget : GlanceAppWidget() {
                 }
             } else {
                 Text(
-                    text = "No upcoming tasks",
+                    text = context.getString(R.string.widget_no_upcoming_tasks),
                     style = TextStyle(
                         color = GlanceTheme.colors.onSurfaceVariant,
                         fontSize = 14.sp
@@ -102,9 +105,10 @@ class TaskGlanceWidget : GlanceAppWidget() {
     }
 
     companion object {
-        val PARAM_TASK_ID = ActionParameters.Key<Int>("taskId")
+        const val EXTRA_TASK_ID = "taskId"
+        val PARAM_TASK_ID = ActionParameters.Key<Int>(EXTRA_TASK_ID)
 
-        private val displayFormatter = DateTimeFormatter.ofPattern("EEE, MMM d 'at' h:mm a", Locale.getDefault())
+        private val displayFormatter = DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM, FormatStyle.SHORT)
 
         fun formatDueDate(dateString: String): String {
             return try {
