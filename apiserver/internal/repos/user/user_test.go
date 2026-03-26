@@ -144,6 +144,24 @@ func (s *UserTestSuite) TestEnsureUserReturnsExisting() {
 	s.Equal(existing.ID, user.ID)
 }
 
+func (s *UserTestSuite) TestEnsureUserDisabled() {
+	ctx := context.Background()
+
+	disabled := &models.User{
+		DirectoryID: "disabled-dir",
+		ObjectID:    "disabled-obj",
+		Disabled:    true,
+		CreatedAt:   time.Now(),
+	}
+
+	err := s.DB.Create(disabled).Error
+	s.Require().NoError(err)
+
+	_, err = s.repo.EnsureUser(ctx, "disabled-dir", "disabled-obj")
+	s.Require().Error(err)
+	s.ErrorIs(err, ErrDisabledUser)
+}
+
 func (s *UserTestSuite) TestEnsureUserRegistrationDisabled() {
 	ctx := context.Background()
 
