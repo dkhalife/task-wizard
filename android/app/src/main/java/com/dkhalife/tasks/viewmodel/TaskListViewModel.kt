@@ -40,7 +40,7 @@ class TaskListViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error
 
-    private val _taskGrouping = MutableStateFlow(TaskGrouping.DUE_DATE)
+    private val _taskGrouping = MutableStateFlow(groupingRepository.getTaskGrouping())
     val taskGrouping: StateFlow<TaskGrouping> = _taskGrouping
 
     private val _taskGroups = MutableStateFlow<List<TaskGroup>>(emptyList())
@@ -60,6 +60,7 @@ class TaskListViewModel @Inject constructor(
     }
 
     fun setTaskGrouping(grouping: TaskGrouping) {
+        if (_taskGrouping.value == grouping) return
         _taskGrouping.value = grouping
         _expandedGroups.value = emptySet()
         groupingRepository.setExpandedGroups(emptySet())
