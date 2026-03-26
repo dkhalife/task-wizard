@@ -64,8 +64,14 @@ fun TaskItem(
 
     LaunchedEffect(dismissState.currentValue) {
         when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.StartToEnd -> onComplete()
-            SwipeToDismissBoxValue.EndToStart -> onDelete()
+            SwipeToDismissBoxValue.StartToEnd -> {
+                onComplete()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.EndToStart -> {
+                onDelete()
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
             SwipeToDismissBoxValue.Settled -> {}
         }
     }
