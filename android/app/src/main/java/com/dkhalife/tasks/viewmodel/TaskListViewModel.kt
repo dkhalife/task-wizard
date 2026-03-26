@@ -60,9 +60,7 @@ class TaskListViewModel @Inject constructor(
     }
 
     fun setTaskGrouping(grouping: TaskGrouping) {
-        if (_taskGrouping.value == grouping){
-            return
-        }
+        if (_taskGrouping.value == grouping) return
         _taskGrouping.value = grouping
         _expandedGroups.value = emptySet()
         groupingRepository.setExpandedGroups(emptySet())
