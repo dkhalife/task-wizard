@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.SkipNext
@@ -25,11 +24,13 @@ import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.CustomAccessibilityAction
+import androidx.compose.ui.semantics.customActions
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.model.FrequencyType
@@ -49,6 +50,14 @@ fun TaskItem(
 ) {
     val ldt = remember(task.nextDueDate) { parseDueDate(task.nextDueDate) }
     val now by rememberTickingNow()
+
+    val accessibilityActions = buildList {
+        add(CustomAccessibilityAction("Complete") { onComplete(); true })
+        if (task.frequency.type != FrequencyType.ONCE) {
+            add(CustomAccessibilityAction("Skip") { onSkip(); true })
+        }
+        add(CustomAccessibilityAction("Delete") { onDelete(); true })
+    }
 
     val dismissState = rememberSwipeToDismissBoxState(
         confirmValueChange = { value ->
@@ -110,6 +119,7 @@ fun TaskItem(
             modifier = Modifier
                 .fillMaxWidth()
                 .clickable(onClick = onClick)
+                .semantics { customActions = accessibilityActions }
         ) {
             Row(
                 modifier = Modifier
