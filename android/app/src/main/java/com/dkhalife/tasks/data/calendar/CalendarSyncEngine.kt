@@ -1,6 +1,7 @@
 package com.dkhalife.tasks.data.calendar
 
-import android.content.ContentResolver
+import android.content.Context
+import com.dkhalife.tasks.data.sync.SyncEngine
 import com.dkhalife.tasks.model.Task
 import java.time.ZonedDateTime
 import javax.inject.Inject
@@ -9,10 +10,14 @@ import javax.inject.Singleton
 @Singleton
 class CalendarSyncEngine @Inject constructor(
     private val calendarProviderClient: CalendarProviderClient
-) {
+) : SyncEngine {
 
-    fun sync(contentResolver: ContentResolver, calendarId: Long, tasks: List<Task>) {
-        val existingEvents = calendarProviderClient.getEventsBySyncData(contentResolver, calendarId)
+    override suspend fun sync(context: Context, tasks: List<Task>) {
+        val calendarId = calendarProviderClient.getCalendarId(
+            context.contentResolver, CalendarRepository.ACCOUNT_NAME
+        ) ?: return
+
+        val existingEvents = calendarProviderClient.getEventsBySyncData(context.contentResolver, calendarId)
         val taskSyncKeys = mutableSetOf<String>()
 
         for (task in tasks) {
@@ -24,18 +29,18 @@ class CalendarSyncEngine @Inject constructor(
             val existingEventId = existingEvents[syncKey]
             if (existingEventId != null) {
                 calendarProviderClient.updateEvent(
-                    contentResolver, existingEventId, task.title, startMillis, endMillis
+                    context.contentResolver, existingEventId, task.title, startMillis, endMillis
                 )
             } else {
                 calendarProviderClient.insertEvent(
-                    contentResolver, calendarId, task.title, startMillis, endMillis, syncKey
+                    context.contentResolver, calendarId, task.title, startMillis, endMillis, syncKey
                 )
             }
         }
 
         for ((syncKey, eventId) in existingEvents) {
             if (syncKey !in taskSyncKeys) {
-                calendarProviderClient.deleteEvent(contentResolver, eventId)
+                calendarProviderClient.deleteEvent(context.contentResolver, eventId)
             }
         }
     }

@@ -3,7 +3,7 @@ package com.dkhalife.tasks
 import android.app.Application
 import androidx.work.Configuration
 import com.dkhalife.tasks.auth.AuthManager
-import com.dkhalife.tasks.data.calendar.CalendarSyncWorkerFactory
+import com.dkhalife.tasks.data.sync.TaskSyncWorkerFactory
 import com.microsoft.identity.client.IPublicClientApplication
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.PublicClientApplication
@@ -18,11 +18,11 @@ class TaskWizardApplication : Application(), Configuration.Provider {
     lateinit var authManager: AuthManager
 
     @Inject
-    lateinit var calendarSyncWorkerFactory: CalendarSyncWorkerFactory
+    lateinit var taskSyncWorkerFactory: TaskSyncWorkerFactory
 
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
-            .setWorkerFactory(calendarSyncWorkerFactory)
+            .setWorkerFactory(taskSyncWorkerFactory)
             .build()
 
     override fun onCreate() {

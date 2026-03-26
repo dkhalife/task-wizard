@@ -1,3 +1,5 @@
 <resources>
     <string name="app_name">Task Wizard</string>
+    <string name="widget_name">Next Task</string>
+    <string name="widget_description">Shows your next upcoming task</string>
 </resources>

@@ -1,33 +1,25 @@
-package com.dkhalife.tasks.data.calendar
+package com.dkhalife.tasks.data.sync
 
 import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.dkhalife.tasks.api.TaskWizardApi
 
-class CalendarSyncWorker(
+class TaskSyncWorker(
     appContext: Context,
     workerParams: WorkerParameters,
     private val api: TaskWizardApi,
-    private val calendarSyncEngine: CalendarSyncEngine,
-    private val calendarProviderClient: CalendarProviderClient
+    private val engines: List<SyncEngine>
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
-        val calendarId = calendarProviderClient.getCalendarId(
-            applicationContext.contentResolver,
-            CalendarRepository.ACCOUNT_NAME
-        )
-
-        if (calendarId == null) {
-            return Result.retry()
-        }
-
         return try {
             val response = api.getTasks()
             if (response.isSuccessful) {
                 val tasks = response.body()?.tasks ?: emptyList()
-                calendarSyncEngine.sync(applicationContext.contentResolver, calendarId, tasks)
+                for (engine in engines) {
+                    engine.sync(applicationContext, tasks)
+                }
                 Result.success()
             } else {
                 Result.retry()

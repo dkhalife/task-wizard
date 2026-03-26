@@ -1,4 +1,4 @@
-package com.dkhalife.tasks.data.calendar
+package com.dkhalife.tasks.data.sync
 
 import android.content.Context
 import androidx.work.ListenableWorker
@@ -9,10 +9,9 @@ import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class CalendarSyncWorkerFactory @Inject constructor(
+class TaskSyncWorkerFactory @Inject constructor(
     private val api: TaskWizardApi,
-    private val calendarSyncEngine: CalendarSyncEngine,
-    private val calendarProviderClient: CalendarProviderClient
+    private val engines: List<@JvmSuppressWildcards SyncEngine>
 ) : WorkerFactory() {
 
     override fun createWorker(
@@ -20,10 +19,8 @@ class CalendarSyncWorkerFactory @Inject constructor(
         workerClassName: String,
         workerParameters: WorkerParameters
     ): ListenableWorker? {
-        if (workerClassName == CalendarSyncWorker::class.java.name) {
-            return CalendarSyncWorker(
-                appContext, workerParameters, api, calendarSyncEngine, calendarProviderClient
-            )
+        if (workerClassName == TaskSyncWorker::class.java.name) {
+            return TaskSyncWorker(appContext, workerParameters, api, engines)
         }
         return null
     }

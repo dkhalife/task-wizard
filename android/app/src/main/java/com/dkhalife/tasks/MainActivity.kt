@@ -34,6 +34,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val initialTaskId = intent?.getIntExtra("taskId", -1) ?: -1
+
         setContent {
             var themeMode by remember { mutableStateOf(themeRepository.getThemeMode()) }
             var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
@@ -62,7 +64,8 @@ class MainActivity : ComponentActivity() {
                         onCalendarSyncChanged = { enabled ->
                             calendarSyncEnabled = enabled
                         },
-                        calendarRepository = calendarRepository
+                        calendarRepository = calendarRepository,
+                        initialTaskId = initialTaskId
                     )
                 } else {
                     SignInScreen(
