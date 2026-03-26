@@ -1,7 +1,6 @@
 package com.dkhalife.tasks.ui.widget
 
 import androidx.compose.ui.graphics.Color
-import androidx.glance.color.ColorProvider
 import androidx.glance.material3.ColorProviders
 import androidx.glance.unit.ColorProvider
 import com.dkhalife.tasks.data.TaskGroupColors
@@ -74,6 +73,6 @@ object WidgetTheme {
             "any_time" -> TaskGroupColors.ANY_TIME
             else -> Color.Gray
         }
-        return ColorProvider(color, color)
+        return ColorProvider(color)
     }
 }

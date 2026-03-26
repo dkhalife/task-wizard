@@ -13,7 +13,6 @@ import com.dkhalife.tasks.data.AppPreferences
 import com.dkhalife.tasks.ui.widget.TaskListWidgetReceiver
 import com.dkhalife.tasks.ui.widget.duetoday.DueTodayWidgetReceiver
 import com.dkhalife.tasks.ui.widget.labelfilter.LabelFilterWidgetReceiver
-import com.dkhalife.tasks.ui.widget.quickadd.QuickAddWidgetReceiver
 import com.dkhalife.tasks.ui.widget.summary.TaskSummaryWidgetReceiver
 import java.util.concurrent.TimeUnit
 import javax.inject.Inject
@@ -57,7 +56,6 @@ class TaskSyncScheduler @Inject constructor(
         val receiverClasses = listOf(
             TaskListWidgetReceiver::class.java,
             TaskSummaryWidgetReceiver::class.java,
-            QuickAddWidgetReceiver::class.java,
             DueTodayWidgetReceiver::class.java,
             LabelFilterWidgetReceiver::class.java,
         )
