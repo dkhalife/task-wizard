@@ -33,6 +33,8 @@ import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.Label
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -49,8 +51,8 @@ fun LabelItem(
     }
 
     val accessibilityActions = listOf(
-        CustomAccessibilityAction("Edit") { onEdit(); true },
-        CustomAccessibilityAction("Delete") { onDelete(); true }
+        CustomAccessibilityAction(stringResource(R.string.action_edit)) { onEdit(); true },
+        CustomAccessibilityAction(stringResource(R.string.action_delete)) { onDelete(); true }
     )
 
     val dismissState = rememberSwipeToDismissBoxState()

@@ -17,7 +17,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.FrequencyType
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.ui.utils.formatDueDate
@@ -29,7 +32,8 @@ private val ChipShape = RoundedCornerShape(8.dp)
 
 @Composable
 fun DueDateChip(ldt: LocalDateTime?, now: LocalDateTime) {
-    val text = if (ldt == null) "No Due Date" else formatDueDate(ldt, now)
+    val context = LocalContext.current
+    val text = if (ldt == null) stringResource(R.string.chip_no_due_date) else formatDueDate(context, ldt, now)
     val (bgColor, fgColor) = when {
         ldt == null -> Pair(MaterialTheme.colorScheme.surfaceVariant, MaterialTheme.colorScheme.onSurfaceVariant)
         ldt.isBefore(now) -> Pair(MaterialTheme.colorScheme.errorContainer, MaterialTheme.colorScheme.onErrorContainer)
@@ -59,7 +63,8 @@ fun DueDateChip(ldt: LocalDateTime?, now: LocalDateTime) {
 
 @Composable
 fun RecurrenceChip(task: Task, nextDueLdt: LocalDateTime?) {
-    val text = getRecurrenceText(task, nextDueLdt)
+    val context = LocalContext.current
+    val text = getRecurrenceText(context, task, nextDueLdt)
     val isOnce = task.frequency.type == FrequencyType.ONCE
     Surface(
         shape = ChipShape,
@@ -103,7 +108,7 @@ fun NotificationChip() {
     ) {
         Icon(
             Icons.Default.NotificationsActive,
-            contentDescription = "Notifications active",
+            contentDescription = stringResource(R.string.section_notifications),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .padding(horizontal = 6.dp, vertical = 4.dp)

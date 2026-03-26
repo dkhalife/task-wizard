@@ -49,7 +49,7 @@ class DueTodayWidget : GlanceAppWidget() {
         val context = LocalContext.current
         val prefs = currentState<Preferences>()
         val tasks = WidgetSyncEngine.deserializeTasks(Gson(), prefs[WidgetSyncEngine.KEY_TASKS_JSON])
-        val groups = TaskGrouper.groupByDueDate(tasks)
+        val groups = TaskGrouper.groupByDueDate(context, tasks)
             .filter { it.key == "overdue" || it.key == "today" }
 
         val openAppAction = actionStartActivity<MainActivity>()

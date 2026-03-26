@@ -13,10 +13,12 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.TextFieldValue
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 
 @Composable
 fun SignInScreen(
@@ -54,7 +56,7 @@ fun SignInScreen(
                 ) {
                     Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = "✓",
+                            text = "\u2713",
                             style = MaterialTheme.typography.displaySmall,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onPrimaryContainer
@@ -65,7 +67,7 @@ fun SignInScreen(
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Text(
-                    text = "Task Wizard",
+                    text = stringResource(R.string.app_name),
                     style = MaterialTheme.typography.headlineLarge,
                     color = MaterialTheme.colorScheme.onBackground
                 )
@@ -73,7 +75,7 @@ fun SignInScreen(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 Text(
-                    text = "Manage your tasks with ease",
+                    text = stringResource(R.string.signin_tagline),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -93,7 +95,7 @@ fun SignInScreen(
                             endpointField = it
                             onEndpointChanged(it.text)
                         },
-                        label = { Text("Server address") },
+                        label = { Text(stringResource(R.string.signin_server_address_label)) },
                         leadingIcon = {
                             Icon(
                                 Icons.Default.Cloud,
@@ -148,7 +150,7 @@ fun SignInScreen(
                         Spacer(modifier = Modifier.width(12.dp))
                     }
                     Text(
-                        "Sign in with Microsoft",
+                        stringResource(R.string.btn_sign_in),
                         style = MaterialTheme.typography.labelLarge
                     )
                 }

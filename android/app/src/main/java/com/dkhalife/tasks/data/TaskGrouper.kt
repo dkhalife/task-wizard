@@ -1,6 +1,8 @@
 package com.dkhalife.tasks.data
 
+import android.content.Context
 import androidx.compose.ui.graphics.Color
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.Label
 import com.dkhalife.tasks.model.Task
 import java.time.DayOfWeek
@@ -30,7 +32,7 @@ object TaskGroupColors {
 
 object TaskGrouper {
 
-    fun groupByDueDate(tasks: List<Task>): List<TaskGroup> {
+    fun groupByDueDate(context: Context, tasks: List<Task>): List<TaskGroup> {
         val now = LocalDateTime.now()
         val endOfToday = LocalDate.now().atTime(23, 59, 59, 999_999_999)
         val endOfTomorrow = LocalDate.now().plusDays(1).atTime(23, 59, 59, 999_999_999)
@@ -77,17 +79,17 @@ object TaskGrouper {
         }
 
         return listOf(
-            TaskGroup("overdue", "Overdue", sortByDueDate(overdue), TaskGroupColors.OVERDUE),
-            TaskGroup("today", "Today", sortByDueDate(today), TaskGroupColors.TODAY),
-            TaskGroup("tomorrow", "Tomorrow", sortByDueDate(tomorrow), TaskGroupColors.TOMORROW),
-            TaskGroup("this_week", "This week", sortByDueDate(thisWeek), TaskGroupColors.THIS_WEEK),
-            TaskGroup("next_week", "Next week", sortByDueDate(nextWeek), TaskGroupColors.NEXT_WEEK),
-            TaskGroup("later", "Later", sortByDueDate(later), TaskGroupColors.LATER),
-            TaskGroup("any_time", "Any time", sortByDueDate(anyTime), TaskGroupColors.ANY_TIME),
+            TaskGroup("overdue", context.getString(R.string.group_overdue), sortByDueDate(overdue), TaskGroupColors.OVERDUE),
+            TaskGroup("today", context.getString(R.string.group_today), sortByDueDate(today), TaskGroupColors.TODAY),
+            TaskGroup("tomorrow", context.getString(R.string.group_tomorrow), sortByDueDate(tomorrow), TaskGroupColors.TOMORROW),
+            TaskGroup("this_week", context.getString(R.string.group_this_week), sortByDueDate(thisWeek), TaskGroupColors.THIS_WEEK),
+            TaskGroup("next_week", context.getString(R.string.group_next_week), sortByDueDate(nextWeek), TaskGroupColors.NEXT_WEEK),
+            TaskGroup("later", context.getString(R.string.group_later), sortByDueDate(later), TaskGroupColors.LATER),
+            TaskGroup("any_time", context.getString(R.string.group_any_time), sortByDueDate(anyTime), TaskGroupColors.ANY_TIME),
         ).filter { it.tasks.isNotEmpty() }
     }
 
-    fun groupByLabel(tasks: List<Task>, labels: List<Label>): List<TaskGroup> {
+    fun groupByLabel(context: Context, tasks: List<Task>, labels: List<Label>): List<TaskGroup> {
         val groups = mutableListOf<TaskGroup>()
         val seenLabelIds = mutableSetOf<Int>()
 
@@ -119,7 +121,7 @@ object TaskGrouper {
 
         val unlabeled = tasks.filter { it.labels.isEmpty() }
         if (unlabeled.isNotEmpty()) {
-            groups.add(TaskGroup("none", "None", sortByDueDate(unlabeled), TaskGroupColors.NONE))
+            groups.add(TaskGroup("none", context.getString(R.string.group_none), sortByDueDate(unlabeled), TaskGroupColors.NONE))
         }
 
         return groups

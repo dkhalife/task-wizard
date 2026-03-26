@@ -35,7 +35,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.Label
 import com.dkhalife.tasks.ui.components.LabelDialog
 import com.dkhalife.tasks.ui.components.LabelItem
@@ -53,12 +55,13 @@ fun LabelsScreen(
     var showDialog by remember { mutableStateOf(false) }
     var editingLabel by remember { mutableStateOf<Label?>(null) }
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val newLabelLabel = stringResource(R.string.btn_new_label)
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Labels") },
+                title = { Text(stringResource(R.string.nav_labels)) },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -73,7 +76,7 @@ fun LabelsScreen(
                     showDialog = true
                 },
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Label") },
+                text = { Text(newLabelLabel) },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -105,13 +108,13 @@ fun LabelsScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "No labels yet",
+                                text = stringResource(R.string.labels_empty_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap New Label to create one",
+                                text = stringResource(R.string.labels_empty_hint, newLabelLabel),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

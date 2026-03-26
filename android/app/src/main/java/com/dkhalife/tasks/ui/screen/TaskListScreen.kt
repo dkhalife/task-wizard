@@ -31,7 +31,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.ui.components.GroupHeader
 import com.dkhalife.tasks.ui.components.TaskItem
@@ -51,12 +53,13 @@ fun TaskListScreen(
     onToggleGroup: (String) -> Unit
 ) {
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
+    val newTaskLabel = stringResource(R.string.btn_new_task)
 
     Scaffold(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Tasks") },
+                title = { Text(stringResource(R.string.nav_tasks)) },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -68,7 +71,7 @@ fun TaskListScreen(
             ExtendedFloatingActionButton(
                 onClick = onCreateTask,
                 icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text("New Task") },
+                text = { Text(newTaskLabel) },
                 containerColor = MaterialTheme.colorScheme.primaryContainer,
                 contentColor = MaterialTheme.colorScheme.onPrimaryContainer
             )
@@ -100,13 +103,13 @@ fun TaskListScreen(
                             )
                             Spacer(modifier = Modifier.height(16.dp))
                             Text(
-                                text = "All caught up!",
+                                text = stringResource(R.string.task_list_empty_title),
                                 style = MaterialTheme.typography.titleMedium,
                                 color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "Tap New Task to create one",
+                                text = stringResource(R.string.task_list_empty_hint, newTaskLabel),
                                 style = MaterialTheme.typography.bodyMedium,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )

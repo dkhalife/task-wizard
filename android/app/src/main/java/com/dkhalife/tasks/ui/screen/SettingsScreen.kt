@@ -20,9 +20,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.nestedscroll.nestedScroll
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.calendar.CalendarRepository
@@ -64,7 +66,7 @@ fun SettingsScreen(
                 if (result.isSuccess) {
                     onCalendarSyncChanged(true)
                 } else {
-                    errorMessage = "Failed to enable calendar sync: ${result.exceptionOrNull()?.message}"
+                    errorMessage = context.getString(R.string.error_enable_calendar_sync, result.exceptionOrNull()?.message ?: "")
                 }
             }
         }
@@ -73,11 +75,11 @@ fun SettingsScreen(
     if (errorMessage != null) {
         AlertDialog(
             onDismissRequest = { errorMessage = null },
-            title = { Text("Error") },
+            title = { Text(stringResource(R.string.dialog_title_error)) },
             text = { Text(errorMessage ?: "") },
             confirmButton = {
                 TextButton(onClick = { errorMessage = null }) {
-                    Text("OK")
+                    Text(stringResource(R.string.btn_ok))
                 }
             }
         )
@@ -88,7 +90,7 @@ fun SettingsScreen(
         modifier = Modifier.nestedScroll(scrollBehavior.nestedScrollConnection),
         topBar = {
             LargeTopAppBar(
-                title = { Text("Settings") },
+                title = { Text(stringResource(R.string.nav_settings)) },
                 scrollBehavior = scrollBehavior,
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background,
@@ -107,7 +109,7 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
-            SettingsCard(icon = Icons.Default.Cloud, title = "Server") {
+            SettingsCard(icon = Icons.Default.Cloud, title = stringResource(R.string.settings_section_server)) {
                 Text(
                     text = serverEndpoint,
                     style = MaterialTheme.typography.bodyMedium,
@@ -115,8 +117,13 @@ fun SettingsScreen(
                 )
             }
 
-            SettingsCard(icon = Icons.Default.Palette, title = "Theme") {
+            SettingsCard(icon = Icons.Default.Palette, title = stringResource(R.string.settings_section_theme)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
+                    val themeModeLabels = mapOf(
+                        ThemeMode.LIGHT to stringResource(R.string.theme_light),
+                        ThemeMode.DARK to stringResource(R.string.theme_dark),
+                        ThemeMode.SYSTEM to stringResource(R.string.theme_system)
+                    )
                     ThemeMode.entries.forEachIndexed { index, mode ->
                         SegmentedButton(
                             selected = themeMode == mode,
@@ -126,13 +133,13 @@ fun SettingsScreen(
                                 count = ThemeMode.entries.size
                             )
                         ) {
-                            Text(mode.name.lowercase().replaceFirstChar { it.uppercase() })
+                            Text(themeModeLabels[mode] ?: mode.name)
                         }
                     }
                 }
             }
 
-            SettingsCard(icon = Icons.Default.GridView, title = "Task Grouping") {
+            SettingsCard(icon = Icons.Default.GridView, title = stringResource(R.string.settings_section_task_grouping)) {
                 SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                     TaskGrouping.entries.forEachIndexed { index, grouping ->
                         SegmentedButton(
@@ -145,8 +152,8 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 when (grouping) {
-                                    TaskGrouping.DUE_DATE -> "Due date"
-                                    TaskGrouping.LABEL -> "Label"
+                                    TaskGrouping.DUE_DATE -> stringResource(R.string.grouping_due_date)
+                                    TaskGrouping.LABEL -> stringResource(R.string.grouping_label)
                                 }
                             )
                         }
@@ -163,10 +170,10 @@ fun SettingsScreen(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column(modifier = Modifier.weight(1f)) {
-                        Text("Calendar sync", style = MaterialTheme.typography.titleMedium)
+                        Text(stringResource(R.string.settings_calendar_sync_title), style = MaterialTheme.typography.titleMedium)
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = "Show tasks in your device calendar",
+                            text = stringResource(R.string.settings_calendar_sync_description),
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
@@ -184,7 +191,7 @@ fun SettingsScreen(
                                         if (result.isSuccess) {
                                             onCalendarSyncChanged(true)
                                         } else {
-                                            errorMessage = "Failed to enable calendar sync: ${result.exceptionOrNull()?.message}"
+                                            errorMessage = context.getString(R.string.error_enable_calendar_sync, result.exceptionOrNull()?.message ?: "")
                                         }
                                     }
                                 } else {
@@ -196,7 +203,7 @@ fun SettingsScreen(
                                     if (result.isSuccess) {
                                         onCalendarSyncChanged(false)
                                     } else {
-                                        errorMessage = "Failed to disable calendar sync: ${result.exceptionOrNull()?.message}"
+                                        errorMessage = context.getString(R.string.error_disable_calendar_sync, result.exceptionOrNull()?.message ?: "")
                                     }
                                 }
                             }
@@ -220,7 +227,7 @@ fun SettingsScreen(
                     modifier = Modifier.size(18.dp)
                 )
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Sign Out")
+                Text(stringResource(R.string.btn_sign_out))
             }
 
             Spacer(modifier = Modifier.height(16.dp))

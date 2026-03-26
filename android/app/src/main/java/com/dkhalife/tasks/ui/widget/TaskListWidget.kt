@@ -49,7 +49,7 @@ class TaskListWidget : GlanceAppWidget() {
         val context = LocalContext.current
         val prefs = currentState<Preferences>()
         val tasks = WidgetSyncEngine.deserializeTasks(Gson(), prefs[WidgetSyncEngine.KEY_TASKS_JSON])
-        val groups = TaskGrouper.groupByDueDate(tasks)
+        val groups = TaskGrouper.groupByDueDate(context, tasks)
 
         val openAppAction = actionStartActivity<MainActivity>()
 
