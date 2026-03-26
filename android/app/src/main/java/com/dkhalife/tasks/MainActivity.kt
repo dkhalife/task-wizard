@@ -10,6 +10,7 @@ import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.ThemeRepository
+import com.dkhalife.tasks.data.calendar.CalendarRepository
 import com.dkhalife.tasks.ui.navigation.AppNavigation
 import com.dkhalife.tasks.ui.screen.SignInScreen
 import com.dkhalife.tasks.ui.theme.TaskWizardTheme
@@ -26,6 +27,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var groupingRepository: GroupingRepository
 
+    @Inject
+    lateinit var calendarRepository: CalendarRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -33,6 +37,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             var themeMode by remember { mutableStateOf(themeRepository.getThemeMode()) }
             var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
+            var calendarSyncEnabled by remember { mutableStateOf(calendarRepository.isCalendarSyncEnabled()) }
 
             TaskWizardTheme(themeMode = themeMode) {
                 val authViewModel: AuthViewModel = hiltViewModel()
@@ -52,7 +57,12 @@ class MainActivity : ComponentActivity() {
                         onTaskGroupingChanged = { grouping ->
                             groupingRepository.setTaskGrouping(grouping)
                             taskGrouping = grouping
-                        }
+                        },
+                        calendarSyncEnabled = calendarSyncEnabled,
+                        onCalendarSyncChanged = { enabled ->
+                            calendarSyncEnabled = enabled
+                        },
+                        calendarRepository = calendarRepository
                     )
                 } else {
                     SignInScreen(

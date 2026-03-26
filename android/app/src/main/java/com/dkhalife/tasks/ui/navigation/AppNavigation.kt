@@ -25,6 +25,7 @@ import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
+import com.dkhalife.tasks.data.calendar.CalendarRepository
 import com.dkhalife.tasks.model.CreateTaskReq
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.model.UpdateTaskReq
@@ -42,7 +43,10 @@ fun AppNavigation(
     themeMode: ThemeMode,
     onThemeModeChanged: (ThemeMode) -> Unit,
     taskGrouping: TaskGrouping,
-    onTaskGroupingChanged: (TaskGrouping) -> Unit
+    onTaskGroupingChanged: (TaskGrouping) -> Unit,
+    calendarSyncEnabled: Boolean,
+    onCalendarSyncChanged: (Boolean) -> Unit,
+    calendarRepository: CalendarRepository
 ) {
     val navController = rememberNavController()
     val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
@@ -127,7 +131,10 @@ fun AppNavigation(
                     themeMode = themeMode,
                     onThemeModeChanged = onThemeModeChanged,
                     taskGrouping = taskGrouping,
-                    onTaskGroupingChanged = onTaskGroupingChanged
+                    onTaskGroupingChanged = onTaskGroupingChanged,
+                    calendarSyncEnabled = calendarSyncEnabled,
+                    onCalendarSyncChanged = onCalendarSyncChanged,
+                    calendarRepository = calendarRepository
                 )
             }
 
