@@ -26,8 +26,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.FrequencyType
 import com.dkhalife.tasks.model.IntervalUnit
 import com.dkhalife.tasks.model.RepeatOn
@@ -53,12 +57,16 @@ fun RecurrenceSection(
     onSelectedMonthsChange: (Set<Int>) -> Unit,
     dueDate: ZonedDateTime?
 ) {
+    val context = LocalContext.current
+    val dayNames = stringArrayResource(R.array.day_names_short)
+    val monthNames = stringArrayResource(R.array.month_names_short)
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text("Repeat this task", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.recurrence_repeat_label), style = MaterialTheme.typography.bodyMedium)
         Switch(
             checked = isRecurring,
             onCheckedChange = onIsRecurringChange
@@ -68,26 +76,35 @@ fun RecurrenceSection(
     if (isRecurring) {
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             val row1 = listOf(FrequencyType.DAILY, FrequencyType.WEEKLY, FrequencyType.MONTHLY)
+            val row1Labels = listOf(
+                stringResource(R.string.frequency_daily),
+                stringResource(R.string.frequency_weekly),
+                stringResource(R.string.frequency_monthly)
+            )
             row1.forEachIndexed { index, option ->
                 SegmentedButton(
                     selected = frequencyType == option,
                     onClick = { onFrequencyTypeChange(option) },
                     shape = SegmentedButtonDefaults.itemShape(index, row1.size)
                 ) {
-                    Text(option.replaceFirstChar { it.uppercase() })
+                    Text(row1Labels[index])
                 }
             }
         }
 
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             val row2 = listOf(FrequencyType.YEARLY, FrequencyType.CUSTOM)
+            val row2Labels = listOf(
+                stringResource(R.string.frequency_yearly),
+                stringResource(R.string.frequency_custom)
+            )
             row2.forEachIndexed { index, option ->
                 SegmentedButton(
                     selected = frequencyType == option,
                     onClick = { onFrequencyTypeChange(option) },
                     shape = SegmentedButtonDefaults.itemShape(index, row2.size)
                 ) {
-                    Text(option.replaceFirstChar { it.uppercase() })
+                    Text(row2Labels[index])
                 }
             }
         }
@@ -95,7 +112,11 @@ fun RecurrenceSection(
         if (frequencyType == FrequencyType.CUSTOM) {
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 val subModes = listOf(RepeatOn.INTERVAL, RepeatOn.DAYS_OF_THE_WEEK, RepeatOn.DAY_OF_THE_MONTHS)
-                val subModeLabels = listOf("Interval", "Days of the week", "Day of the months")
+                val subModeLabels = listOf(
+                    stringResource(R.string.recurrence_mode_interval),
+                    stringResource(R.string.recurrence_mode_days_of_week),
+                    stringResource(R.string.recurrence_mode_day_of_months)
+                )
                 subModes.forEachIndexed { index, mode ->
                     SegmentedButton(
                         selected = repeatOn == mode,
@@ -109,12 +130,19 @@ fun RecurrenceSection(
 
             when (repeatOn) {
                 RepeatOn.INTERVAL -> {
+                    val intervalUnitLabels = mapOf(
+                        IntervalUnit.HOURS to stringResource(R.string.interval_unit_hours),
+                        IntervalUnit.DAYS to stringResource(R.string.interval_unit_days),
+                        IntervalUnit.WEEKS to stringResource(R.string.interval_unit_weeks),
+                        IntervalUnit.MONTHS to stringResource(R.string.interval_unit_months),
+                        IntervalUnit.YEARS to stringResource(R.string.interval_unit_years)
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text("Every", style = MaterialTheme.typography.bodyMedium)
+                        Text(stringResource(R.string.recurrence_every_label), style = MaterialTheme.typography.bodyMedium)
                         OutlinedTextField(
                             value = intervalEvery,
                             onValueChange = { v ->
@@ -133,7 +161,7 @@ fun RecurrenceSection(
                             modifier = Modifier.weight(1f)
                         ) {
                             OutlinedTextField(
-                                value = intervalUnit.replaceFirstChar { it.uppercase() },
+                                value = intervalUnitLabels[intervalUnit] ?: intervalUnit,
                                 onValueChange = {},
                                 readOnly = true,
                                 trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = unitExpanded) },
@@ -151,7 +179,7 @@ fun RecurrenceSection(
                                     IntervalUnit.YEARS
                                 ).forEach { unit ->
                                     DropdownMenuItem(
-                                        text = { Text(unit.replaceFirstChar { it.uppercase() }) },
+                                        text = { Text(intervalUnitLabels[unit] ?: unit) },
                                         onClick = {
                                             onIntervalUnitChange(unit)
                                             unitExpanded = false
@@ -165,7 +193,6 @@ fun RecurrenceSection(
                 }
 
                 RepeatOn.DAYS_OF_THE_WEEK -> {
-                    val dayNames = listOf("Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat")
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -190,12 +217,11 @@ fun RecurrenceSection(
 
                 RepeatOn.DAY_OF_THE_MONTHS -> {
                     val dayOfMonth = dueDate?.dayOfMonth ?: 1
-                    val ordinalSuffix = getDayOfMonthSuffix(dayOfMonth)
+                    val ordinalSuffix = getDayOfMonthSuffix(context, dayOfMonth)
                     Text(
-                        "on the $dayOfMonth$ordinalSuffix of the following month(s)",
+                        stringResource(R.string.recurrence_day_of_months_format, dayOfMonth, ordinalSuffix),
                         style = MaterialTheme.typography.bodyMedium
                     )
-                    val monthNames = listOf("Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec")
                     FlowRow(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp)

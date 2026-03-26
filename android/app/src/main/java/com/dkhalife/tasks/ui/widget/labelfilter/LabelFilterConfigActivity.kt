@@ -37,6 +37,7 @@ import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.appwidget.updateAll
 import com.dkhalife.tasks.api.TaskWizardApi
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.Label
 import com.dkhalife.tasks.ui.theme.TaskWizardTheme
 import dagger.hilt.android.AndroidEntryPoint
@@ -84,7 +85,7 @@ class LabelFilterConfigActivity : ComponentActivity() {
 
                 Scaffold(
                     topBar = {
-                        TopAppBar(title = { Text("Select a label") })
+                        TopAppBar(title = { Text(getString(R.string.label_filter_select_title)) })
                     }
                 ) { padding ->
                     if (isLoading) {
@@ -103,7 +104,7 @@ class LabelFilterConfigActivity : ComponentActivity() {
                                 .padding(padding),
                             contentAlignment = Alignment.Center
                         ) {
-                            Text("No labels found")
+                            Text(getString(R.string.labels_empty_widget))
                         }
                     } else {
                         LazyColumn(modifier = Modifier.padding(padding)) {

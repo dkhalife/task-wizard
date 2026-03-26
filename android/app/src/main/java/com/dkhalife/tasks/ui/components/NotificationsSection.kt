@@ -14,7 +14,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 
 @Composable
 fun NotificationsSection(
@@ -32,7 +34,7 @@ fun NotificationsSection(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text("Notify for this task", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.notifications_enable_label), style = MaterialTheme.typography.bodyMedium)
         Switch(
             checked = notificationsEnabled,
             onCheckedChange = onEnabledChange
@@ -46,7 +48,7 @@ fun NotificationsSection(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                "When should notifications trigger?",
+                stringResource(R.string.notifications_trigger_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -60,9 +62,9 @@ fun NotificationsSection(
                     onCheckedChange = onNotifyDueDateChange
                 )
                 Column {
-                    Text("Due Date/Time", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.notification_trigger_due_date), style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        "After the due date and time has passed",
+                        stringResource(R.string.notification_trigger_due_date_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -78,9 +80,9 @@ fun NotificationsSection(
                     onCheckedChange = onNotifyPreDueChange
                 )
                 Column {
-                    Text("Pre-due", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.notification_trigger_pre_due), style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        "A few hours before the due date",
+                        stringResource(R.string.notification_trigger_pre_due_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -96,9 +98,9 @@ fun NotificationsSection(
                     onCheckedChange = onNotifyOverdueChange
                 )
                 Column {
-                    Text("Overdue", style = MaterialTheme.typography.bodyMedium)
+                    Text(stringResource(R.string.notification_trigger_overdue), style = MaterialTheme.typography.bodyMedium)
                     Text(
-                        "When left uncompleted at least one day past its due date",
+                        stringResource(R.string.notification_trigger_overdue_description),
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

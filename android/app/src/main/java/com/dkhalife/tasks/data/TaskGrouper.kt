@@ -12,7 +12,7 @@ import java.time.temporal.TemporalAdjusters
 
 data class TaskGroup(
     val key: String,
-    val name: String,
+    val name: String = "",
     val tasks: List<Task>,
     val color: Color
 )
@@ -77,13 +77,13 @@ object TaskGrouper {
         }
 
         return listOf(
-            TaskGroup("overdue", "Overdue", sortByDueDate(overdue), TaskGroupColors.OVERDUE),
-            TaskGroup("today", "Today", sortByDueDate(today), TaskGroupColors.TODAY),
-            TaskGroup("tomorrow", "Tomorrow", sortByDueDate(tomorrow), TaskGroupColors.TOMORROW),
-            TaskGroup("this_week", "This week", sortByDueDate(thisWeek), TaskGroupColors.THIS_WEEK),
-            TaskGroup("next_week", "Next week", sortByDueDate(nextWeek), TaskGroupColors.NEXT_WEEK),
-            TaskGroup("later", "Later", sortByDueDate(later), TaskGroupColors.LATER),
-            TaskGroup("any_time", "Any time", sortByDueDate(anyTime), TaskGroupColors.ANY_TIME),
+            TaskGroup("overdue", tasks = sortByDueDate(overdue), color = TaskGroupColors.OVERDUE),
+            TaskGroup("today", tasks = sortByDueDate(today), color = TaskGroupColors.TODAY),
+            TaskGroup("tomorrow", tasks = sortByDueDate(tomorrow), color = TaskGroupColors.TOMORROW),
+            TaskGroup("this_week", tasks = sortByDueDate(thisWeek), color = TaskGroupColors.THIS_WEEK),
+            TaskGroup("next_week", tasks = sortByDueDate(nextWeek), color = TaskGroupColors.NEXT_WEEK),
+            TaskGroup("later", tasks = sortByDueDate(later), color = TaskGroupColors.LATER),
+            TaskGroup("any_time", tasks = sortByDueDate(anyTime), color = TaskGroupColors.ANY_TIME),
         ).filter { it.tasks.isNotEmpty() }
     }
 
@@ -119,7 +119,7 @@ object TaskGrouper {
 
         val unlabeled = tasks.filter { it.labels.isEmpty() }
         if (unlabeled.isNotEmpty()) {
-            groups.add(TaskGroup("none", "None", sortByDueDate(unlabeled), TaskGroupColors.NONE))
+            groups.add(TaskGroup("none", tasks = sortByDueDate(unlabeled), color = TaskGroupColors.NONE))
         }
 
         return groups

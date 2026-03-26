@@ -22,8 +22,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGroup
+import com.dkhalife.tasks.ui.utils.taskGroupNameResId
 
 @Composable
 fun GroupHeader(group: TaskGroup, isExpanded: Boolean, onToggle: () -> Unit) {
@@ -62,7 +65,7 @@ fun GroupHeader(group: TaskGroup, isExpanded: Boolean, onToggle: () -> Unit) {
         Spacer(modifier = Modifier.width(12.dp))
 
         Text(
-            text = group.name,
+            text = taskGroupNameResId(group.key)?.let { stringResource(it) } ?: group.name,
             style = MaterialTheme.typography.titleSmall,
             color = headerColor
         )
@@ -85,7 +88,7 @@ fun GroupHeader(group: TaskGroup, isExpanded: Boolean, onToggle: () -> Unit) {
 
         Icon(
             imageVector = Icons.Default.ExpandMore,
-            contentDescription = if (isExpanded) "Collapse" else "Expand",
+            contentDescription = if (isExpanded) stringResource(R.string.action_collapse) else stringResource(R.string.action_expand),
             tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier
                 .size(20.dp)

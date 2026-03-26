@@ -25,7 +25,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.ui.utils.toDisplayString
 import java.time.Instant
 import java.time.ZoneId
@@ -83,10 +85,10 @@ fun DateTimePickerRow(
                         pendingDate = localDate.atStartOfDay(ZoneId.systemDefault())
                         showTimePicker = true
                     }
-                }) { Text("Next") }
+                }) { Text(stringResource(R.string.btn_next)) }
             },
             dismissButton = {
-                TextButton(onClick = { showDatePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showDatePicker = false }) { Text(stringResource(R.string.btn_cancel)) }
             }
         ) {
             DatePicker(state = datePickerState)
@@ -96,7 +98,7 @@ fun DateTimePickerRow(
     if (showTimePicker) {
         AlertDialog(
             onDismissRequest = { showTimePicker = false },
-            title = { Text("Select time") },
+            title = { Text(stringResource(R.string.dialog_title_select_time)) },
             text = {
                 Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                     TimePicker(state = timePickerState)
@@ -113,10 +115,10 @@ fun DateTimePickerRow(
                             .withNano(0)
                         onValueSelected(result)
                     }
-                }) { Text("OK") }
+                }) { Text(stringResource(R.string.btn_ok)) }
             },
             dismissButton = {
-                TextButton(onClick = { showTimePicker = false }) { Text("Cancel") }
+                TextButton(onClick = { showTimePicker = false }) { Text(stringResource(R.string.btn_cancel)) }
             }
         )
     }

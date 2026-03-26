@@ -24,6 +24,7 @@ import com.dkhalife.tasks.MainActivity
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.widget.WidgetSyncEngine
+import com.dkhalife.tasks.ui.utils.taskGroupNameResId
 import com.dkhalife.tasks.ui.widget.WidgetTheme
 import com.dkhalife.tasks.ui.widget.components.WidgetEmptyState
 import com.dkhalife.tasks.ui.widget.components.WidgetGroupHeader
@@ -74,7 +75,8 @@ class DueTodayWidget : GlanceAppWidget() {
                     for (group in groups) {
                         item {
                             WidgetGroupHeader(
-                                name = group.name,
+                                name = taskGroupNameResId(group.key)
+                                    ?.let { context.getString(it) } ?: group.name,
                                 count = group.tasks.size,
                                 groupKey = group.key
                             )

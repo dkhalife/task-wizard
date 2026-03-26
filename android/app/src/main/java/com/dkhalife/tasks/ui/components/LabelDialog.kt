@@ -27,7 +27,9 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.Label
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -50,19 +52,19 @@ fun LabelDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         shape = RoundedCornerShape(24.dp),
-        title = { Text(if (existingLabel != null) "Edit Label" else "New Label") },
+        title = { Text(if (existingLabel != null) stringResource(R.string.dialog_title_edit_label) else stringResource(R.string.dialog_title_new_label)) },
         text = {
             Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 OutlinedTextField(
                     value = name,
                     onValueChange = { name = it },
-                    label = { Text("Name") },
+                    label = { Text(stringResource(R.string.label_name)) },
                     singleLine = true,
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 )
 
-                Text("Color", style = MaterialTheme.typography.titleSmall)
+                Text(stringResource(R.string.label_color), style = MaterialTheme.typography.titleSmall)
 
                 FlowRow(
                     horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -88,7 +90,7 @@ fun LabelDialog(
                                 ) {
                                     Icon(
                                         Icons.Default.Check,
-                                        contentDescription = "Selected",
+                                        contentDescription = stringResource(R.string.color_selected_description),
                                         tint = Color.White,
                                         modifier = Modifier.size(20.dp)
                                     )
@@ -104,12 +106,12 @@ fun LabelDialog(
                 onClick = { onSave(name, color) },
                 enabled = name.isNotBlank()
             ) {
-                Text("Save")
+                Text(stringResource(R.string.btn_save))
             }
         },
         dismissButton = {
             TextButton(onClick = onDismiss) {
-                Text("Cancel")
+                Text(stringResource(R.string.btn_cancel))
             }
         }
     )

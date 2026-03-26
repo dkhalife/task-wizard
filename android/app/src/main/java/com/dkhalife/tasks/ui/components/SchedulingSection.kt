@@ -16,7 +16,9 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
+import com.dkhalife.tasks.R
 import java.time.ZonedDateTime
 
 @Composable
@@ -28,9 +30,9 @@ fun SchedulingSection(
     endDate: ZonedDateTime?,
     onEndDateChange: (ZonedDateTime) -> Unit
 ) {
-    Text("Scheduling Preferences", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.section_scheduling), style = MaterialTheme.typography.titleSmall)
     Text(
-        "How should the next occurrence be calculated?",
+        stringResource(R.string.scheduling_description),
         style = MaterialTheme.typography.bodySmall,
         color = MaterialTheme.colorScheme.onSurfaceVariant
     )
@@ -45,9 +47,9 @@ fun SchedulingSection(
             onClick = { onIsRollingChange(false) }
         )
         Column {
-            Text("Reschedule from due date", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.scheduling_from_due_date), style = MaterialTheme.typography.bodyMedium)
             Text(
-                "The next task will be scheduled from the original due date, even if the previous task was completed late",
+                stringResource(R.string.scheduling_from_due_date_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -64,9 +66,9 @@ fun SchedulingSection(
             onClick = { onIsRollingChange(true) }
         )
         Column {
-            Text("Reschedule from completion date", style = MaterialTheme.typography.bodyMedium)
+            Text(stringResource(R.string.scheduling_from_completion_date), style = MaterialTheme.typography.bodyMedium)
             Text(
-                "The next task will be scheduled from the actual completion date of the previous task",
+                stringResource(R.string.scheduling_from_completion_date_description),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -74,13 +76,13 @@ fun SchedulingSection(
     }
 
     Spacer(modifier = Modifier.height(8.dp))
-    Text("End Date", style = MaterialTheme.typography.titleSmall)
+    Text(stringResource(R.string.section_end_date), style = MaterialTheme.typography.titleSmall)
     Row(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text("Give this task an end date", style = MaterialTheme.typography.bodyMedium)
+        Text(stringResource(R.string.end_date_hint), style = MaterialTheme.typography.bodyMedium)
         Switch(
             checked = hasEndDate,
             onCheckedChange = onHasEndDateChange
@@ -92,7 +94,7 @@ fun SchedulingSection(
         exit = shrinkVertically()
     ) {
         DateTimePickerRow(
-            label = "Select end date & time",
+            label = stringResource(R.string.picker_end_date_label),
             value = endDate,
             onValueSelected = onEndDateChange
         )

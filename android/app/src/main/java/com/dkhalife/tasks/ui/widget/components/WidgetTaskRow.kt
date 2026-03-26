@@ -37,7 +37,8 @@ fun WidgetTaskRow(
 ) {
     val now = LocalDateTime.now()
     val dueLdt = parseDueDate(dueDate)
-    val dueText = if (dueLdt != null) formatDueDate(dueLdt, now) else null
+    val context = androidx.glance.LocalContext.current
+    val dueText = if (dueLdt != null) formatDueDate(context, dueLdt, now) else null
 
     val openIntent = actionStartActivity<MainActivity>(
         actionParametersOf(TaskListWidget.PARAM_TASK_ID to taskId)

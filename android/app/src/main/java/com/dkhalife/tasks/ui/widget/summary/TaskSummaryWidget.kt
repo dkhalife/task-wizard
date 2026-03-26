@@ -32,6 +32,7 @@ import com.dkhalife.tasks.MainActivity
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.widget.WidgetSyncEngine
+import com.dkhalife.tasks.ui.utils.taskGroupNameResId
 import com.dkhalife.tasks.ui.widget.WidgetTheme
 import com.google.gson.Gson
 
@@ -89,7 +90,8 @@ class TaskSummaryWidget : GlanceAppWidget() {
                             )
                         )
                         Text(
-                            text = group.name,
+                            text = taskGroupNameResId(group.key)
+                                ?.let { context.getString(it) } ?: group.name,
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
                                 fontSize = 10.sp

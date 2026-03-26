@@ -34,6 +34,8 @@ import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.res.stringResource
+import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.FrequencyType
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.ui.utils.hasActiveNotification
@@ -52,12 +54,16 @@ fun TaskItem(
     val ldt = remember(task.nextDueDate) { parseDueDate(task.nextDueDate) }
     val now by rememberTickingNow()
 
+    val completeLabel = stringResource(R.string.action_complete)
+    val skipLabel = stringResource(R.string.action_skip)
+    val deleteLabel = stringResource(R.string.action_delete)
+
     val accessibilityActions = buildList {
-        add(CustomAccessibilityAction("Complete") { onComplete(); true })
+        add(CustomAccessibilityAction(completeLabel) { onComplete(); true })
         if (task.frequency.type != FrequencyType.ONCE) {
-            add(CustomAccessibilityAction("Skip") { onSkip(); true })
+            add(CustomAccessibilityAction(skipLabel) { onSkip(); true })
         }
-        add(CustomAccessibilityAction("Delete") { onDelete(); true })
+        add(CustomAccessibilityAction(deleteLabel) { onDelete(); true })
     }
 
     val dismissState = rememberSwipeToDismissBoxState()
@@ -131,7 +137,7 @@ fun TaskItem(
                 IconButton(onClick = onComplete) {
                     Icon(
                         Icons.Default.RadioButtonUnchecked,
-                        contentDescription = "Complete",
+                        contentDescription = completeLabel,
                         tint = MaterialTheme.colorScheme.primary
                     )
                 }
