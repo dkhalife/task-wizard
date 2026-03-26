@@ -12,25 +12,27 @@ import javax.inject.Singleton
 @Singleton
 class CalendarSyncEngine @Inject constructor(
     private val calendarProviderClient: CalendarProviderClient,
+    private val calendarRepository: CalendarRepository,
     private val sharedPreferences: SharedPreferences
 ) : SyncEngine {
 
     override suspend fun sync(context: Context, tasks: List<Task>) {
         if (!sharedPreferences.getBoolean(AppPreferences.KEY_CALENDAR_SYNC, false)) return
 
+        val accountName = calendarRepository.getAccountName()
         var calendarId = calendarProviderClient.getCalendarId(
-            context.contentResolver, CalendarRepository.ACCOUNT_NAME
+            context.contentResolver, accountName
         )
 
         if (calendarId == null) {
             calendarProviderClient.createCalendar(
                 context.contentResolver,
-                CalendarRepository.ACCOUNT_NAME,
+                accountName,
                 CalendarRepository.CALENDAR_DISPLAY_NAME,
                 CalendarRepository.CALENDAR_COLOR
             )
             calendarId = calendarProviderClient.getCalendarId(
-                context.contentResolver, CalendarRepository.ACCOUNT_NAME
+                context.contentResolver, accountName
             ) ?: return
         }
 
