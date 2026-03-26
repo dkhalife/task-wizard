@@ -50,7 +50,8 @@ fun AppNavigation(
     onTaskGroupingChanged: (TaskGrouping) -> Unit,
     calendarSyncEnabled: Boolean,
     onCalendarSyncChanged: (Boolean) -> Unit,
-    calendarRepository: CalendarRepository
+    calendarRepository: CalendarRepository,
+    initialTaskId: Int = -1
 ) {
     val navController = rememberNavController()
     val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
@@ -58,6 +59,12 @@ fun AppNavigation(
     val currentRoute = navBackStackEntry?.destination?.route
 
     val showBottomBar = bottomScreens.any { it.route == currentRoute }
+
+    LaunchedEffect(initialTaskId) {
+        if (initialTaskId > 0) {
+            navController.navigate(Routes.taskFormEdit(initialTaskId))
+        }
+    }
 
     Scaffold(
         contentWindowInsets = WindowInsets(0, 0, 0, 0),

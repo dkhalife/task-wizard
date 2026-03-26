@@ -1,25 +1,25 @@
 package com.dkhalife.tasks.data.calendar
 
 import android.content.ContentResolver
+import android.content.Context
 import android.content.SharedPreferences
 import android.graphics.Color
 import androidx.core.content.edit
-import androidx.work.Constraints
-import androidx.work.ExistingPeriodicWorkPolicy
-import androidx.work.NetworkType
-import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.dkhalife.tasks.data.AppPreferences
+import com.dkhalife.tasks.data.sync.TaskSyncScheduler
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
 class CalendarRepository @Inject constructor(
+    @ApplicationContext private val appContext: Context,
     private val sharedPreferences: SharedPreferences,
-    private val calendarProviderClient: CalendarProviderClient
+    private val calendarProviderClient: CalendarProviderClient,
+    private val taskSyncScheduler: TaskSyncScheduler
 ) {
 
     fun isCalendarSyncEnabled(): Boolean {
@@ -35,22 +35,7 @@ class CalendarRepository @Inject constructor(
                 )
             }
 
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
-            val syncRequest = PeriodicWorkRequestBuilder<CalendarSyncWorker>(
-                SYNC_INTERVAL_MINUTES, TimeUnit.MINUTES
-            )
-                .setConstraints(constraints)
-                .addTag(WORK_TAG)
-                .build()
-
-            workManager.enqueueUniquePeriodicWork(
-                WORK_NAME,
-                ExistingPeriodicWorkPolicy.UPDATE,
-                syncRequest
-            )
+            taskSyncScheduler.ensureScheduled(workManager)
 
             sharedPreferences.edit { putBoolean(AppPreferences.KEY_CALENDAR_SYNC, true) }
             Result.success(Unit)
@@ -61,14 +46,13 @@ class CalendarRepository @Inject constructor(
 
     suspend fun disableCalendarSync(contentResolver: ContentResolver, workManager: WorkManager): Result<Unit> = withContext(Dispatchers.IO) {
         try {
-            workManager.cancelUniqueWork(WORK_NAME)
-
             val calendarId = calendarProviderClient.getCalendarId(contentResolver, ACCOUNT_NAME)
             if (calendarId != null) {
                 calendarProviderClient.deleteCalendar(contentResolver, calendarId, ACCOUNT_NAME)
             }
 
             sharedPreferences.edit { putBoolean(AppPreferences.KEY_CALENDAR_SYNC, false) }
+            taskSyncScheduler.cancelIfUnneeded(workManager, appContext)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
@@ -77,10 +61,7 @@ class CalendarRepository @Inject constructor(
 
     companion object {
         const val ACCOUNT_NAME = "com.dkhalife.tasks.calendar"
-        private const val CALENDAR_DISPLAY_NAME = "Task Wizard"
-        private val CALENDAR_COLOR = Color.parseColor("#4A90D9")
-        private const val SYNC_INTERVAL_MINUTES = 15L
-        private const val WORK_NAME = "calendar_sync"
-        private const val WORK_TAG = "calendar_sync"
+        internal const val CALENDAR_DISPLAY_NAME = "Task Wizard"
+        internal val CALENDAR_COLOR = Color.parseColor("#4A90D9")
     }
 }

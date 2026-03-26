@@ -14,6 +14,7 @@ import com.dkhalife.tasks.data.calendar.CalendarRepository
 import com.dkhalife.tasks.ui.navigation.AppNavigation
 import com.dkhalife.tasks.ui.screen.SignInScreen
 import com.dkhalife.tasks.ui.theme.TaskWizardTheme
+import com.dkhalife.tasks.ui.widget.TaskGlanceWidget
 import com.dkhalife.tasks.viewmodel.AuthViewModel
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -33,6 +34,8 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+
+        val initialTaskId = intent?.getIntExtra(TaskGlanceWidget.EXTRA_TASK_ID, -1) ?: -1
 
         setContent {
             var themeMode by remember { mutableStateOf(themeRepository.getThemeMode()) }
@@ -62,7 +65,8 @@ class MainActivity : ComponentActivity() {
                         onCalendarSyncChanged = { enabled ->
                             calendarSyncEnabled = enabled
                         },
-                        calendarRepository = calendarRepository
+                        calendarRepository = calendarRepository,
+                        initialTaskId = initialTaskId
                     )
                 } else {
                     SignInScreen(
