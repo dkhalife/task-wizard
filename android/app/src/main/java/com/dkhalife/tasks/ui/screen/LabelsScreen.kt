@@ -15,6 +15,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -42,6 +43,9 @@ fun LabelsScreen(
     var editingLabel by remember { mutableStateOf<Label?>(null) }
 
     Scaffold(
+        topBar = {
+            TopAppBar(title = { Text("Labels") })
+        },
         floatingActionButton = {
             FloatingActionButton(onClick = {
                 editingLabel = null
