@@ -1,7 +1,9 @@
 package com.dkhalife.tasks
 
 import android.app.Application
+import androidx.work.Configuration
 import com.dkhalife.tasks.auth.AuthManager
+import com.dkhalife.tasks.data.calendar.CalendarSyncWorkerFactory
 import com.microsoft.identity.client.IPublicClientApplication
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.PublicClientApplication
@@ -10,10 +12,18 @@ import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
 @HiltAndroidApp
-class TaskWizardApplication : Application() {
+class TaskWizardApplication : Application(), Configuration.Provider {
 
     @Inject
     lateinit var authManager: AuthManager
+
+    @Inject
+    lateinit var calendarSyncWorkerFactory: CalendarSyncWorkerFactory
+
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(calendarSyncWorkerFactory)
+            .build()
 
     override fun onCreate() {
         super.onCreate()
