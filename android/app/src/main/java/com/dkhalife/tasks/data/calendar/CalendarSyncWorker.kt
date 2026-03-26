@@ -17,7 +17,11 @@ class CalendarSyncWorker(
         val calendarId = calendarProviderClient.getCalendarId(
             applicationContext.contentResolver,
             CalendarRepository.ACCOUNT_NAME
-        ) ?: return Result.failure()
+        )
+
+        if (calendarId == null) {
+            return Result.retry()
+        }
 
         return try {
             val response = api.getTasks()

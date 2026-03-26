@@ -60,9 +60,10 @@ class CalendarProviderClient @Inject constructor() {
             ?: throw IllegalStateException("Failed to create calendar")
     }
 
-    fun deleteCalendar(contentResolver: ContentResolver, calendarId: Long) {
+    fun deleteCalendar(contentResolver: ContentResolver, calendarId: Long, accountName: String) {
         val uri = ContentUris.withAppendedId(CalendarContract.Calendars.CONTENT_URI, calendarId)
-        contentResolver.delete(uri, null, null)
+        val syncAdapterUri = asSyncAdapter(uri, accountName)
+        contentResolver.delete(syncAdapterUri, null, null)
     }
 
     fun insertEvent(

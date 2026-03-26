@@ -2,9 +2,7 @@ package com.dkhalife.tasks.data.calendar
 
 import android.content.ContentResolver
 import com.dkhalife.tasks.model.Task
-import java.text.SimpleDateFormat
-import java.util.Locale
-import java.util.TimeZone
+import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -45,10 +43,7 @@ class CalendarSyncEngine @Inject constructor(
     private fun parseToMillis(dateString: String?): Long? {
         if (dateString.isNullOrBlank()) return null
         return try {
-            val format = SimpleDateFormat(ISO_8601_FORMAT, Locale.US).apply {
-                timeZone = TimeZone.getTimeZone("UTC")
-            }
-            format.parse(dateString)?.time
+            ZonedDateTime.parse(dateString).toInstant().toEpochMilli()
         } catch (_: Exception) {
             null
         }
@@ -56,6 +51,5 @@ class CalendarSyncEngine @Inject constructor(
 
     companion object {
         const val EVENT_DURATION_MS = 15 * 60 * 1000L
-        private const val ISO_8601_FORMAT = "yyyy-MM-dd'T'HH:mm:ss'Z'"
     }
 }

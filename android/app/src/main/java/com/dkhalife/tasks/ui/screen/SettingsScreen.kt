@@ -17,6 +17,7 @@ import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.calendar.CalendarRepository
 import com.dkhalife.tasks.viewmodel.AuthViewModel
+import kotlinx.coroutines.launch
 
 private val CALENDAR_PERMISSIONS = arrayOf(
     Manifest.permission.READ_CALENDAR,
@@ -39,15 +40,37 @@ fun SettingsScreen(
     val context = LocalContext.current
     val contentResolver = context.contentResolver
     val workManager = remember { WorkManager.getInstance(context) }
+    val scope = rememberCoroutineScope()
+
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
         val allGranted = permissions.values.all { it }
         if (allGranted) {
-            calendarRepository.enableCalendarSync(contentResolver, workManager)
-            onCalendarSyncChanged(true)
+            scope.launch {
+                val result = calendarRepository.enableCalendarSync(contentResolver, workManager)
+                if (result.isSuccess) {
+                    onCalendarSyncChanged(true)
+                } else {
+                    errorMessage = "Failed to enable calendar sync: ${result.exceptionOrNull()?.message}"
+                }
+            }
         }
+    }
+
+    if (errorMessage != null) {
+        AlertDialog(
+            onDismissRequest = { errorMessage = null },
+            title = { Text("Error") },
+            text = { Text(errorMessage ?: "") },
+            confirmButton = {
+                TextButton(onClick = { errorMessage = null }) {
+                    Text("OK")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -146,14 +169,26 @@ fun SettingsScreen(
                                     ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
                                 }
                                 if (hasPermissions) {
-                                    calendarRepository.enableCalendarSync(contentResolver, workManager)
-                                    onCalendarSyncChanged(true)
+                                    scope.launch {
+                                        val result = calendarRepository.enableCalendarSync(contentResolver, workManager)
+                                        if (result.isSuccess) {
+                                            onCalendarSyncChanged(true)
+                                        } else {
+                                            errorMessage = "Failed to enable calendar sync: ${result.exceptionOrNull()?.message}"
+                                        }
+                                    }
                                 } else {
                                     calendarPermissionLauncher.launch(CALENDAR_PERMISSIONS)
                                 }
                             } else {
-                                calendarRepository.disableCalendarSync(contentResolver, workManager)
-                                onCalendarSyncChanged(false)
+                                scope.launch {
+                                    val result = calendarRepository.disableCalendarSync(contentResolver, workManager)
+                                    if (result.isSuccess) {
+                                        onCalendarSyncChanged(false)
+                                    } else {
+                                        errorMessage = "Failed to disable calendar sync: ${result.exceptionOrNull()?.message}"
+                                    }
+                                }
                             }
                         }
                     )
