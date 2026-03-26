@@ -176,6 +176,10 @@ fun TaskItem(
         return
     }
 
+    val isOnce = task.frequency.type == FrequencyType.ONCE
+    val effectiveStartToEnd = if (isOnce && swipeSettings.startToEndAction == SwipeAction.SKIP) SwipeAction.NONE else swipeSettings.startToEndAction
+    val effectiveEndToStart = if (isOnce && swipeSettings.endToStartAction == SwipeAction.SKIP) SwipeAction.NONE else swipeSettings.endToStartAction
+
     fun triggerAction(action: SwipeAction) {
         when (action) {
             SwipeAction.COMPLETE -> onComplete()
@@ -194,11 +198,11 @@ fun TaskItem(
     LaunchedEffect(dismissState.currentValue) {
         when (dismissState.currentValue) {
             SwipeToDismissBoxValue.StartToEnd -> {
-                triggerAction(swipeSettings.startToEndAction)
+                triggerAction(effectiveStartToEnd)
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
             SwipeToDismissBoxValue.EndToStart -> {
-                triggerAction(swipeSettings.endToStartAction)
+                triggerAction(effectiveEndToStart)
                 dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
             SwipeToDismissBoxValue.Settled -> {}
@@ -207,11 +211,11 @@ fun TaskItem(
 
     SwipeToDismissBox(
         state = dismissState,
-        enableDismissFromStartToEnd = swipeSettings.startToEndAction != SwipeAction.NONE,
-        enableDismissFromEndToStart = swipeSettings.endToStartAction != SwipeAction.NONE,
+        enableDismissFromStartToEnd = effectiveStartToEnd != SwipeAction.NONE,
+        enableDismissFromEndToStart = effectiveEndToStart != SwipeAction.NONE,
         backgroundContent = {
             val isStartToEnd = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
-            val action = if (isStartToEnd) swipeSettings.startToEndAction else swipeSettings.endToStartAction
+            val action = if (isStartToEnd) effectiveStartToEnd else effectiveEndToStart
             val alignment = if (isStartToEnd) Alignment.CenterStart else Alignment.CenterEnd
             val icon = when (action) {
                 SwipeAction.COMPLETE -> Icons.Default.Check

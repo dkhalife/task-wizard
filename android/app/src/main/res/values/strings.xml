@@ -79,7 +79,7 @@
     <string name="settings_swipe_customize_title">Customize swipe actions</string>
     <string name="settings_swipe_customize_description">Choose what each swipe direction does</string>
     <string name="settings_swipe_delete_confirmation_title">Confirm before deleting</string>
-    <string name="settings_swipe_delete_confirmation_description">Show a confirmation dialog when a swipe triggers a delete</string>
+    <string name="settings_swipe_delete_confirmation_description">Show a confirmation dialog before permanently deleting a task</string>
 
     <!-- Swipe actions sub-settings screen -->
     <string name="swipe_settings_title">Swipe Actions</string>
