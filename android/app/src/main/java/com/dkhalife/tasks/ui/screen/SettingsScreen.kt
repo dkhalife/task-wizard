@@ -4,15 +4,18 @@ import android.Manifest
 import android.content.pm.PackageManager
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Palette
+import androidx.compose.material.icons.filled.SwipeLeft
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -25,6 +28,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.work.WorkManager
 import com.dkhalife.tasks.R
+import com.dkhalife.tasks.data.SwipeSettings
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.calendar.CalendarRepository
@@ -46,8 +50,12 @@ fun SettingsScreen(
     onTaskGroupingChanged: (TaskGrouping) -> Unit,
     calendarSyncEnabled: Boolean,
     onCalendarSyncChanged: (Boolean) -> Unit,
-    calendarRepository: CalendarRepository
-) {
+    calendarRepository: CalendarRepository,
+    swipeSettings: SwipeSettings,
+    onSwipeEnabledChanged: (Boolean) -> Unit,
+    onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
+    onNavigateToSwipeSettings: () -> Unit
+){
     val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
     val context = LocalContext.current
     val contentResolver = context.contentResolver
@@ -209,6 +217,81 @@ fun SettingsScreen(
                             }
                         }
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SettingsCard(icon = Icons.Default.SwipeLeft, title = stringResource(R.string.settings_section_swipe_actions)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(stringResource(R.string.settings_swipe_enabled_title), style = MaterialTheme.typography.bodyMedium)
+                        Text(
+                            text = stringResource(R.string.settings_swipe_enabled_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = swipeSettings.enabled,
+                        onCheckedChange = onSwipeEnabledChanged
+                    )
+                }
+
+                if (swipeSettings.enabled) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable(onClick = onNavigateToSwipeSettings),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_swipe_customize_title), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = stringResource(R.string.settings_swipe_customize_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            modifier = Modifier.size(20.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+                    HorizontalDivider()
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_swipe_delete_confirmation_title), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = stringResource(R.string.settings_swipe_delete_confirmation_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = swipeSettings.deleteConfirmationEnabled,
+                            onCheckedChange = onSwipeDeleteConfirmationChanged
+                        )
+                    }
                 }
             }
 

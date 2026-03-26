@@ -10,9 +10,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Block
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
+import androidx.compose.material.icons.filled.SkipNext
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -22,20 +25,25 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SwipeToDismissBox
 import androidx.compose.material3.SwipeToDismissBoxValue
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.rememberSwipeToDismissBoxState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.res.stringResource
 import com.dkhalife.tasks.R
+import com.dkhalife.tasks.data.SwipeAction
+import com.dkhalife.tasks.data.SwipeSettings
 import com.dkhalife.tasks.model.FrequencyType
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.ui.utils.hasActiveNotification
@@ -49,7 +57,8 @@ fun TaskItem(
     onComplete: () -> Unit,
     onSkip: () -> Unit,
     onDelete: () -> Unit,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    swipeSettings: SwipeSettings = SwipeSettings()
 ) {
     val ldt = remember(task.nextDueDate) { parseDueDate(task.nextDueDate) }
     val now by rememberTickingNow()
@@ -58,65 +67,50 @@ fun TaskItem(
     val skipLabel = stringResource(R.string.action_skip)
     val deleteLabel = stringResource(R.string.action_delete)
 
+    var showDeleteConfirmation by remember { mutableStateOf(false) }
+
+    if (showDeleteConfirmation) {
+        AlertDialog(
+            onDismissRequest = { showDeleteConfirmation = false },
+            title = { Text(stringResource(R.string.dialog_delete_title)) },
+            text = { Text(stringResource(R.string.dialog_delete_message, task.title)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeleteConfirmation = false
+                        onDelete()
+                    },
+                    colors = androidx.compose.material3.ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Text(stringResource(R.string.btn_delete))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteConfirmation = false }) {
+                    Text(stringResource(R.string.btn_cancel))
+                }
+            }
+        )
+    }
+
     val accessibilityActions = buildList {
         add(CustomAccessibilityAction(completeLabel) { onComplete(); true })
         if (task.frequency.type != FrequencyType.ONCE) {
             add(CustomAccessibilityAction(skipLabel) { onSkip(); true })
         }
-        add(CustomAccessibilityAction(deleteLabel) { onDelete(); true })
-    }
-
-    val dismissState = rememberSwipeToDismissBoxState()
-
-    LaunchedEffect(dismissState.currentValue) {
-        when (dismissState.currentValue) {
-            SwipeToDismissBoxValue.StartToEnd -> {
-                onComplete()
-                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
-            }
-            SwipeToDismissBoxValue.EndToStart -> {
+        add(CustomAccessibilityAction(deleteLabel) {
+            if (swipeSettings.deleteConfirmationEnabled) {
+                showDeleteConfirmation = true
+            } else {
                 onDelete()
-                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
             }
-            SwipeToDismissBoxValue.Settled -> {}
-        }
+            true
+        })
     }
 
-    SwipeToDismissBox(
-        state = dismissState,
-        backgroundContent = {
-            val alignment = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                else -> Alignment.CenterEnd
-            }
-            val icon = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Check
-                else -> Icons.Default.Delete
-            }
-            val containerColor = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.primaryContainer
-                else -> MaterialTheme.colorScheme.errorContainer
-            }
-            val contentColor = when (dismissState.dismissDirection) {
-                SwipeToDismissBoxValue.StartToEnd -> MaterialTheme.colorScheme.onPrimaryContainer
-                else -> MaterialTheme.colorScheme.onErrorContainer
-            }
-
-            Card(
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = containerColor)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 20.dp),
-                    contentAlignment = alignment
-                ) {
-                    Icon(icon, contentDescription = null, tint = contentColor)
-                }
-            }
-        }
-    ) {
+    val taskCard = @Composable {
         Card(
             shape = RoundedCornerShape(16.dp),
             colors = CardDefaults.cardColors(
@@ -175,5 +169,84 @@ fun TaskItem(
                 }
             }
         }
+    }
+
+    if (!swipeSettings.enabled) {
+        taskCard()
+        return
+    }
+
+    fun triggerAction(action: SwipeAction) {
+        when (action) {
+            SwipeAction.COMPLETE -> onComplete()
+            SwipeAction.DELETE -> if (swipeSettings.deleteConfirmationEnabled) {
+                showDeleteConfirmation = true
+            } else {
+                onDelete()
+            }
+            SwipeAction.SKIP -> onSkip()
+            SwipeAction.NONE -> {}
+        }
+    }
+
+    val dismissState = rememberSwipeToDismissBoxState()
+
+    LaunchedEffect(dismissState.currentValue) {
+        when (dismissState.currentValue) {
+            SwipeToDismissBoxValue.StartToEnd -> {
+                triggerAction(swipeSettings.startToEndAction)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.EndToStart -> {
+                triggerAction(swipeSettings.endToStartAction)
+                dismissState.snapTo(SwipeToDismissBoxValue.Settled)
+            }
+            SwipeToDismissBoxValue.Settled -> {}
+        }
+    }
+
+    SwipeToDismissBox(
+        state = dismissState,
+        enableDismissFromStartToEnd = swipeSettings.startToEndAction != SwipeAction.NONE,
+        enableDismissFromEndToStart = swipeSettings.endToStartAction != SwipeAction.NONE,
+        backgroundContent = {
+            val isStartToEnd = dismissState.dismissDirection == SwipeToDismissBoxValue.StartToEnd
+            val action = if (isStartToEnd) swipeSettings.startToEndAction else swipeSettings.endToStartAction
+            val alignment = if (isStartToEnd) Alignment.CenterStart else Alignment.CenterEnd
+            val icon = when (action) {
+                SwipeAction.COMPLETE -> Icons.Default.Check
+                SwipeAction.DELETE -> Icons.Default.Delete
+                SwipeAction.SKIP -> Icons.Default.SkipNext
+                SwipeAction.NONE -> Icons.Default.Block
+            }
+            val containerColor = when (action) {
+                SwipeAction.COMPLETE -> MaterialTheme.colorScheme.primaryContainer
+                SwipeAction.DELETE -> MaterialTheme.colorScheme.errorContainer
+                SwipeAction.SKIP -> MaterialTheme.colorScheme.tertiaryContainer
+                SwipeAction.NONE -> MaterialTheme.colorScheme.surfaceVariant
+            }
+            val contentColor = when (action) {
+                SwipeAction.COMPLETE -> MaterialTheme.colorScheme.onPrimaryContainer
+                SwipeAction.DELETE -> MaterialTheme.colorScheme.onErrorContainer
+                SwipeAction.SKIP -> MaterialTheme.colorScheme.onTertiaryContainer
+                SwipeAction.NONE -> MaterialTheme.colorScheme.onSurfaceVariant
+            }
+
+            Card(
+                shape = RoundedCornerShape(16.dp),
+                colors = CardDefaults.cardColors(containerColor = containerColor)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 20.dp),
+                    contentAlignment = alignment
+                ) {
+                    Icon(icon, contentDescription = null, tint = contentColor)
+                }
+            }
+        }
+    ) {
+        taskCard()
     }
 }

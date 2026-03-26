@@ -7,6 +7,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.dkhalife.tasks.data.GroupingRepository
+import com.dkhalife.tasks.data.SwipeAction
+import com.dkhalife.tasks.data.SwipeActionsRepository
 import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.ThemeRepository
@@ -32,6 +34,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var calendarRepository: CalendarRepository
 
+    @Inject
+    lateinit var swipeActionsRepository: SwipeActionsRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -43,6 +48,7 @@ class MainActivity : ComponentActivity() {
             var themeMode by remember { mutableStateOf(themeRepository.getThemeMode()) }
             var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
             var calendarSyncEnabled by remember { mutableStateOf(calendarRepository.isCalendarSyncEnabled()) }
+            var swipeSettings by remember { mutableStateOf(swipeActionsRepository.getSettings()) }
 
             TaskWizardTheme(themeMode = themeMode) {
                 val authViewModel: AuthViewModel = hiltViewModel()
@@ -68,6 +74,23 @@ class MainActivity : ComponentActivity() {
                             calendarSyncEnabled = enabled
                         },
                         calendarRepository = calendarRepository,
+                        swipeSettings = swipeSettings,
+                        onSwipeEnabledChanged = { enabled ->
+                            swipeActionsRepository.setEnabled(enabled)
+                            swipeSettings = swipeSettings.copy(enabled = enabled)
+                        },
+                        onSwipeStartToEndActionChanged = { action ->
+                            swipeActionsRepository.setStartToEndAction(action)
+                            swipeSettings = swipeSettings.copy(startToEndAction = action)
+                        },
+                        onSwipeEndToStartActionChanged = { action ->
+                            swipeActionsRepository.setEndToStartAction(action)
+                            swipeSettings = swipeSettings.copy(endToStartAction = action)
+                        },
+                        onSwipeDeleteConfirmationChanged = { enabled ->
+                            swipeActionsRepository.setDeleteConfirmationEnabled(enabled)
+                            swipeSettings = swipeSettings.copy(deleteConfirmationEnabled = enabled)
+                        },
                         initialTaskId = initialTaskId,
                         createTask = createTask
                     )

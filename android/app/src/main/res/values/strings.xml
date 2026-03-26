@@ -72,6 +72,34 @@
     <string name="error_disable_calendar_sync">Failed to disable calendar sync: %1$s</string>
     <string name="dialog_title_error">Error</string>
 
+    <!-- Swipe actions settings -->
+    <string name="settings_section_swipe_actions">Swipe Actions</string>
+    <string name="settings_swipe_enabled_title">Enable swipe actions</string>
+    <string name="settings_swipe_enabled_description">Swipe task cards left or right to trigger quick actions</string>
+    <string name="settings_swipe_customize_title">Customize swipe actions</string>
+    <string name="settings_swipe_customize_description">Choose what each swipe direction does</string>
+    <string name="settings_swipe_delete_confirmation_title">Confirm before deleting</string>
+    <string name="settings_swipe_delete_confirmation_description">Show a confirmation dialog when a swipe triggers a delete</string>
+
+    <!-- Swipe actions sub-settings screen -->
+    <string name="swipe_settings_title">Swipe Actions</string>
+    <string name="swipe_settings_preview_title">Preview</string>
+    <string name="swipe_settings_preview_swipe_right">Swipe right</string>
+    <string name="swipe_settings_preview_swipe_left">Swipe left</string>
+    <string name="swipe_settings_right_action_title">Right swipe →</string>
+    <string name="swipe_settings_left_action_title">Left swipe ←</string>
+
+    <!-- Swipe action names -->
+    <string name="swipe_action_complete">Complete</string>
+    <string name="swipe_action_delete">Delete</string>
+    <string name="swipe_action_skip">Skip</string>
+    <string name="swipe_action_none">None</string>
+
+    <!-- Delete confirmation dialog -->
+    <string name="dialog_delete_title">Delete task?</string>
+    <string name="dialog_delete_message">"%1$s" will be permanently deleted.</string>
+    <string name="btn_delete">Delete</string>
+
     <!-- Theme mode display names -->
     <string name="theme_light">Light</string>
     <string name="theme_dark">Dark</string>

@@ -34,6 +34,7 @@ import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.R
+import com.dkhalife.tasks.data.SwipeSettings
 import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.ui.components.GroupHeader
 import com.dkhalife.tasks.ui.components.TaskItem
@@ -50,8 +51,9 @@ fun TaskListScreen(
     onDeleteTask: (Int) -> Unit,
     onTaskClick: (Int) -> Unit,
     onCreateTask: () -> Unit,
-    onToggleGroup: (String) -> Unit
-) {
+    onToggleGroup: (String) -> Unit,
+    swipeSettings: SwipeSettings = SwipeSettings()
+){
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val newTaskLabel = stringResource(R.string.btn_new_task)
 
@@ -139,7 +141,8 @@ fun TaskListScreen(
                                         onComplete = { onCompleteTask(task.id) },
                                         onSkip = { onSkipTask(task.id) },
                                         onDelete = { onDeleteTask(task.id) },
-                                        onClick = { onTaskClick(task.id) }
+                                        onClick = { onTaskClick(task.id) },
+                                        swipeSettings = swipeSettings
                                     )
                                 }
                             }
