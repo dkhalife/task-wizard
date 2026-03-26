@@ -10,6 +10,8 @@ import (
 	"gorm.io/gorm"
 )
 
+var ErrDisabledUser = errors.New("account is disabled")
+
 type IUserRepo interface {
 	CreateUser(c context.Context, user *models.User) error
 	GetUser(c context.Context, id int) (*models.User, error)
@@ -73,6 +75,9 @@ func (r *UserRepository) FindByEntraID(c context.Context, directoryID string, ob
 func (r *UserRepository) EnsureUser(c context.Context, directoryID string, objectID string) (*models.User, error) {
 	user, err := r.FindByEntraID(c, directoryID, objectID)
 	if err == nil {
+		if user.Disabled {
+			return nil, ErrDisabledUser
+		}
 		return user, nil
 	}
 
