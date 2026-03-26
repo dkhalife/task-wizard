@@ -1,78 +1,67 @@
 package com.dkhalife.tasks.data.widget
 
 import android.content.Context
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.glance.appwidget.GlanceAppWidgetManager
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.appwidget.updateAll
 import com.dkhalife.tasks.data.sync.SyncEngine
 import com.dkhalife.tasks.model.Task
-import com.dkhalife.tasks.ui.widget.TaskGlanceWidget
-import java.time.ZonedDateTime
+import com.dkhalife.tasks.ui.widget.TaskListWidget
+import com.dkhalife.tasks.ui.widget.duetoday.DueTodayWidget
+import com.dkhalife.tasks.ui.widget.labelfilter.LabelFilterWidget
+import com.dkhalife.tasks.ui.widget.summary.TaskSummaryWidget
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class WidgetSyncEngine @Inject constructor() : SyncEngine {
+class WidgetSyncEngine @Inject constructor(
+    private val gson: Gson
+) : SyncEngine {
 
     override suspend fun sync(context: Context, tasks: List<Task>) {
-        val nextTask = findNextUpcomingTask(tasks)
+        val json = gson.toJson(tasks)
 
-        val widgetManager = android.appwidget.AppWidgetManager.getInstance(context)
-        val widgetComponent = android.content.ComponentName(context, com.dkhalife.tasks.ui.widget.TaskGlanceWidgetReceiver::class.java)
-        val widgetIds = widgetManager.getAppWidgetIds(widgetComponent)
-        if (widgetIds.isEmpty()) return
+        val widgetTypes = listOf(
+            TaskListWidget::class.java,
+            TaskSummaryWidget::class.java,
+            DueTodayWidget::class.java,
+            LabelFilterWidget::class.java,
+        )
 
-        val glanceIds = androidx.glance.appwidget.GlanceAppWidgetManager(context)
-            .getGlanceIds(TaskGlanceWidget::class.java)
+        for (widgetType in widgetTypes) {
+            val glanceIds = try {
+                GlanceAppWidgetManager(context).getGlanceIds(widgetType)
+            } catch (_: Exception) {
+                continue
+            }
 
-        for (glanceId in glanceIds) {
-            updateAppWidgetState(context, glanceId) { prefs ->
-                if (nextTask != null) {
-                    prefs[KEY_TASK_ID] = nextTask.id
-                    prefs[KEY_TASK_TITLE] = nextTask.title
-                    prefs[KEY_TASK_DUE_DATE] = nextTask.nextDueDate ?: ""
-                } else {
-                    prefs.remove(KEY_TASK_ID)
-                    prefs.remove(KEY_TASK_TITLE)
-                    prefs.remove(KEY_TASK_DUE_DATE)
+            for (glanceId in glanceIds) {
+                updateAppWidgetState(context, glanceId) { prefs ->
+                    prefs[KEY_TASKS_JSON] = json
                 }
             }
         }
 
-        TaskGlanceWidget().updateAll(context)
-    }
-
-    private fun findNextUpcomingTask(tasks: List<Task>): Task? {
-        val now = System.currentTimeMillis()
-        var bestTask: Task? = null
-        var bestMillis: Long? = null
-
-        for (task in tasks) {
-            val millis = parseToMillis(task.nextDueDate) ?: continue
-            if (millis >= now) {
-                if (bestMillis == null || millis < bestMillis) {
-                    bestTask = task
-                    bestMillis = millis
-                }
-            }
-        }
-
-        return bestTask
-    }
-
-    private fun parseToMillis(dateString: String?): Long? {
-        if (dateString.isNullOrBlank()) return null
-        return try {
-            ZonedDateTime.parse(dateString).toInstant().toEpochMilli()
-        } catch (_: Exception) {
-            null
-        }
+        TaskListWidget().updateAll(context)
+        TaskSummaryWidget().updateAll(context)
+        DueTodayWidget().updateAll(context)
+        LabelFilterWidget().updateAll(context)
     }
 
     companion object {
-        val KEY_TASK_ID = intPreferencesKey("widget_task_id")
-        val KEY_TASK_TITLE = stringPreferencesKey("widget_task_title")
-        val KEY_TASK_DUE_DATE = stringPreferencesKey("widget_task_due_date")
+        val KEY_TASKS_JSON = stringPreferencesKey("widget_tasks_json")
+
+        fun deserializeTasks(gson: Gson, json: String?): List<Task> {
+            if (json.isNullOrBlank()) return emptyList()
+            return try {
+                val type = object : TypeToken<List<Task>>() {}.type
+                gson.fromJson(json, type)
+            } catch (_: Exception) {
+                emptyList()
+            }
+        }
     }
 }

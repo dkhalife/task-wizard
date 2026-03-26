@@ -51,7 +51,8 @@ fun AppNavigation(
     calendarSyncEnabled: Boolean,
     onCalendarSyncChanged: (Boolean) -> Unit,
     calendarRepository: CalendarRepository,
-    initialTaskId: Int = -1
+    initialTaskId: Int = -1,
+    createTask: Boolean = false
 ) {
     val navController = rememberNavController()
     val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
@@ -63,6 +64,12 @@ fun AppNavigation(
     LaunchedEffect(initialTaskId) {
         if (initialTaskId > 0) {
             navController.navigate(Routes.taskFormEdit(initialTaskId))
+        }
+    }
+
+    LaunchedEffect(createTask) {
+        if (createTask) {
+            navController.navigate(Routes.TASK_FORM_CREATE)
         }
     }
 

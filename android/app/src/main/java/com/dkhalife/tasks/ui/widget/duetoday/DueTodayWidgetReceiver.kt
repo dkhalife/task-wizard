@@ -1,4 +1,4 @@
-package com.dkhalife.tasks.ui.widget
+package com.dkhalife.tasks.ui.widget.duetoday
 
 import android.content.Context
 import androidx.glance.appwidget.GlanceAppWidget
@@ -9,9 +9,9 @@ import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
 @AndroidEntryPoint
-class TaskGlanceWidgetReceiver : GlanceAppWidgetReceiver() {
+class DueTodayWidgetReceiver : GlanceAppWidgetReceiver() {
 
-    override val glanceAppWidget: GlanceAppWidget = TaskGlanceWidget()
+    override val glanceAppWidget: GlanceAppWidget = DueTodayWidget()
 
     @Inject
     lateinit var taskSyncScheduler: TaskSyncScheduler

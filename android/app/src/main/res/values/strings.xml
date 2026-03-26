@@ -1,6 +1,23 @@
 <resources>
     <string name="app_name">Task Wizard</string>
-    <string name="widget_name">Next Task</string>
-    <string name="widget_description">Shows your next upcoming task</string>
+
+    <string name="widget_task_list_name">Task List</string>
+    <string name="widget_task_list_description">Scrollable grouped task list with quick complete</string>
     <string name="widget_no_upcoming_tasks">No upcoming tasks</string>
+
+    <string name="widget_summary_name">Task Summary</string>
+    <string name="widget_summary_description">Color-coded task count badges</string>
+
+    <string name="widget_quick_add_name">Quick Add</string>
+    <string name="widget_quick_add_description">One-tap shortcut to create a new task</string>
+    <string name="widget_quick_add_label">New Task</string>
+
+    <string name="widget_due_today_name">Due Today</string>
+    <string name="widget_due_today_description">Shows overdue and today\'s tasks</string>
+    <string name="widget_due_today_empty">All caught up!</string>
+
+    <string name="widget_label_filter_name">Label Tasks</string>
+    <string name="widget_label_filter_description">Tasks filtered by a chosen label</string>
+    <string name="widget_label_filter_not_configured">Tap to configure</string>
+    <string name="widget_label_filter_empty">No tasks with this label</string>
 </resources>

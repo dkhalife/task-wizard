@@ -27,9 +27,9 @@
         </activity>
 
         <receiver
-            android:name=".ui.widget.TaskGlanceWidgetReceiver"
+            android:name=".ui.widget.TaskListWidgetReceiver"
             android:exported="false"
-            android:label="@string/widget_name">
+            android:label="@string/widget_task_list_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
             </intent-filter>
@@ -37,6 +37,59 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/task_widget_info" />
         </receiver>
+
+        <receiver
+            android:name=".ui.widget.summary.TaskSummaryWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_summary_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/task_summary_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ui.widget.quickadd.QuickAddWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_quick_add_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/quick_add_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ui.widget.duetoday.DueTodayWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_due_today_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/due_today_widget_info" />
+        </receiver>
+
+        <receiver
+            android:name=".ui.widget.labelfilter.LabelFilterWidgetReceiver"
+            android:exported="false"
+            android:label="@string/widget_label_filter_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/label_filter_widget_info" />
+        </receiver>
+
+        <activity
+            android:name=".ui.widget.labelfilter.LabelFilterConfigActivity"
+            android:exported="false"
+            android:theme="@style/Theme.TaskWizard" />
 
         <provider
             android:name="androidx.startup.InitializationProvider"
