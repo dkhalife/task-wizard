@@ -95,6 +95,14 @@ In the [config](./apiserver/config/) directory are a couple of starter configura
 
 **Note:** You can set Entra ID settings and database credentials using environment variables for improved security and flexibility.
 
+### Telemetry (Application Insights)
+
+Task Wizard supports optional Application Insights telemetry for both the API server and Android app. All events are sent as CustomEvents and include build number, commit hash, and component identifiers.
+
+**API Server:** Set the `APPINSIGHTS_CONNECTION_STRING` environment variable. When not set, telemetry is silently disabled.
+
+**Android App:** Telemetry is **disabled by default**. Users can opt in via Settings → Analytics. When disabled, the app sends a `DNT: 1` header on all API requests, which the backend respects by skipping request telemetry for that user. An additional "Debug logging" sub-toggle sends more detailed diagnostic data when enabled.
+
 ### Database Configuration
 
 Task Wizard supports both SQLite and MySQL databases. By default, it uses SQLite.
@@ -176,6 +184,12 @@ The configuration files are yaml mappings with the following values:
 | `scheduler_jobs.due_frequency`           | `5m`                                                | The interval for sending regular notifications.                             |
 | `scheduler_jobs.overdue_frequency`       | `24h`                                               | The interval for sending overdue notifications.                             |
 | `scheduler_jobs.notification_cleanup`    | `10m`                                               | The interval for cleaning up sent notifications.                            |
+
+### Telemetry Configuration
+
+| Environment Variable               | Default Value | Description                                                                 |
+|-------------------------------------|---------------|-----------------------------------------------------------------------------|
+| `APPINSIGHTS_CONNECTION_STRING`     | (empty)       | Azure Application Insights connection string. When empty, telemetry is disabled. |
 
 
 ## 🛠️ Development

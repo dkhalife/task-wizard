@@ -1,12 +1,14 @@
 package apis
 
 import (
+	"fmt"
 	"net/http"
 
+	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"github.com/gin-gonic/gin"
 	limiter "github.com/ulule/limiter/v3"
 )
@@ -35,6 +37,7 @@ func (h *LogsAPIHandler) Warn(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 	log := logging.FromContext(c)
 	log.Warnf("Route:%s User:%d Message:%s", req.Route, currentIdentity.UserID, req.Message)
+	telemetry.TrackWarning(c, "client_log_warn", "log-handler", req.Message, map[string]string{"route": req.Route})
 	c.Status(http.StatusNoContent)
 }
 
@@ -50,6 +53,7 @@ func (h *LogsAPIHandler) Error(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 	log := logging.FromContext(c)
 	log.Errorf("Route:%s User:%d Message:%s", req.Route, currentIdentity.UserID, req.Message)
+	telemetry.TrackError(c, "client_log_error", "log-handler", fmt.Errorf("%s", req.Message), map[string]string{"route": req.Route})
 	c.Status(http.StatusNoContent)
 }
 

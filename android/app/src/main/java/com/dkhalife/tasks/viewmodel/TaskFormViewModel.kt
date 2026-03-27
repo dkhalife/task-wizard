@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.dkhalife.tasks.model.*
 import com.dkhalife.tasks.repo.LabelRepository
 import com.dkhalife.tasks.repo.TaskRepository
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 @HiltViewModel
 class TaskFormViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
-    private val labelRepository: LabelRepository
+    private val labelRepository: LabelRepository,
+    private val telemetryManager: TelemetryManager
 ) : ViewModel() {
 
     val availableLabels: StateFlow<List<Label>> = labelRepository.labels
@@ -32,7 +34,10 @@ class TaskFormViewModel @Inject constructor(
         viewModelScope.launch {
             taskRepository.getTask(taskId)
                 .onSuccess { onLoaded(it) }
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to load task $taskId: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
@@ -41,7 +46,10 @@ class TaskFormViewModel @Inject constructor(
             _isSaving.value = true
             taskRepository.createTask(req)
                 .onSuccess { _saveResult.value = Result.success(Unit) }
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to create task: ${it.message}", it)
+                    _error.value = it.message
+                }
             _isSaving.value = false
         }
     }
@@ -51,7 +59,10 @@ class TaskFormViewModel @Inject constructor(
             _isSaving.value = true
             taskRepository.updateTask(req)
                 .onSuccess { _saveResult.value = Result.success(Unit) }
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to update task: ${it.message}", it)
+                    _error.value = it.message
+                }
             _isSaving.value = false
         }
     }
@@ -62,5 +73,9 @@ class TaskFormViewModel @Inject constructor(
 
     fun clearError() {
         _error.value = null
+    }
+
+    companion object {
+        private const val TAG = "TaskFormViewModel"
     }
 }

@@ -74,6 +74,14 @@
 
     <!-- Swipe actions settings -->
     <string name="settings_section_swipe_actions">Swipe Actions</string>
+
+    <!-- Analytics settings -->
+    <string name="settings_analytics_title">Analytics</string>
+    <string name="settings_analytics_description">Help improve Task Wizard by sharing anonymous usage data</string>
+    <string name="settings_debug_logging_title">Debug logging</string>
+    <string name="settings_debug_logging_description">Send detailed diagnostic data to help troubleshoot issues</string>
+
+    <!-- Swipe actions detail settings -->
     <string name="settings_swipe_enabled_title">Enable swipe actions</string>
     <string name="settings_swipe_enabled_description">Swipe task cards left or right to trigger quick actions</string>
     <string name="settings_swipe_customize_title">Customize swipe actions</string>

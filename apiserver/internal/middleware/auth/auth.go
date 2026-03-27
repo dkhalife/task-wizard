@@ -12,6 +12,7 @@ import (
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
@@ -75,6 +76,7 @@ func (m *AuthMiddleware) MiddlewareFunc() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		identity, err := m.authenticate(c)
 		if err != nil {
+			telemetry.TrackWarning(c, "auth_unauthorized", "auth-middleware", err.Error(), nil)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"error": err.Error(),
 			})
@@ -177,6 +179,7 @@ func ScopeMiddleware(requiredScope models.ApiTokenScope) gin.HandlerFunc {
 			return
 		}
 
+		telemetry.TrackWarning(c, "auth_forbidden_scope", "auth-middleware", "Missing required scope: "+string(requiredScope), nil)
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
 			"error": "Missing required scope: " + requiredScope,
 		})

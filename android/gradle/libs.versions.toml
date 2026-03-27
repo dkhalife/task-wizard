@@ -17,6 +17,7 @@ hiltNavigationCompose = "1.2.0"
 gson = "2.13.1"
 workRuntime = "2.10.1"
 glance = "1.1.1"
+openTelemetry = "1.57.0"
 
 [libraries]
 androidx-core-ktx = { group = "androidx.core", name = "core-ktx", version.ref = "coreKtx" }
@@ -48,6 +49,9 @@ gson = { group = "com.google.code.gson", name = "gson", version.ref = "gson" }
 androidx-work-runtime-ktx = { group = "androidx.work", name = "work-runtime-ktx", version.ref = "workRuntime" }
 androidx-glance-appwidget = { group = "androidx.glance", name = "glance-appwidget", version.ref = "glance" }
 androidx-glance-material3 = { group = "androidx.glance", name = "glance-material3", version.ref = "glance" }
+opentelemetry-api = { group = "io.opentelemetry", name = "opentelemetry-api", version.ref = "openTelemetry" }
+opentelemetry-sdk = { group = "io.opentelemetry", name = "opentelemetry-sdk", version.ref = "openTelemetry" }
+opentelemetry-exporter-logging = { group = "io.opentelemetry", name = "opentelemetry-exporter-logging", version.ref = "openTelemetry" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

@@ -10,6 +10,7 @@ import com.dkhalife.tasks.model.Label
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.repo.LabelRepository
 import com.dkhalife.tasks.repo.TaskRepository
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.dkhalife.tasks.utils.SoundEffect
 import com.dkhalife.tasks.utils.SoundManager
 import com.dkhalife.tasks.ws.WebSocketManager
@@ -28,7 +29,8 @@ class TaskListViewModel @Inject constructor(
     private val labelRepository: LabelRepository,
     private val groupingRepository: GroupingRepository,
     private val webSocketManager: WebSocketManager,
-    private val soundManager: SoundManager
+    private val soundManager: SoundManager,
+    private val telemetryManager: TelemetryManager
 ) : ViewModel() {
 
     val tasks: StateFlow<List<Task>> = taskRepository.tasks
@@ -52,7 +54,10 @@ class TaskListViewModel @Inject constructor(
     init {
         refreshTasks()
         viewModelScope.launch {
-            labelRepository.refreshLabels().onFailure { _error.value = it.message }
+            labelRepository.refreshLabels().onFailure {
+                telemetryManager.logError(TAG, "Failed to refresh labels: ${it.message}", it)
+                _error.value = it.message
+            }
         }
         webSocketManager.connect()
         collectWebSocketMessages()
@@ -123,7 +128,10 @@ class TaskListViewModel @Inject constructor(
     fun refreshTasks() {
         viewModelScope.launch {
             _isRefreshing.value = true
-            taskRepository.refreshTasks().onFailure { _error.value = it.message }
+            taskRepository.refreshTasks().onFailure {
+                telemetryManager.logError(TAG, "Failed to refresh tasks: ${it.message}", it)
+                _error.value = it.message
+            }
             _isRefreshing.value = false
         }
     }
@@ -131,7 +139,10 @@ class TaskListViewModel @Inject constructor(
     fun refreshCompletedTasks(limit: Int = 10, page: Int = 1) {
         viewModelScope.launch {
             taskRepository.refreshCompletedTasks(limit, page)
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to refresh completed tasks: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
@@ -141,28 +152,40 @@ class TaskListViewModel @Inject constructor(
                 .onSuccess {
                     soundManager.playSound(SoundEffect.TASK_COMPLETE)
                 }
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to complete task $id: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
     fun uncompleteTask(id: Int) {
         viewModelScope.launch {
             taskRepository.uncompleteTask(id)
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to uncomplete task $id: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
     fun skipTask(id: Int) {
         viewModelScope.launch {
             taskRepository.skipTask(id)
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to skip task $id: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
     fun deleteTask(id: Int) {
         viewModelScope.launch {
             taskRepository.deleteTask(id)
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to delete task $id: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
@@ -174,5 +197,9 @@ class TaskListViewModel @Inject constructor(
         super.onCleared()
         webSocketManager.disconnect()
         soundManager.release()
+    }
+
+    companion object {
+        private const val TAG = "TaskListViewModel"
     }
 }

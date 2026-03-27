@@ -10,6 +10,7 @@ import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.SwipeAction
 import com.dkhalife.tasks.data.SwipeActionsRepository
 import com.dkhalife.tasks.data.TaskGrouping
+import com.dkhalife.tasks.data.TelemetryRepository
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.ThemeRepository
 import com.dkhalife.tasks.data.calendar.CalendarRepository
@@ -37,6 +38,9 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var swipeActionsRepository: SwipeActionsRepository
 
+    @Inject
+    lateinit var telemetryRepository: TelemetryRepository
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -49,6 +53,8 @@ class MainActivity : ComponentActivity() {
             var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
             var calendarSyncEnabled by remember { mutableStateOf(calendarRepository.isCalendarSyncEnabled()) }
             var swipeSettings by remember { mutableStateOf(swipeActionsRepository.getSettings()) }
+            var telemetryEnabled by remember { mutableStateOf(telemetryRepository.isTelemetryEnabled()) }
+            var debugLoggingEnabled by remember { mutableStateOf(telemetryRepository.isDebugLoggingEnabled()) }
 
             TaskWizardTheme(themeMode = themeMode) {
                 val authViewModel: AuthViewModel = hiltViewModel()
@@ -90,6 +96,16 @@ class MainActivity : ComponentActivity() {
                         onSwipeDeleteConfirmationChanged = { enabled ->
                             swipeActionsRepository.setDeleteConfirmationEnabled(enabled)
                             swipeSettings = swipeSettings.copy(deleteConfirmationEnabled = enabled)
+                        },
+                        telemetryEnabled = telemetryEnabled,
+                        onTelemetryEnabledChanged = { enabled ->
+                            telemetryRepository.setTelemetryEnabled(enabled)
+                            telemetryEnabled = enabled
+                        },
+                        debugLoggingEnabled = debugLoggingEnabled,
+                        onDebugLoggingEnabledChanged = { enabled ->
+                            telemetryRepository.setDebugLoggingEnabled(enabled)
+                            debugLoggingEnabled = enabled
                         },
                         initialTaskId = initialTaskId,
                         createTask = createTask

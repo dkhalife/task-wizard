@@ -1,3 +1,4 @@
+import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Properties
@@ -29,11 +30,26 @@ fun calculateVersion(): Pair<Int, String> {
     return Pair(runNumber, versionName)
 }
 
+fun resolveGitSha(): String {
+    return try {
+        val output = ByteArrayOutputStream()
+        exec {
+            commandLine("git", "rev-parse", "HEAD")
+            standardOutput = output
+            isIgnoreExitValue = true
+        }
+        output.toString().trim().ifBlank { "local" }
+    } catch (e: Exception) {
+        "local"
+    }
+}
+
 android {
     namespace = "com.dkhalife.tasks"
     compileSdk = 36
 
     val (calculatedVersionCode, calculatedVersionName) = calculateVersion()
+    val gitSha = resolveGitSha()
 
     defaultConfig {
         applicationId = "com.dkhalife.tasks"
@@ -41,6 +57,7 @@ android {
         targetSdk = 36
         versionCode = calculatedVersionCode
         versionName = calculatedVersionName
+        buildConfigField("String", "GIT_SHA", "\"$gitSha\"")
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
@@ -80,6 +97,16 @@ android {
             if (releaseSigningConfig.storeFile != null) {
                 signingConfig = releaseSigningConfig
             }
+
+            val appInsightsKey = localProperties.getProperty("APPINSIGHTS_CONNECTION_STRING")
+                ?: System.getenv("APPINSIGHTS_CONNECTION_STRING") ?: ""
+            buildConfigField("String", "APPINSIGHTS_CONNECTION_STRING", "\"$appInsightsKey\"")
+        }
+
+        debug {
+            val appInsightsKey = localProperties.getProperty("APPINSIGHTS_CONNECTION_STRING")
+                ?: System.getenv("APPINSIGHTS_CONNECTION_STRING") ?: ""
+            buildConfigField("String", "APPINSIGHTS_CONNECTION_STRING", "\"$appInsightsKey\"")
         }
     }
 
@@ -137,6 +164,10 @@ dependencies {
 
     implementation(libs.androidx.glance.appwidget)
     implementation(libs.androidx.glance.material3)
+
+    implementation(libs.opentelemetry.api)
+    implementation(libs.opentelemetry.sdk)
+    implementation(libs.opentelemetry.exporter.logging)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

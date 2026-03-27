@@ -30,7 +30,12 @@ jobs:
     - name: Build
       run: |
         cd apiserver
-        go build -v ./...
+        VERSION=$(date -u +'%y%m%d').00.1
+        go build -v \
+          -ldflags "-X dkhalife.com/tasks/core/internal/version.Version=${VERSION} \
+                    -X dkhalife.com/tasks/core/internal/version.BuildNumber=0 \
+                    -X dkhalife.com/tasks/core/internal/version.CommitHash=${{ github.sha }}" \
+          ./...
 
     - name: Install lint tool
       run: |

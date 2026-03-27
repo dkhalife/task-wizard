@@ -8,6 +8,7 @@ import (
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/models"
 	tService "dkhalife.com/tasks/core/internal/services/tasks"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/gin-gonic/gin"
 )
@@ -34,6 +35,7 @@ func (h *TasksAPIHandler) getTasksDueBefore(c *gin.Context) {
 
 	raw := c.Query("before")
 	if raw == "" {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Missing 'before' query parameter", nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "'before' query parameter is required",
 		})
@@ -42,6 +44,7 @@ func (h *TasksAPIHandler) getTasksDueBefore(c *gin.Context) {
 
 	before, err := time.Parse(time.RFC3339, raw)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid 'before' format: "+raw, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "'before' must be in RFC 3339 / ISO 8601 format (e.g. 2025-01-15T00:00:00Z)",
 		})
@@ -58,6 +61,7 @@ func (h *TasksAPIHandler) getTasksByLabel(c *gin.Context) {
 	rawID := c.Param("labelId")
 	labelID, err := strconv.Atoi(rawID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid label ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid label ID",
 		})
@@ -76,12 +80,14 @@ func (h *TasksAPIHandler) getCompletedTasks(c *gin.Context) {
 
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid limit: "+limitStr, nil)
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
 	page, err := strconv.Atoi(pageStr)
 	if err != nil || page <= 0 {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid page: "+pageStr, nil)
 		c.Status(http.StatusBadRequest)
 		return
 	}
@@ -96,6 +102,7 @@ func (h *TasksAPIHandler) getTask(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid task ID",
 		})
@@ -111,6 +118,7 @@ func (h *TasksAPIHandler) createTask(c *gin.Context) {
 
 	var TaskReq models.CreateTaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
+		telemetry.TrackWarning(c, "task_bind_failed", "task-handler", err.Error(), nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -126,6 +134,7 @@ func (h *TasksAPIHandler) editTask(c *gin.Context) {
 
 	var TaskReq models.UpdateTaskReq
 	if err := c.ShouldBindJSON(&TaskReq); err != nil {
+		telemetry.TrackWarning(c, "task_bind_failed", "task-handler", err.Error(), nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -142,6 +151,7 @@ func (h *TasksAPIHandler) deleteTask(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid task ID",
 		})
@@ -159,6 +169,7 @@ func (h *TasksAPIHandler) skipTask(c *gin.Context) {
 	id, err := strconv.Atoi(rawID)
 
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid task ID",
 		})
@@ -174,6 +185,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 
 	var dueDateReq models.UpdateDueDateReq
 	if err := c.ShouldBindJSON(&dueDateReq); err != nil {
+		telemetry.TrackWarning(c, "task_bind_failed", "task-handler", err.Error(), nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -183,6 +195,7 @@ func (h *TasksAPIHandler) updateDueDate(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Task ID required",
 		})
@@ -199,6 +212,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	completeTaskID := c.Param("id")
 	id, err := strconv.Atoi(completeTaskID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+completeTaskID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Task ID required",
 		})
@@ -208,6 +222,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	endRecurrenceStr := c.DefaultQuery("endRecurrence", "false")
 	endRecurrence, err := strconv.ParseBool(endRecurrenceStr)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid endRecurrence: "+endRecurrenceStr, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid endRecurrence value",
 		})
@@ -224,6 +239,7 @@ func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid task ID",
 		})
@@ -240,6 +256,7 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	rawID := c.Param("id")
 	id, err := strconv.Atoi(rawID)
 	if err != nil {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid task ID: "+rawID, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Task ID required",
 		})

@@ -2,6 +2,7 @@ package com.dkhalife.tasks.repo
 
 import com.dkhalife.tasks.api.TaskWizardApi
 import com.dkhalife.tasks.model.*
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
@@ -9,7 +10,8 @@ import javax.inject.Singleton
 
 @Singleton
 class TaskRepository @Inject constructor(
-    private val api: TaskWizardApi
+    private val api: TaskWizardApi,
+    private val telemetryManager: TelemetryManager
 ) {
     private val _tasks = MutableStateFlow<List<Task>>(emptyList())
     val tasks: StateFlow<List<Task>> = _tasks
@@ -25,9 +27,11 @@ class TaskRepository @Inject constructor(
                 _tasks.value = tasks
                 Result.success(tasks)
             } else {
+                telemetryManager.logError(TAG, "Failed to fetch tasks: ${response.code()}")
                 Result.failure(Exception("Failed to fetch tasks: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to fetch tasks: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -40,9 +44,11 @@ class TaskRepository @Inject constructor(
                 _completedTasks.value = tasks
                 Result.success(tasks)
             } else {
+                telemetryManager.logError(TAG, "Failed to fetch completed tasks: ${response.code()}")
                 Result.failure(Exception("Failed to fetch completed tasks: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to fetch completed tasks: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -53,9 +59,11 @@ class TaskRepository @Inject constructor(
             if (response.isSuccessful) {
                 Result.success(response.body()!!.task)
             } else {
+                telemetryManager.logError(TAG, "Failed to fetch task: ${response.code()}")
                 Result.failure(Exception("Failed to fetch task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to fetch task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -66,9 +74,11 @@ class TaskRepository @Inject constructor(
             if (response.isSuccessful) {
                 Result.success(response.body()?.history ?: emptyList())
             } else {
+                telemetryManager.logError(TAG, "Failed to fetch task history: ${response.code()}")
                 Result.failure(Exception("Failed to fetch task history: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to fetch task history: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -80,9 +90,11 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(response.body()!!.task)
             } else {
+                telemetryManager.logError(TAG, "Failed to create task: ${response.code()}")
                 Result.failure(Exception("Failed to create task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to create task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -94,9 +106,11 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(Unit)
             } else {
+                telemetryManager.logError(TAG, "Failed to update task: ${response.code()}")
                 Result.failure(Exception("Failed to update task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to update task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -108,9 +122,11 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(Unit)
             } else {
+                telemetryManager.logError(TAG, "Failed to delete task: ${response.code()}")
                 Result.failure(Exception("Failed to delete task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to delete task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -122,9 +138,11 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(Unit)
             } else {
+                telemetryManager.logError(TAG, "Failed to complete task: ${response.code()}")
                 Result.failure(Exception("Failed to complete task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to complete task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -136,9 +154,11 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(Unit)
             } else {
+                telemetryManager.logError(TAG, "Failed to uncomplete task: ${response.code()}")
                 Result.failure(Exception("Failed to uncomplete task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to uncomplete task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -150,9 +170,11 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(Unit)
             } else {
+                telemetryManager.logError(TAG, "Failed to skip task: ${response.code()}")
                 Result.failure(Exception("Failed to skip task: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to skip task: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -164,14 +186,20 @@ class TaskRepository @Inject constructor(
                 refreshTasks()
                 Result.success(Unit)
             } else {
+                telemetryManager.logError(TAG, "Failed to update due date: ${response.code()}")
                 Result.failure(Exception("Failed to update due date: ${response.code()}"))
             }
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to update due date: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     fun updateTasksFromWebSocket(tasks: List<Task>) {
         _tasks.value = tasks
+    }
+
+    companion object {
+        private const val TAG = "TaskRepository"
     }
 }

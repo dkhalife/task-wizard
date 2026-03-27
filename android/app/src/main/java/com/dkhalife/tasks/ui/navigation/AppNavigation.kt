@@ -59,6 +59,10 @@ fun AppNavigation(
     onSwipeStartToEndActionChanged: (com.dkhalife.tasks.data.SwipeAction) -> Unit,
     onSwipeEndToStartActionChanged: (com.dkhalife.tasks.data.SwipeAction) -> Unit,
     onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
+    telemetryEnabled: Boolean,
+    onTelemetryEnabledChanged: (Boolean) -> Unit,
+    debugLoggingEnabled: Boolean,
+    onDebugLoggingEnabledChanged: (Boolean) -> Unit,
     initialTaskId: Int = -1,
     createTask: Boolean = false
 ){
@@ -169,7 +173,11 @@ fun AppNavigation(
                     swipeSettings = swipeSettings,
                     onSwipeEnabledChanged = onSwipeEnabledChanged,
                     onSwipeDeleteConfirmationChanged = onSwipeDeleteConfirmationChanged,
-                    onNavigateToSwipeSettings = { navController.navigate(Routes.SWIPE_SETTINGS) }
+                    onNavigateToSwipeSettings = { navController.navigate(Routes.SWIPE_SETTINGS) },
+                    telemetryEnabled = telemetryEnabled,
+                    onTelemetryEnabledChanged = onTelemetryEnabledChanged,
+                    debugLoggingEnabled = debugLoggingEnabled,
+                    onDebugLoggingEnabledChanged = onDebugLoggingEnabledChanged
                 )
             }
 

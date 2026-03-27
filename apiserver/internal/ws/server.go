@@ -14,6 +14,7 @@ import (
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 )
@@ -81,6 +82,7 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 	protocolsList := strings.Split(protocols, ",")
 	if len(protocolsList) != 2 {
 		logging.FromContext(c).Debug("no websocket protocol provided")
+		telemetry.TrackWarning(c, "ws_unauthorized", "ws-server", "No websocket protocol provided", nil)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -89,6 +91,7 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 	bearerToken := strings.TrimSpace(protocolsList[1])
 
 	if protocol == "" {
+		telemetry.TrackWarning(c, "ws_unauthorized", "ws-server", "Empty websocket protocol", nil)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -96,12 +99,14 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 	identity, err := s.authMiddleware.VerifyWSToken(c.Request.Context(), bearerToken)
 	if err != nil {
 		logging.FromContext(c).Debugf("token verification failed: %v", err)
+		telemetry.TrackWarning(c, "ws_unauthorized", "ws-server", "Token verification failed", nil)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 
 	if identity.Type != models.IdentityTypeUser {
 		logging.FromContext(c).Debug("identity type is not user")
+		telemetry.TrackWarning(c, "ws_unauthorized", "ws-server", "Identity type is not user", nil)
 		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
@@ -111,6 +116,7 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 	})
 	if err != nil {
 		logging.FromContext(c).Errorf("websocket upgrade error: %v", err)
+		telemetry.TrackError(c, "ws_upgrade_failed", "ws-server", err, nil)
 		return
 	}
 
@@ -185,6 +191,7 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 				logging.FromContext(ctx).Debugf("websocket connection closed: %v", err)
 			} else {
 				logging.FromContext(ctx).Errorf("websocket read error: %v", err)
+				telemetry.TrackError(nil, "ws_read_failed", "ws-server", err, nil)
 			}
 			return
 		}
@@ -228,6 +235,7 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 
 	if !ok {
 		log.Errorf("no handler registered for action %s", msg.Action)
+		telemetry.TrackWarning(nil, "ws_unknown_action", "ws-server", "No handler for action: "+msg.Action, nil)
 		return
 	}
 
@@ -242,6 +250,7 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 
 	if err := conn.safeWriteJSON(resp); err != nil {
 		log.Errorf("failed to write JSON to WebSocket: %v", err)
+		telemetry.TrackError(nil, "ws_write_failed", "ws-server", err, nil)
 		return
 	}
 }
@@ -257,6 +266,7 @@ func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
 		for _, c := range conns {
 			if err := c.safeWriteJSON(resp); err != nil {
 				log.Errorf("Failed to write JSON to WebSocket: %v", err)
+				telemetry.TrackError(nil, "ws_broadcast_write_failed", "ws-server", err, nil)
 			}
 		}
 	}()

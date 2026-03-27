@@ -9,11 +9,14 @@ import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.SilentAuthenticationCallback
 import com.microsoft.identity.client.exception.MsalException
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import javax.inject.Inject
 import javax.inject.Singleton
 
 @Singleton
-class AuthManager @Inject constructor() : AuthTokenProvider {
+class AuthManager @Inject constructor(
+    private val telemetryManager: TelemetryManager
+) : AuthTokenProvider {
 
     private var singleAccountApp: ISingleAccountPublicClientApplication? = null
 
@@ -98,6 +101,7 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
             cacheToken(result)
             result.accessToken
         } catch (e: MsalException) {
+            telemetryManager.logWarning(TAG, "Silent token acquire failed: ${e.message}", e)
             null
         }
     }
@@ -116,7 +120,10 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
     }
 
     fun signIn(activity: Activity, callback: AuthenticationCallback) {
-        val app = singleAccountApp ?: return
+        val app = singleAccountApp ?: run {
+            telemetryManager.logError(TAG, "Sign-in failed: singleAccountApp not initialized")
+            return
+        }
 
         val params = AcquireTokenParameters.Builder()
             .startAuthorizationFromActivity(activity)
@@ -142,7 +149,10 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
     }
 
     fun signOut(callback: ISingleAccountPublicClientApplication.SignOutCallback) {
-        val app = singleAccountApp ?: return
+        val app = singleAccountApp ?: run {
+            telemetryManager.logError(TAG, "Sign-out failed: singleAccountApp not initialized")
+            return
+        }
         app.signOut(object : ISingleAccountPublicClientApplication.SignOutCallback {
             override fun onSignOut() {
                 updateAccount(null)
@@ -161,6 +171,7 @@ class AuthManager @Inject constructor() : AuthTokenProvider {
     }
 
     companion object {
+        private const val TAG = "AuthManager"
         private const val TOKEN_SKEW_MS = 120_000L
 
         val REQUIRED_SCOPES: List<String>

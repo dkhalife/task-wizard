@@ -5,9 +5,11 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
@@ -29,11 +31,13 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 		// Use the IP as the key, which is the client IP.
 		context, err := limiter.Get(c.Request.Context(), c.ClientIP())
 		if err != nil {
+			telemetry.TrackError(c, "rate_limit_store_error", "rate-limiter", err, nil)
 			c.AbortWithStatus(http.StatusInternalServerError)
 			return
 		}
 
 		if context.Reached {
+			telemetry.TrackWarning(c, "rate_limited", "rate-limiter", "Too many requests", nil)
 			c.AbortWithStatusJSON(http.StatusTooManyRequests, gin.H{"message": "Too many requests"})
 			return
 		}
@@ -93,5 +97,25 @@ func RequestLogger() gin.HandlerFunc {
 		log := logging.FromContext(c)
 		log.Infof("IP:%s Method:%s UA:%q Route:%s Status:%d",
 			c.ClientIP(), c.Request.Method, c.Request.UserAgent(), c.Request.URL.Path, c.Writer.Status())
+	}
+}
+
+func TelemetryMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		if c.GetHeader("DNT") == "1" {
+			telemetry.SetDNT(c)
+		}
+
+		start := time.Now()
+		c.Next()
+		duration := time.Since(start)
+
+		telemetry.TrackEvent(c, "http_request", "http-middleware", map[string]string{
+			"method":    c.Request.Method,
+			"route":     c.Request.URL.Path,
+			"status":    strconv.Itoa(c.Writer.Status()),
+			"duration":  duration.String(),
+			"client_ip": c.ClientIP(),
+		})
 	}
 }

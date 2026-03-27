@@ -6,6 +6,11 @@ builds:
 - dir: apiserver
   env:
   - CGO_ENABLED=0
+  ldflags:
+  - -s -w
+  - -X dkhalife.com/tasks/core/internal/version.Version={{.Version}}
+  - -X dkhalife.com/tasks/core/internal/version.BuildNumber={{.Env.GITHUB_RUN_NUMBER}}
+  - -X dkhalife.com/tasks/core/internal/version.CommitHash={{.ShortCommit}}
   targets:
   - linux_amd64_v1
   - darwin_arm64
