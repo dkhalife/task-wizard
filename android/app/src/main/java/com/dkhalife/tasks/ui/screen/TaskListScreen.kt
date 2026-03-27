@@ -52,7 +52,8 @@ fun TaskListScreen(
     onTaskClick: (Int) -> Unit,
     onCreateTask: () -> Unit,
     onToggleGroup: (String) -> Unit,
-    swipeSettings: SwipeSettings = SwipeSettings()
+    swipeSettings: SwipeSettings = SwipeSettings(),
+    inlineCompleteEnabled: Boolean = true
 ){
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val newTaskLabel = stringResource(R.string.btn_new_task)
@@ -142,7 +143,8 @@ fun TaskListScreen(
                                         onSkip = { onSkipTask(task.id) },
                                         onDelete = { onDeleteTask(task.id) },
                                         onClick = { onTaskClick(task.id) },
-                                        swipeSettings = swipeSettings
+                                        swipeSettings = swipeSettings,
+                                        inlineCompleteEnabled = inlineCompleteEnabled
                                     )
                                 }
                             }

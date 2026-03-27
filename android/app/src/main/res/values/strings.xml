@@ -72,6 +72,10 @@
     <string name="error_disable_calendar_sync">Failed to disable calendar sync: %1$s</string>
     <string name="dialog_title_error">Error</string>
 
+    <!-- Task list settings -->
+    <string name="settings_inline_complete_title">Quick complete button</string>
+    <string name="settings_inline_complete_description">Show a button on each task to quickly mark it as complete</string>
+
     <!-- Swipe actions settings -->
     <string name="settings_section_swipe_actions">Swipe Actions</string>
 

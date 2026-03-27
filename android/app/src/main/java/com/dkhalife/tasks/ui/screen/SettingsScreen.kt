@@ -12,6 +12,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Insights
@@ -56,6 +57,8 @@ fun SettingsScreen(
     onSwipeEnabledChanged: (Boolean) -> Unit,
     onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
     onNavigateToSwipeSettings: () -> Unit,
+    inlineCompleteEnabled: Boolean,
+    onInlineCompleteEnabledChanged: (Boolean) -> Unit,
     telemetryEnabled: Boolean,
     onTelemetryEnabledChanged: (Boolean) -> Unit,
     debugLoggingEnabled: Boolean,
@@ -171,6 +174,39 @@ fun SettingsScreen(
                             )
                         }
                     }
+                }
+            }
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_inline_complete_title), style = MaterialTheme.typography.titleMedium)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.settings_inline_complete_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = inlineCompleteEnabled,
+                        onCheckedChange = onInlineCompleteEnabledChanged
+                    )
                 }
             }
 

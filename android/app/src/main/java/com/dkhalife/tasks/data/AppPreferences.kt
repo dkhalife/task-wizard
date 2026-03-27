@@ -10,6 +10,7 @@ object AppPreferences {
     const val KEY_SWIPE_START_TO_END_ACTION = "swipe_start_to_end_action"
     const val KEY_SWIPE_END_TO_START_ACTION = "swipe_end_to_start_action"
     const val KEY_SWIPE_DELETE_CONFIRMATION = "swipe_delete_confirmation"
+    const val KEY_INLINE_COMPLETE_ENABLED = "inline_complete_enabled"
     const val KEY_TELEMETRY_ENABLED = "telemetry_enabled"
     const val KEY_DEBUG_LOGGING_ENABLED = "debug_logging_enabled"
     const val KEY_DEVICE_IDENTIFIER = "device_identifier"
