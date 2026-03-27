@@ -58,8 +58,9 @@ fun TaskItem(
     onSkip: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
-    swipeSettings: SwipeSettings = SwipeSettings()
-) {
+    swipeSettings: SwipeSettings = SwipeSettings(),
+    inlineCompleteEnabled: Boolean = true
+){
     val ldt = remember(task.nextDueDate) { parseDueDate(task.nextDueDate) }
     val now by rememberTickingNow()
 
@@ -128,12 +129,14 @@ fun TaskItem(
                     .padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                IconButton(onClick = onComplete) {
-                    Icon(
-                        Icons.Default.RadioButtonUnchecked,
-                        contentDescription = completeLabel,
-                        tint = MaterialTheme.colorScheme.primary
-                    )
+                if (inlineCompleteEnabled) {
+                    IconButton(onClick = onComplete) {
+                        Icon(
+                            Icons.Default.RadioButtonUnchecked,
+                            contentDescription = completeLabel,
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
                 }
 
                 Column(modifier = Modifier.weight(1f)) {

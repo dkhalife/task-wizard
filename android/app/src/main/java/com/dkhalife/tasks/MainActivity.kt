@@ -10,6 +10,7 @@ import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.SwipeAction
 import com.dkhalife.tasks.data.SwipeActionsRepository
 import com.dkhalife.tasks.data.TaskGrouping
+import com.dkhalife.tasks.data.TaskListSettingsRepository
 import com.dkhalife.tasks.data.TelemetryRepository
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.ThemeRepository
@@ -40,6 +41,9 @@ class MainActivity : ComponentActivity() {
     lateinit var swipeActionsRepository: SwipeActionsRepository
 
     @Inject
+    lateinit var taskListSettingsRepository: TaskListSettingsRepository
+
+    @Inject
     lateinit var telemetryRepository: TelemetryRepository
 
     @Inject
@@ -57,6 +61,7 @@ class MainActivity : ComponentActivity() {
             var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
             var calendarSyncEnabled by remember { mutableStateOf(calendarRepository.isCalendarSyncEnabled()) }
             var swipeSettings by remember { mutableStateOf(swipeActionsRepository.getSettings()) }
+            var inlineCompleteEnabled by remember { mutableStateOf(taskListSettingsRepository.isInlineCompleteEnabled()) }
             var telemetryEnabled by remember { mutableStateOf(telemetryRepository.isTelemetryEnabled()) }
             var debugLoggingEnabled by remember { mutableStateOf(telemetryRepository.isDebugLoggingEnabled()) }
 
@@ -100,6 +105,11 @@ class MainActivity : ComponentActivity() {
                         onSwipeDeleteConfirmationChanged = { enabled ->
                             swipeActionsRepository.setDeleteConfirmationEnabled(enabled)
                             swipeSettings = swipeSettings.copy(deleteConfirmationEnabled = enabled)
+                        },
+                        inlineCompleteEnabled = inlineCompleteEnabled,
+                        onInlineCompleteEnabledChanged = { enabled ->
+                            taskListSettingsRepository.setInlineCompleteEnabled(enabled)
+                            inlineCompleteEnabled = enabled
                         },
                         telemetryEnabled = telemetryEnabled,
                         onTelemetryEnabledChanged = { enabled ->

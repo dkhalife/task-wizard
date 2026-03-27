@@ -59,6 +59,8 @@ fun AppNavigation(
     onSwipeStartToEndActionChanged: (com.dkhalife.tasks.data.SwipeAction) -> Unit,
     onSwipeEndToStartActionChanged: (com.dkhalife.tasks.data.SwipeAction) -> Unit,
     onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
+    inlineCompleteEnabled: Boolean,
+    onInlineCompleteEnabledChanged: (Boolean) -> Unit,
     telemetryEnabled: Boolean,
     onTelemetryEnabledChanged: (Boolean) -> Unit,
     debugLoggingEnabled: Boolean,
@@ -140,7 +142,8 @@ fun AppNavigation(
                     onTaskClick = { navController.navigate(Routes.taskFormEdit(it)) },
                     onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
                     onToggleGroup = { viewModel.toggleGroupExpanded(it) },
-                    swipeSettings = swipeSettings
+                    swipeSettings = swipeSettings,
+                    inlineCompleteEnabled = inlineCompleteEnabled
                 )
             }
 
@@ -174,6 +177,8 @@ fun AppNavigation(
                     onSwipeEnabledChanged = onSwipeEnabledChanged,
                     onSwipeDeleteConfirmationChanged = onSwipeDeleteConfirmationChanged,
                     onNavigateToSwipeSettings = { navController.navigate(Routes.SWIPE_SETTINGS) },
+                    inlineCompleteEnabled = inlineCompleteEnabled,
+                    onInlineCompleteEnabledChanged = onInlineCompleteEnabledChanged,
                     telemetryEnabled = telemetryEnabled,
                     onTelemetryEnabledChanged = onTelemetryEnabledChanged,
                     debugLoggingEnabled = debugLoggingEnabled,
