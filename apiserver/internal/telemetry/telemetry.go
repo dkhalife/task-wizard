@@ -1,7 +1,8 @@
 package telemetry
 
 import (
-	"github.com/gin-gonic/gin"
+	"context"
+
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 
 	"dkhalife.com/tasks/core/internal/version"
@@ -12,21 +13,24 @@ const (
 	dntKey      = "telemetry_dnt"
 )
 
-func SetDNT(c *gin.Context) {
-	c.Set(dntKey, true)
+type dntKeyType struct{}
+
+var dntContextKey = dntKeyType{}
+
+func SetDNT(ctx context.Context) context.Context {
+	return context.WithValue(ctx, dntContextKey, true)
 }
 
-func IsDNT(c *gin.Context) bool {
-	v, exists := c.Get(dntKey)
-	if !exists {
+func IsDNT(ctx context.Context) bool {
+	if ctx == nil {
 		return false
 	}
-	dnt, ok := v.(bool)
+	dnt, ok := ctx.Value(dntContextKey).(bool)
 	return ok && dnt
 }
 
-func TrackEvent(c *gin.Context, name string, component string, properties map[string]string) {
-	if c != nil && IsDNT(c) {
+func TrackEvent(ctx context.Context, name string, component string, properties map[string]string) {
+	if IsDNT(ctx) {
 		return
 	}
 
@@ -49,8 +53,8 @@ func TrackEvent(c *gin.Context, name string, component string, properties map[st
 	client.Track(event)
 }
 
-func TrackError(c *gin.Context, name string, component string, err error, properties map[string]string) {
-	if c != nil && IsDNT(c) {
+func TrackError(ctx context.Context, name string, component string, err error, properties map[string]string) {
+	if IsDNT(ctx) {
 		return
 	}
 
@@ -78,8 +82,8 @@ func TrackError(c *gin.Context, name string, component string, err error, proper
 	client.Track(event)
 }
 
-func TrackWarning(c *gin.Context, name string, component string, message string, properties map[string]string) {
-	if c != nil && IsDNT(c) {
+func TrackWarning(ctx context.Context, name string, component string, message string, properties map[string]string) {
+	if IsDNT(ctx) {
 		return
 	}
 

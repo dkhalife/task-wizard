@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -73,7 +74,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 
 	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger})
 	if err != nil {
-		telemetry.TrackError(nil, "database_open_failed", "database", err, map[string]string{"type": dbType})
+		telemetry.TrackError(context.Background(), "database_open_failed", "database", err, map[string]string{"type": dbType})
 		return nil, err
 	}
 

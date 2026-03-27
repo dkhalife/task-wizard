@@ -34,7 +34,7 @@ class TelemetryManager @Inject constructor(
     private var isInitialized = false
 
     fun initialize(context: Context) {
-        if (isInitialized) {
+        if (isInitialized && tracer != null) {
             return
         }
 

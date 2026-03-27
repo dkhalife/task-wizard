@@ -26,7 +26,7 @@ func (s *LabelService) GetUserLabels(ctx context.Context, userID int) (int, inte
 	if err != nil {
 		log := logging.FromContext(ctx)
 		log.Errorf("Failed to get labels: %s", err.Error())
-		telemetry.TrackError(nil, "label_get_failed", "label-service", err, nil)
+		telemetry.TrackError(ctx, "label_get_failed", "label-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Failed to get labels",
 		}
@@ -57,7 +57,7 @@ func (s *LabelService) CreateLabel(ctx context.Context, userId int, req models.C
 
 	if err := s.r.CreateLabels(ctx, []*models.Label{label}); err != nil {
 		log.Errorf("Failed to create label: %s", err.Error())
-		telemetry.TrackError(nil, "label_create_failed", "label-service", err, nil)
+		telemetry.TrackError(ctx, "label_create_failed", "label-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Failed to create label",
 		}
@@ -89,7 +89,7 @@ func (s *LabelService) UpdateLabel(ctx context.Context, userId int, req models.U
 	}
 
 	if !s.r.AreLabelsAssignableByUser(ctx, userId, []int{label.ID}) {
-		telemetry.TrackWarning(nil, "label_forbidden", "label-service", "User not allowed to update label", nil)
+		telemetry.TrackWarning(ctx, "label_forbidden", "label-service", "User not allowed to update label", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to perform this update",
 		}
@@ -97,7 +97,7 @@ func (s *LabelService) UpdateLabel(ctx context.Context, userId int, req models.U
 
 	if err := s.r.UpdateLabel(ctx, userId, label); err != nil {
 		log.Errorf("Failed to update label: %s", err.Error())
-		telemetry.TrackError(nil, "label_update_failed", "label-service", err, nil)
+		telemetry.TrackError(ctx, "label_update_failed", "label-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error updating label",
 		}
@@ -123,7 +123,7 @@ func (s *LabelService) DeleteLabel(ctx context.Context, userID int, labelID int)
 	if err := s.r.DeleteLabel(ctx, userID, labelID); err != nil {
 		log := logging.FromContext(ctx)
 		log.Errorf("Failed to delete label: %s", err.Error())
-		telemetry.TrackError(nil, "label_delete_failed", "label-service", err, nil)
+		telemetry.TrackError(ctx, "label_delete_failed", "label-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Failed to delete label",
 		}

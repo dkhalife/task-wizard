@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 
@@ -102,7 +103,7 @@ func IsAppInsightsEnabled() bool {
 
 func FlushAppInsights() {
 	if client := GetAppInsightsClient(); client != nil {
-		<-client.Channel().Close(10)
+		<-client.Channel().Close(10 * time.Second)
 		log.Println("Application Insights telemetry flushed successfully")
 	}
 }

@@ -1,6 +1,5 @@
 package com.dkhalife.tasks.api
 
-import android.util.Log
 import com.dkhalife.tasks.auth.AuthTokenProvider
 import com.dkhalife.tasks.telemetry.TelemetryManager
 import kotlinx.coroutines.runBlocking

@@ -98,6 +98,9 @@ android {
                 signingConfig = releaseSigningConfig
             }
 
+            // Note: connection string is embedded in the APK. App Insights ingestion keys are
+            // low-sensitivity (write-only, no read access to data). If spoofed telemetry is a
+            // concern, consider proxying ingestion through the backend.
             val appInsightsKey = localProperties.getProperty("APPINSIGHTS_CONNECTION_STRING")
                 ?: System.getenv("APPINSIGHTS_CONNECTION_STRING") ?: ""
             buildConfigField("String", "APPINSIGHTS_CONNECTION_STRING", "\"$appInsightsKey\"")

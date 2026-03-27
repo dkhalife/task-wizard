@@ -191,7 +191,7 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 				logging.FromContext(ctx).Debugf("websocket connection closed: %v", err)
 			} else {
 				logging.FromContext(ctx).Errorf("websocket read error: %v", err)
-				telemetry.TrackError(nil, "ws_read_failed", "ws-server", err, nil)
+				telemetry.TrackError(context.Background(), "ws_read_failed", "ws-server", err, nil)
 			}
 			return
 		}
@@ -235,7 +235,7 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 
 	if !ok {
 		log.Errorf("no handler registered for action %s", msg.Action)
-		telemetry.TrackWarning(nil, "ws_unknown_action", "ws-server", "No handler for action: "+msg.Action, nil)
+		telemetry.TrackWarning(context.Background(), "ws_unknown_action", "ws-server", "No handler for action: "+msg.Action, nil)
 		return
 	}
 
@@ -250,7 +250,7 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 
 	if err := conn.safeWriteJSON(resp); err != nil {
 		log.Errorf("failed to write JSON to WebSocket: %v", err)
-		telemetry.TrackError(nil, "ws_write_failed", "ws-server", err, nil)
+		telemetry.TrackError(context.Background(), "ws_write_failed", "ws-server", err, nil)
 		return
 	}
 }
@@ -266,7 +266,7 @@ func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
 		for _, c := range conns {
 			if err := c.safeWriteJSON(resp); err != nil {
 				log.Errorf("Failed to write JSON to WebSocket: %v", err)
-				telemetry.TrackError(nil, "ws_broadcast_write_failed", "ws-server", err, nil)
+				telemetry.TrackError(context.Background(), "ws_broadcast_write_failed", "ws-server", err, nil)
 			}
 		}
 	}()

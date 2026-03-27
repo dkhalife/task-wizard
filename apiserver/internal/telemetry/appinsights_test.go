@@ -1,7 +1,6 @@
 package telemetry
 
 import (
-	"os"
 	"testing"
 )
 
@@ -57,7 +56,8 @@ func TestSplitKeyValueNoEquals(t *testing.T) {
 }
 
 func TestIsAppInsightsEnabledWithoutEnvVar(t *testing.T) {
-	os.Unsetenv("APPINSIGHTS_CONNECTION_STRING")
-	// Note: due to sync.Once, this test verifies the function doesn't panic
-	// In a fresh process with no env var, IsAppInsightsEnabled returns false
+	// Note: due to sync.Once, the singleton may already be initialized from other tests.
+	// In a fresh process with no env var, IsAppInsightsEnabled returns false.
+	// This test at minimum verifies the function doesn't panic.
+	_ = IsAppInsightsEnabled()
 }

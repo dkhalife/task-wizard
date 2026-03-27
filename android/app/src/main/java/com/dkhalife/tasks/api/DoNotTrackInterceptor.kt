@@ -13,7 +13,7 @@ class DoNotTrackInterceptor(
 
         val request = if (!telemetryEnabled) {
             chain.request().newBuilder()
-                .addHeader("DNT", "1")
+                .header("DNT", "1")
                 .build()
         } else {
             chain.request()

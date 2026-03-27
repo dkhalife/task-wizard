@@ -103,19 +103,19 @@ func RequestLogger() gin.HandlerFunc {
 func TelemetryMiddleware() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if c.GetHeader("DNT") == "1" {
-			telemetry.SetDNT(c)
+			ctx := telemetry.SetDNT(c.Request.Context())
+			c.Request = c.Request.WithContext(ctx)
 		}
 
 		start := time.Now()
 		c.Next()
 		duration := time.Since(start)
 
-		telemetry.TrackEvent(c, "http_request", "http-middleware", map[string]string{
-			"method":    c.Request.Method,
-			"route":     c.Request.URL.Path,
-			"status":    strconv.Itoa(c.Writer.Status()),
-			"duration":  duration.String(),
-			"client_ip": c.ClientIP(),
+		telemetry.TrackEvent(c.Request.Context(), "http_request", "http-middleware", map[string]string{
+			"method":   c.Request.Method,
+			"route":    c.FullPath(),
+			"status":   strconv.Itoa(c.Writer.Status()),
+			"duration": duration.String(),
 		})
 	}
 }

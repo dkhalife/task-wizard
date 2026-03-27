@@ -43,7 +43,7 @@ func (s *TaskService) GetUserTasks(ctx context.Context, userID int) (int, interf
 	tasks, err := s.t.GetTasks(ctx, userID)
 	if err != nil {
 		log.Errorf("error getting tasks: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting tasks",
 		}
@@ -59,7 +59,7 @@ func (s *TaskService) GetTasksDueBefore(ctx context.Context, userID int, before 
 	tasks, err := s.t.GetTasksDueBefore(ctx, userID, before)
 	if err != nil {
 		log.Errorf("error getting tasks due before %s: %s", before.String(), err.Error())
-		telemetry.TrackError(nil, "task_get_due_before_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_due_before_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting tasks",
 		}
@@ -75,7 +75,7 @@ func (s *TaskService) GetTasksByLabel(ctx context.Context, userID int, labelID i
 	tasks, err := s.t.GetTasksByLabel(ctx, userID, labelID)
 	if err != nil {
 		log.Errorf("error getting tasks by label %d: %s", labelID, err.Error())
-		telemetry.TrackError(nil, "task_get_by_label_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_by_label_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting tasks",
 		}
@@ -93,7 +93,7 @@ func (s *TaskService) GetCompletedTasks(ctx context.Context, userID, limit, page
 	tasks, err := s.t.GetCompletedTasks(ctx, userID, limit, offset)
 	if err != nil {
 		log.Errorf("error getting completed tasks: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_completed_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_completed_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{}
 	}
 
@@ -108,14 +108,14 @@ func (s *TaskService) GetTask(ctx context.Context, userID, taskID int) (int, int
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		}
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(nil, "task_forbidden", "task-service", "User not allowed to view task", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to view task", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to view this task",
 		}
@@ -142,7 +142,7 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 		rawDueDate, err := time.Parse(time.RFC3339, req.NextDueDate)
 		if err != nil {
 			log.Errorf("error parsing due date: %s", err.Error())
-			telemetry.TrackError(nil, "task_create_failed", "task-service", err, nil)
+			telemetry.TrackError(ctx, "task_create_failed", "task-service", err, nil)
 			return http.StatusBadRequest, gin.H{
 				"error": "Due date must be in UTC format",
 			}
@@ -157,7 +157,7 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 		rawEndDate, err := time.Parse(time.RFC3339, req.EndDate)
 		if err != nil {
 			log.Errorf("error parsing end date: %s", err.Error())
-			telemetry.TrackError(nil, "task_create_failed", "task-service", err, nil)
+			telemetry.TrackError(ctx, "task_create_failed", "task-service", err, nil)
 			return http.StatusBadRequest, gin.H{
 				"error": "End date must be in UTC format",
 			}
@@ -183,7 +183,7 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 
 	if err != nil {
 		log.Errorf("error creating task: %s", err.Error())
-		telemetry.TrackError(nil, "task_create_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_create_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error creating task",
 		}
@@ -191,7 +191,7 @@ func (s *TaskService) CreateTask(ctx context.Context, userID int, req models.Cre
 
 	if err := s.l.AssignLabelsToTask(ctx, createdTask.ID, userID, req.Labels); err != nil {
 		log.Errorf("error assigning labels to task: %s", err.Error())
-		telemetry.TrackError(nil, "task_label_assign_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_label_assign_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		}
@@ -222,7 +222,7 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 		rawDueDate, err := time.Parse(time.RFC3339, req.NextDueDate)
 		if err != nil {
 			log.Errorf("error parsing due date: %s", err.Error())
-			telemetry.TrackError(nil, "task_edit_failed", "task-service", err, nil)
+			telemetry.TrackError(ctx, "task_edit_failed", "task-service", err, nil)
 			return http.StatusBadRequest, gin.H{
 				"error": "Due date must be in UTC format",
 			}
@@ -237,7 +237,7 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 		rawEndDate, err := time.Parse(time.RFC3339, req.EndDate)
 		if err != nil {
 			log.Errorf("error parsing end date: %s", err.Error())
-			telemetry.TrackError(nil, "task_edit_failed", "task-service", err, nil)
+			telemetry.TrackError(ctx, "task_edit_failed", "task-service", err, nil)
 			return http.StatusBadRequest, gin.H{
 				"error": "End date must be in UTC format",
 			}
@@ -252,14 +252,14 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 
 	if err != nil {
 		log.Errorf("error getting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		}
 	}
 
 	if userID != oldTask.CreatedBy {
-		telemetry.TrackWarning(nil, "task_forbidden", "task-service", "User not allowed to edit task", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to edit task", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to edit this task",
 		}
@@ -267,7 +267,7 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 
 	if err := s.l.AssignLabelsToTask(ctx, taskId, userID, req.Labels); err != nil {
 		log.Errorf("error assigning labels to task: %s", err.Error())
-		telemetry.TrackError(nil, "task_label_assign_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_label_assign_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error adding labels",
 		}
@@ -287,7 +287,7 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 
 	if err := s.t.UpsertTask(ctx, updatedTask); err != nil {
 		log.Errorf("error upserting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_edit_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_edit_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error upserting task",
 		}
@@ -312,7 +312,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, userID, taskID int) (int, 
 	log := logging.FromContext(ctx)
 
 	if err := s.t.IsTaskOwner(ctx, taskID, userID); err != nil {
-		telemetry.TrackWarning(nil, "task_forbidden", "task-service", "User not allowed to delete task", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to delete task", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to delete this task",
 		}
@@ -320,7 +320,7 @@ func (s *TaskService) DeleteTask(ctx context.Context, userID, taskID int) (int, 
 
 	if err := s.t.DeleteTask(ctx, taskID); err != nil {
 		log.Errorf("error deleting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_delete_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_delete_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error deleting task",
 		}
@@ -341,7 +341,7 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		}
@@ -350,7 +350,7 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
 	if err != nil {
 		log.Errorf("error scheduling next due date: %s", err.Error())
-		telemetry.TrackError(nil, "task_skip_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_skip_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error scheduling next due date",
 		}
@@ -358,7 +358,7 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 
 	if err := s.t.CompleteTask(ctx, task, userID, nextDueDate, nil); err != nil {
 		log.Errorf("error completing task: %s", err.Error())
-		telemetry.TrackError(nil, "task_skip_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_skip_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error completing task",
 		}
@@ -367,7 +367,7 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 	updatedTask, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting updated task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting updated task",
 		}
@@ -394,14 +394,14 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		}
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(nil, "task_forbidden", "task-service", "User not allowed to update due date", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to update due date", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to update this task",
 		}
@@ -411,7 +411,7 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 		rawDueDate, err := time.Parse(time.RFC3339, req.DueDate)
 		if err != nil {
 			log.Errorf("error parsing due date: %s", err.Error())
-			telemetry.TrackError(nil, "task_update_due_date_failed", "task-service", err, nil)
+			telemetry.TrackError(ctx, "task_update_due_date_failed", "task-service", err, nil)
 			return http.StatusBadRequest, gin.H{
 				"error": "Due date must be in UTC format",
 			}
@@ -423,7 +423,7 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 
 	if err := s.t.UpsertTask(ctx, task); err != nil {
 		log.Errorf("error updating due date: %s", err.Error())
-		telemetry.TrackError(nil, "task_update_due_date_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_update_due_date_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error updating due date",
 		}
@@ -450,7 +450,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		}
@@ -463,7 +463,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 		nextDueDate, err = tRepo.ScheduleNextDueDate(task, completedDate)
 		if err != nil {
 			log.Errorf("error scheduling next due date: %s", err.Error())
-			telemetry.TrackError(nil, "task_complete_failed", "task-service", err, nil)
+			telemetry.TrackError(ctx, "task_complete_failed", "task-service", err, nil)
 			return http.StatusInternalServerError, gin.H{
 				"error": fmt.Sprintf("Error scheduling next due date: %s", err),
 			}
@@ -472,7 +472,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 
 	if err := s.t.CompleteTask(ctx, task, userID, nextDueDate, &completedDate); err != nil {
 		log.Errorf("error completing task: %s", err.Error())
-		telemetry.TrackError(nil, "task_complete_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_complete_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error completing task",
 		}
@@ -481,7 +481,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 	updatedTask, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting updated task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting updated task",
 		}
@@ -507,14 +507,14 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
 		}
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(nil, "task_forbidden", "task-service", "User not allowed to uncomplete task", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to uncomplete task", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to update this task",
 		}
@@ -528,7 +528,7 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 		}
 
 		log.Errorf("error uncompleting task: %s", err.Error())
-		telemetry.TrackError(nil, "task_uncomplete_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_uncomplete_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error uncompleting task",
 		}
@@ -537,7 +537,7 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 	updatedTask, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting updated task: %s", err.Error())
-		telemetry.TrackError(nil, "task_get_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting updated task",
 		}
@@ -562,7 +562,7 @@ func (s *TaskService) GetTaskHistory(ctx context.Context, userID, taskID int) (i
 	log := logging.FromContext(ctx)
 
 	if err := s.t.IsTaskOwner(ctx, taskID, userID); err != nil {
-		telemetry.TrackWarning(nil, "task_forbidden", "task-service", "User not allowed to view task history", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to view task history", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to view this task's history",
 		}
@@ -571,7 +571,7 @@ func (s *TaskService) GetTaskHistory(ctx context.Context, userID, taskID int) (i
 	TaskHistory, err := s.t.GetTaskHistory(ctx, taskID)
 	if err != nil {
 		log.Errorf("error getting task history: %s", err.Error())
-		telemetry.TrackError(nil, "task_history_failed", "task-service", err, nil)
+		telemetry.TrackError(ctx, "task_history_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task history",
 		}

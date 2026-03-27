@@ -68,7 +68,7 @@ func (n *Notifier) cleanupInvalidNotifications(c context.Context) error {
 	}
 
 	if err := n.nRepo.DeleteNotificationsByIDs(c, ids); err != nil {
-		telemetry.TrackError(nil, "notification_cleanup_failed", "notifier", err, nil)
+		telemetry.TrackError(c, "notification_cleanup_failed", "notifier", err, nil)
 		return fmt.Errorf("error deleting invalid notifications: %s", err.Error())
 	}
 
@@ -83,7 +83,7 @@ func (n *Notifier) cleanupSentNotifications(c context.Context) error {
 	deleteBefore := time.Now().UTC().Add(-2 * n.DueFrequency)
 	err := n.nRepo.DeleteSentNotifications(c, deleteBefore)
 	if err != nil {
-		telemetry.TrackError(nil, "notification_cleanup_failed", "notifier", err, nil)
+		telemetry.TrackError(c, "notification_cleanup_failed", "notifier", err, nil)
 		return fmt.Errorf("error deleting sent notifications: %s", err.Error())
 	}
 
@@ -116,7 +116,7 @@ func (n *Notifier) LoadAndSendNotificationJob(c context.Context) error {
 		err := n.sendNotification(c, notification)
 		if err != nil {
 			log.Errorf("Error sending notification: %s", err.Error())
-			telemetry.TrackError(nil, "notification_send_failed", "notifier", err, nil)
+			telemetry.TrackError(c, "notification_send_failed", "notifier", err, nil)
 			continue
 		}
 		notification.IsSent = true

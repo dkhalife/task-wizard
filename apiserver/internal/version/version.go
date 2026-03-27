@@ -25,5 +25,9 @@ func GetFullVersion() string {
 	if Version == "dev" {
 		return "dev (unknown)"
 	}
-	return Version + " (build " + BuildNumber + ", commit " + CommitHash[:7] + ")"
+	commit := CommitHash
+	if len(commit) > 7 {
+		commit = commit[:7]
+	}
+	return Version + " (build " + BuildNumber + ", commit " + commit + ")"
 }

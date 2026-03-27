@@ -1,7 +1,6 @@
 package com.dkhalife.tasks.data.sync
 
 import android.content.Context
-import android.util.Log
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.dkhalife.tasks.api.TaskWizardApi

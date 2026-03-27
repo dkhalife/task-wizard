@@ -20,6 +20,7 @@ import com.dkhalife.tasks.ui.theme.TaskWizardTheme
 import com.dkhalife.tasks.ui.widget.TaskListWidget
 import com.dkhalife.tasks.ui.widget.quickadd.QuickAddWidget
 import com.dkhalife.tasks.viewmodel.AuthViewModel
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -40,6 +41,9 @@ class MainActivity : ComponentActivity() {
 
     @Inject
     lateinit var telemetryRepository: TelemetryRepository
+
+    @Inject
+    lateinit var telemetryManager: TelemetryManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -101,6 +105,9 @@ class MainActivity : ComponentActivity() {
                         onTelemetryEnabledChanged = { enabled ->
                             telemetryRepository.setTelemetryEnabled(enabled)
                             telemetryEnabled = enabled
+                            if (enabled) {
+                                telemetryManager.initialize(this@MainActivity)
+                            }
                         },
                         debugLoggingEnabled = debugLoggingEnabled,
                         onDebugLoggingEnabledChanged = { enabled ->

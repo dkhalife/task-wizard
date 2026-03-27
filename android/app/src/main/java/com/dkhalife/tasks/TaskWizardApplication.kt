@@ -39,8 +39,17 @@ class TaskWizardApplication : Application(), Configuration.Provider {
     private fun setupCrashHandler() {
         val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
-            telemetryManager.trackException(throwable, mapOf("source" to "uncaught_exception"))
-            defaultHandler?.uncaughtException(thread, throwable)
+            try {
+                telemetryManager.trackException(throwable, mapOf("source" to "uncaught_exception"))
+                try {
+                    Thread.sleep(2000)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+            } catch (_: Exception) {
+            } finally {
+                defaultHandler?.uncaughtException(thread, throwable)
+            }
         }
     }
 

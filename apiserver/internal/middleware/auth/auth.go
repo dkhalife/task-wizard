@@ -181,7 +181,7 @@ func ScopeMiddleware(requiredScope models.ApiTokenScope) gin.HandlerFunc {
 
 		telemetry.TrackWarning(c, "auth_forbidden_scope", "auth-middleware", "Missing required scope: "+string(requiredScope), nil)
 		c.AbortWithStatusJSON(http.StatusForbidden, gin.H{
-			"error": "Missing required scope: " + requiredScope,
+			"error": "Missing required scope: " + string(requiredScope),
 		})
 	}
 }

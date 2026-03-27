@@ -47,7 +47,7 @@ func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c c
 			err := job(c)
 			if err != nil {
 				log.Errorf("[%s] %s", jobName, err)
-				telemetry.TrackError(nil, "scheduler_job_failed", "scheduler", err, map[string]string{"job": jobName})
+				telemetry.TrackError(c, "scheduler_job_failed", "scheduler", err, map[string]string{"job": jobName})
 			}
 
 			time.Sleep(interval)
