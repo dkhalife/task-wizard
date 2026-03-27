@@ -35,7 +35,7 @@ import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { NotificationTriggerOptions } from '@/models/notifications'
 import { NotificationOptions } from '@/views/Notifications/NotificationOptions'
 import { moveFocusToJoyInput } from '@/utils/joy'
-import { addHours, format } from 'date-fns'
+import { addHours, format, set } from 'date-fns'
 import { AppDispatch, RootState } from '@/store/store'
 import { connect } from 'react-redux'
 import { MakeDateUI, MarshallDate } from '@/utils/marshalling'
@@ -247,7 +247,7 @@ class TaskEditImpl extends React.Component<TaskEditProps, TaskEditState> {
   private onHasDueDateChanged = (e: ChangeEvent<HTMLInputElement>) => {
     this.props.setDraft({
       ...this.props.draft,
-      next_due_date: MarshallDate(e.target.checked ? addHours(new Date(), 1) : null),
+      next_due_date: MarshallDate(e.target.checked ? set(addHours(new Date(), 1), { seconds: 0, milliseconds: 0 }) : null),
     })
   }
 
