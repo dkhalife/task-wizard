@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.dkhalife.tasks.auth.AuthManager
 import com.dkhalife.tasks.data.sync.TaskSyncWorkerFactory
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.microsoft.identity.client.IPublicClientApplication
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.PublicClientApplication
@@ -20,6 +21,9 @@ class TaskWizardApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var taskSyncWorkerFactory: TaskSyncWorkerFactory
 
+    @Inject
+    lateinit var telemetryManager: TelemetryManager
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(taskSyncWorkerFactory)
@@ -27,7 +31,26 @@ class TaskWizardApplication : Application(), Configuration.Provider {
 
     override fun onCreate() {
         super.onCreate()
+        telemetryManager.initialize(this)
+        setupCrashHandler()
         initializeMsal()
+    }
+
+    private fun setupCrashHandler() {
+        val defaultHandler = Thread.getDefaultUncaughtExceptionHandler()
+        Thread.setDefaultUncaughtExceptionHandler { thread, throwable ->
+            try {
+                telemetryManager.trackException(throwable, mapOf("source" to "uncaught_exception"))
+                try {
+                    Thread.sleep(2000)
+                } catch (_: InterruptedException) {
+                    Thread.currentThread().interrupt()
+                }
+            } catch (_: Exception) {
+            } finally {
+                defaultHandler?.uncaughtException(thread, throwable)
+            }
+        }
     }
 
     private fun initializeMsal() {
@@ -41,7 +64,7 @@ class TaskWizardApplication : Application(), Configuration.Provider {
                 }
 
                 override fun onError(exception: MsalException) {
-                    android.util.Log.e(TAG, "Failed to initialize MSAL", exception)
+                    telemetryManager.logError(TAG, "Failed to initialize MSAL", exception)
                 }
             }
         )
@@ -61,7 +84,7 @@ class TaskWizardApplication : Application(), Configuration.Provider {
             }
 
             override fun onError(exception: MsalException) {
-                android.util.Log.e(TAG, "Failed to load current account", exception)
+                telemetryManager.logError(TAG, "Failed to load current account", exception)
             }
         })
     }

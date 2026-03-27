@@ -1,6 +1,7 @@
 package database
 
 import (
+	"context"
 	"fmt"
 	"log"
 	"os"
@@ -9,6 +10,7 @@ import (
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
@@ -72,6 +74,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 
 	db, err := gorm.Open(dialector, &gorm.Config{Logger: logger})
 	if err != nil {
+		telemetry.TrackError(context.Background(), "database_open_failed", "database", err, map[string]string{"type": dbType})
 		return nil, err
 	}
 

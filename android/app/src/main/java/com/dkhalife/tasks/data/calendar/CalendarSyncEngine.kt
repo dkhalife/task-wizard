@@ -5,6 +5,7 @@ import android.content.SharedPreferences
 import com.dkhalife.tasks.data.AppPreferences
 import com.dkhalife.tasks.data.sync.SyncEngine
 import com.dkhalife.tasks.model.Task
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import java.time.ZonedDateTime
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -13,7 +14,8 @@ import javax.inject.Singleton
 class CalendarSyncEngine @Inject constructor(
     private val calendarProviderClient: CalendarProviderClient,
     private val calendarRepository: CalendarRepository,
-    private val sharedPreferences: SharedPreferences
+    private val sharedPreferences: SharedPreferences,
+    private val telemetryManager: TelemetryManager
 ) : SyncEngine {
 
     override suspend fun sync(context: Context, tasks: List<Task>) {
@@ -33,7 +35,10 @@ class CalendarSyncEngine @Inject constructor(
             )
             calendarId = calendarProviderClient.getCalendarId(
                 context.contentResolver, accountName
-            ) ?: return
+            ) ?: run {
+                telemetryManager.logError(TAG, "Calendar not found after creation for account=$accountName")
+                return
+            }
         }
 
         val existingEvents = calendarProviderClient.getEventsBySyncData(context.contentResolver, calendarId)
@@ -68,12 +73,14 @@ class CalendarSyncEngine @Inject constructor(
         if (dateString.isNullOrBlank()) return null
         return try {
             ZonedDateTime.parse(dateString).toInstant().toEpochMilli()
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            telemetryManager.logWarning(TAG, "Failed to parse date: $dateString: ${e.message}", e)
             null
         }
     }
 
     companion object {
+        private const val TAG = "CalendarSyncEngine"
         const val EVENT_DURATION_MS = 15 * 60 * 1000L
     }
 }

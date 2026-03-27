@@ -58,9 +58,47 @@ export class PrivacyPolicy extends React.Component {
             items={[
               'Personal names, email addresses, or passwords — these fields were explicitly omitted from the data model',
               'Tracking cookies, analytics identifiers, or advertising data',
-              'Telemetry or usage analytics',
             ]}
           />
+        </Section>
+
+        <Section title='Optional Telemetry'>
+          <Typography>
+            Task Wizard includes optional, opt-in telemetry powered by Azure
+            Application Insights. Telemetry is used solely to monitor application
+            health, track errors, and improve the user experience.
+          </Typography>
+          <Typography sx={{ mt: 1, fontWeight: 600 }}>
+            On the Android app, telemetry is disabled by default and must be
+            explicitly enabled by the user in Settings → Analytics.
+          </Typography>
+          <Typography sx={{ mt: 1 }}>
+            When telemetry is disabled, the Android app sends a
+            Do-Not-Track (DNT) header with every API request. The backend
+            respects this header and skips request-level telemetry for that user.
+          </Typography>
+          <Typography sx={{ mt: 1 }}>
+            When enabled, the following anonymous data may be collected:
+          </Typography>
+          <BulletList
+            icon={<CheckCircle color='success' />}
+            items={[
+              'Application errors, warnings, and crash reports',
+              'HTTP request metadata (method, route, status code, duration)',
+              'Build version, build number, and commit hash for the running software',
+              'A randomly generated device identifier (not linked to any account or personal information)',
+            ]}
+          />
+          <Typography sx={{ mt: 1 }}>
+            An additional &ldquo;Debug logging&rdquo; toggle (visible only when
+            telemetry is enabled) sends more detailed diagnostic data to help
+            troubleshoot specific issues.
+          </Typography>
+          <Typography sx={{ mt: 1 }}>
+            No task content, user identifiers, authentication tokens, or
+            personally identifiable information is ever included in telemetry
+            data.
+          </Typography>
         </Section>
 
         <Section title='How Your Data Is Stored'>
@@ -95,6 +133,7 @@ export class PrivacyPolicy extends React.Component {
             icon={<CheckCircle color='success' />}
             items={[
               'Microsoft Entra ID - contacted for authentication only; no task or personal data is shared',
+              'Azure Application Insights (optional) - when telemetry is enabled, anonymous operational data (errors, request metadata, build info) is sent to the configured Application Insights instance; no task content or personal data is included',
               'Gotify or webhook endpoints (optional) - if configured by you, only minimal task completion text is sent to the endpoint you choose',
             ]}
           />

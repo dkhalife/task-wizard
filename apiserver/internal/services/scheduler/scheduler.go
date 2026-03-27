@@ -7,6 +7,7 @@ import (
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/services/notifications"
+	"dkhalife.com/tasks/core/internal/telemetry"
 )
 
 type Scheduler struct {
@@ -46,6 +47,7 @@ func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c c
 			err := job(c)
 			if err != nil {
 				log.Errorf("[%s] %s", jobName, err)
+				telemetry.TrackError(c, "scheduler_job_failed", "scheduler", err, map[string]string{"job": jobName})
 			}
 
 			time.Sleep(interval)

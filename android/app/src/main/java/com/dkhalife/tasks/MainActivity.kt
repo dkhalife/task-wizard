@@ -10,6 +10,7 @@ import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.SwipeAction
 import com.dkhalife.tasks.data.SwipeActionsRepository
 import com.dkhalife.tasks.data.TaskGrouping
+import com.dkhalife.tasks.data.TelemetryRepository
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.ThemeRepository
 import com.dkhalife.tasks.data.calendar.CalendarRepository
@@ -19,6 +20,7 @@ import com.dkhalife.tasks.ui.theme.TaskWizardTheme
 import com.dkhalife.tasks.ui.widget.TaskListWidget
 import com.dkhalife.tasks.ui.widget.quickadd.QuickAddWidget
 import com.dkhalife.tasks.viewmodel.AuthViewModel
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
 
@@ -37,6 +39,12 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var swipeActionsRepository: SwipeActionsRepository
 
+    @Inject
+    lateinit var telemetryRepository: TelemetryRepository
+
+    @Inject
+    lateinit var telemetryManager: TelemetryManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -49,6 +57,8 @@ class MainActivity : ComponentActivity() {
             var taskGrouping by remember { mutableStateOf(groupingRepository.getTaskGrouping()) }
             var calendarSyncEnabled by remember { mutableStateOf(calendarRepository.isCalendarSyncEnabled()) }
             var swipeSettings by remember { mutableStateOf(swipeActionsRepository.getSettings()) }
+            var telemetryEnabled by remember { mutableStateOf(telemetryRepository.isTelemetryEnabled()) }
+            var debugLoggingEnabled by remember { mutableStateOf(telemetryRepository.isDebugLoggingEnabled()) }
 
             TaskWizardTheme(themeMode = themeMode) {
                 val authViewModel: AuthViewModel = hiltViewModel()
@@ -90,6 +100,19 @@ class MainActivity : ComponentActivity() {
                         onSwipeDeleteConfirmationChanged = { enabled ->
                             swipeActionsRepository.setDeleteConfirmationEnabled(enabled)
                             swipeSettings = swipeSettings.copy(deleteConfirmationEnabled = enabled)
+                        },
+                        telemetryEnabled = telemetryEnabled,
+                        onTelemetryEnabledChanged = { enabled ->
+                            telemetryRepository.setTelemetryEnabled(enabled)
+                            telemetryEnabled = enabled
+                            if (enabled) {
+                                telemetryManager.initialize(this@MainActivity)
+                            }
+                        },
+                        debugLoggingEnabled = debugLoggingEnabled,
+                        onDebugLoggingEnabledChanged = { enabled ->
+                            telemetryRepository.setDebugLoggingEnabled(enabled)
+                            debugLoggingEnabled = enabled
                         },
                         initialTaskId = initialTaskId,
                         createTask = createTask

@@ -4,12 +4,14 @@ import android.content.Context
 import androidx.work.CoroutineWorker
 import androidx.work.WorkerParameters
 import com.dkhalife.tasks.api.TaskWizardApi
+import com.dkhalife.tasks.telemetry.TelemetryManager
 
 class TaskSyncWorker(
     appContext: Context,
     workerParams: WorkerParameters,
     private val api: TaskWizardApi,
-    private val engines: List<SyncEngine>
+    private val engines: List<SyncEngine>,
+    private val telemetryManager: TelemetryManager
 ) : CoroutineWorker(appContext, workerParams) {
 
     override suspend fun doWork(): Result {
@@ -21,16 +23,23 @@ class TaskSyncWorker(
                 for (engine in engines) {
                     try {
                         engine.sync(applicationContext, tasks)
-                    } catch (_: Exception) {
+                    } catch (e: Exception) {
+                        telemetryManager.logError(TAG, "Sync engine ${engine::class.simpleName} failed: ${e.message}", e)
                         anyFailed = true
                     }
                 }
                 if (anyFailed) Result.retry() else Result.success()
             } else {
+                telemetryManager.logError(TAG, "Failed to fetch tasks for sync: ${response.code()}")
                 Result.retry()
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Task sync failed: ${e.message}", e)
             Result.retry()
         }
+    }
+
+    companion object {
+        private const val TAG = "TaskSyncWorker"
     }
 }

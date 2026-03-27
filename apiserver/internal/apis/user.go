@@ -10,6 +10,7 @@ import (
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/services/users"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
@@ -55,6 +56,7 @@ func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, currentIdentity.UserID)
 	if err != nil {
 		log.Errorf("failed to get notification settings: %s", err.Error())
+		telemetry.TrackError(c, "user_profile_get_failed", "user-handler", err, nil)
 		c.JSON(http.StatusInternalServerError, gin.H{
 			"error": "Failed to get notification settings",
 		})
@@ -73,6 +75,7 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 
 	var req models.NotificationUpdateRequest
 	if err := c.ShouldBindJSON(&req); err != nil {
+		telemetry.TrackWarning(c, "user_bind_failed", "user-handler", err.Error(), nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})

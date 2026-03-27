@@ -11,6 +11,7 @@ import androidx.work.WorkManager
 import com.dkhalife.tasks.auth.AuthManager
 import com.dkhalife.tasks.data.AppPreferences
 import com.dkhalife.tasks.data.sync.TaskSyncScheduler
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -23,7 +24,8 @@ class CalendarRepository @Inject constructor(
     private val sharedPreferences: SharedPreferences,
     private val calendarProviderClient: CalendarProviderClient,
     private val taskSyncScheduler: TaskSyncScheduler,
-    private val authManager: AuthManager
+    private val authManager: AuthManager,
+    private val telemetryManager: TelemetryManager
 ) {
 
     fun isCalendarSyncEnabled(): Boolean {
@@ -63,6 +65,7 @@ class CalendarRepository @Inject constructor(
             sharedPreferences.edit { putBoolean(AppPreferences.KEY_CALENDAR_SYNC, true) }
             Result.success(Unit)
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to enable calendar sync: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -85,11 +88,13 @@ class CalendarRepository @Inject constructor(
             taskSyncScheduler.cancelIfUnneeded(workManager, appContext)
             Result.success(Unit)
         } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to disable calendar sync: ${e.message}", e)
             Result.failure(e)
         }
     }
 
     companion object {
+        private const val TAG = "CalendarRepository"
         private const val FALLBACK_ACCOUNT_NAME = "Task Wizard"
         internal const val CALENDAR_DISPLAY_NAME = "Task Wizard"
         internal val CALENDAR_COLOR = Color.parseColor("#4A90D9")

@@ -12,6 +12,7 @@ import (
 	"dkhalife.com/tasks/core/frontend"
 	auth "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/migrations"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	database "dkhalife.com/tasks/core/internal/utils/database"
 	utils "dkhalife.com/tasks/core/internal/utils/middleware"
 	ws "dkhalife.com/tasks/core/internal/ws"
@@ -134,10 +135,12 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 			corsCfg.AllowCredentials = true
 		}
 		corsCfg.AddAllowHeaders("Authorization")
+		corsCfg.AddAllowHeaders("DNT")
 		r.Use(cors.New(corsCfg))
 	}
 	r.Use(utils.SecurityHeaders(cfg))
 	r.Use(utils.RequestLogger())
+	r.Use(utils.TelemetryMiddleware())
 
 	lc.Append(fx.Hook{
 		OnStart: func(ctx context.Context) error {
@@ -163,6 +166,7 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 		},
 		OnStop: func(ctx context.Context) error {
 			bgScheduler.Stop()
+			telemetry.FlushAppInsights()
 
 			if err := srv.Shutdown(ctx); err != nil {
 				log := logging.FromContext(ctx)

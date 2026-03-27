@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Cloud
 import androidx.compose.material.icons.filled.GridView
+import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwipeLeft
 import androidx.compose.material3.*
@@ -54,7 +55,11 @@ fun SettingsScreen(
     swipeSettings: SwipeSettings,
     onSwipeEnabledChanged: (Boolean) -> Unit,
     onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
-    onNavigateToSwipeSettings: () -> Unit
+    onNavigateToSwipeSettings: () -> Unit,
+    telemetryEnabled: Boolean,
+    onTelemetryEnabledChanged: (Boolean) -> Unit,
+    debugLoggingEnabled: Boolean,
+    onDebugLoggingEnabledChanged: (Boolean) -> Unit
 ){
     val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
     val context = LocalContext.current
@@ -217,6 +222,66 @@ fun SettingsScreen(
                             }
                         }
                     )
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Insights,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_analytics_title), style = MaterialTheme.typography.titleMedium)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.settings_analytics_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = telemetryEnabled,
+                        onCheckedChange = onTelemetryEnabledChanged
+                    )
+                }
+
+                if (telemetryEnabled) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_debug_logging_title), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = stringResource(R.string.settings_debug_logging_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = debugLoggingEnabled,
+                            onCheckedChange = onDebugLoggingEnabledChanged
+                        )
+                    }
                 }
             }
 

@@ -190,6 +190,7 @@ jobs:
           GITHUB_RUN_NUMBER: ${{ github.run_number }}
           GITHUB_RUN_ATTEMPT: ${{ github.run_attempt }}
           GITHUB_RUN_ID: ${{ github.run_id }}
+          APPINSIGHTS_CONNECTION_STRING: ${{ secrets.APPINSIGHTS_CONNECTION_STRING }}
         run: |
           cd android
           ./gradlew bundleRelease

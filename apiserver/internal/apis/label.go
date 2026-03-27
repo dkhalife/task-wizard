@@ -7,6 +7,7 @@ import (
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	models "dkhalife.com/tasks/core/internal/models"
 	lService "dkhalife.com/tasks/core/internal/services/labels"
+	"dkhalife.com/tasks/core/internal/telemetry"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/gin-gonic/gin"
 )
@@ -32,6 +33,7 @@ func (h *LabelsAPIHandler) createLabel(c *gin.Context) {
 
 	var req models.CreateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		telemetry.TrackWarning(c, "label_bind_failed", "label-handler", err.Error(), nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -47,6 +49,7 @@ func (h *LabelsAPIHandler) updateLabel(c *gin.Context) {
 
 	var req models.UpdateLabelReq
 	if err := c.ShouldBindJSON(&req); err != nil {
+		telemetry.TrackWarning(c, "label_bind_failed", "label-handler", err.Error(), nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": err,
 		})
@@ -62,6 +65,7 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 
 	labelIDRaw := c.Param("id")
 	if labelIDRaw == "" {
+		telemetry.TrackWarning(c, "label_invalid_param", "label-handler", "Missing label ID", nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Label ID is required",
 		})
@@ -70,6 +74,7 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 
 	labelID, err := strconv.Atoi(labelIDRaw)
 	if err != nil {
+		telemetry.TrackWarning(c, "label_invalid_param", "label-handler", "Invalid label ID: "+labelIDRaw, nil)
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error": "Invalid label ID",
 		})

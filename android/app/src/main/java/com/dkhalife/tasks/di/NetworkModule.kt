@@ -3,14 +3,17 @@ package com.dkhalife.tasks.di
 import com.dkhalife.tasks.BuildConfig
 import com.dkhalife.tasks.api.ApiEndpointProvider
 import com.dkhalife.tasks.api.AuthInterceptor
+import com.dkhalife.tasks.api.DoNotTrackInterceptor
 import com.dkhalife.tasks.api.TaskWizardApi
 import com.dkhalife.tasks.auth.AuthTokenProvider
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import android.content.SharedPreferences
 import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
@@ -27,9 +30,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(tokenProvider: AuthTokenProvider): OkHttpClient {
-        val authInterceptor = AuthInterceptor(tokenProvider)
+    fun provideOkHttpClient(tokenProvider: AuthTokenProvider, sharedPreferences: SharedPreferences, telemetryManager: TelemetryManager): OkHttpClient {
+        val authInterceptor = AuthInterceptor(tokenProvider, telemetryManager)
+        val dntInterceptor = DoNotTrackInterceptor(sharedPreferences)
         val builder = OkHttpClient.Builder()
+            .addInterceptor(dntInterceptor)
             .addInterceptor(authInterceptor)
             .authenticator(authInterceptor)
 

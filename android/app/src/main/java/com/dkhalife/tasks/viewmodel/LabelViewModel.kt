@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.dkhalife.tasks.model.*
 import com.dkhalife.tasks.repo.LabelRepository
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -14,7 +15,8 @@ import javax.inject.Inject
 @HiltViewModel
 class LabelViewModel @Inject constructor(
     private val labelRepository: LabelRepository,
-    private val webSocketManager: WebSocketManager
+    private val webSocketManager: WebSocketManager,
+    private val telemetryManager: TelemetryManager
 ) : ViewModel() {
 
     val labels: StateFlow<List<Label>> = labelRepository.labels
@@ -44,7 +46,10 @@ class LabelViewModel @Inject constructor(
         viewModelScope.launch {
             _isRefreshing.value = true
             labelRepository.refreshLabels()
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to refresh labels: ${it.message}", it)
+                    _error.value = it.message
+                }
             _isRefreshing.value = false
         }
     }
@@ -52,25 +57,38 @@ class LabelViewModel @Inject constructor(
     fun createLabel(name: String, color: String) {
         viewModelScope.launch {
             labelRepository.createLabel(CreateLabelReq(name, color))
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to create label: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
     fun updateLabel(id: Int, name: String, color: String) {
         viewModelScope.launch {
             labelRepository.updateLabel(UpdateLabelReq(id, name, color))
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to update label $id: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
     fun deleteLabel(id: Int) {
         viewModelScope.launch {
             labelRepository.deleteLabel(id)
-                .onFailure { _error.value = it.message }
+                .onFailure {
+                    telemetryManager.logError(TAG, "Failed to delete label $id: ${it.message}", it)
+                    _error.value = it.message
+                }
         }
     }
 
     fun clearError() {
         _error.value = null
+    }
+
+    companion object {
+        private const val TAG = "LabelViewModel"
     }
 }

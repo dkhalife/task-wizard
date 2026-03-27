@@ -4,6 +4,7 @@ import android.app.Activity
 import androidx.lifecycle.ViewModel
 import com.dkhalife.tasks.api.ApiEndpointProvider
 import com.dkhalife.tasks.auth.AuthManager
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.microsoft.identity.client.AuthenticationCallback
 import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
@@ -16,7 +17,8 @@ import javax.inject.Inject
 @HiltViewModel
 class AuthViewModel @Inject constructor(
     private val authManager: AuthManager,
-    private val endpointProvider: ApiEndpointProvider
+    private val endpointProvider: ApiEndpointProvider,
+    private val telemetryManager: TelemetryManager
 ) : ViewModel() {
 
     private val _isSignedIn = MutableStateFlow(authManager.isSignedIn())
@@ -50,6 +52,7 @@ class AuthViewModel @Inject constructor(
             }
 
             override fun onError(exception: MsalException) {
+                telemetryManager.logError(TAG, "Sign-in failed: ${exception.message}", exception)
                 _isLoading.value = false
                 _errorMessage.value = exception.message
             }
@@ -67,6 +70,7 @@ class AuthViewModel @Inject constructor(
             }
 
             override fun onError(exception: MsalException) {
+                telemetryManager.logError(TAG, "Sign-out failed: ${exception.message}", exception)
                 _errorMessage.value = exception.message
             }
         })
@@ -84,5 +88,9 @@ class AuthViewModel @Inject constructor(
     override fun onCleared() {
         super.onCleared()
         authManager.removeUserChangeListener(userChangeListener)
+    }
+
+    companion object {
+        private const val TAG = "AuthViewModel"
     }
 }

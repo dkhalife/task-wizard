@@ -2,9 +2,9 @@ package com.dkhalife.tasks.utils
 
 import android.content.Context
 import android.media.MediaPlayer
-import android.util.Log
 import androidx.annotation.RawRes
 import com.dkhalife.tasks.R
+import com.dkhalife.tasks.telemetry.TelemetryManager
 import dagger.hilt.android.qualifiers.ApplicationContext
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -15,7 +15,8 @@ enum class SoundEffect(@RawRes val resourceId: Int) {
 
 @Singleton
 class SoundManager @Inject constructor(
-    @ApplicationContext private val context: Context
+    @ApplicationContext private val context: Context,
+    private val telemetryManager: TelemetryManager
 ) {
     private val mediaPlayers = mutableMapOf<SoundEffect, MediaPlayer>()
 
@@ -30,10 +31,10 @@ class SoundManager @Inject constructor(
                 if (mediaPlayer != null) {
                     mediaPlayers[effect] = mediaPlayer
                 } else {
-                    Log.e("SoundManager", "Failed to preload sound ${effect.name}: MediaPlayer.create returned null")
+                    telemetryManager.logError(TAG, "Failed to preload sound ${effect.name}: MediaPlayer.create returned null")
                 }
             } catch (e: Exception) {
-                Log.e("SoundManager", "Failed to preload sound ${effect.name}", e)
+                telemetryManager.logError(TAG, "Failed to preload sound ${effect.name}: ${e.message}", e)
             }
         }
     }
@@ -43,7 +44,7 @@ class SoundManager @Inject constructor(
             val mediaPlayer = mediaPlayers[effect] ?: MediaPlayer.create(context, effect.resourceId)
 
             if (mediaPlayer == null) {
-                Log.e("SoundManager", "Failed to create player for ${effect.name}: MediaPlayer.create returned null")
+                telemetryManager.logError(TAG, "Failed to create player for ${effect.name}: MediaPlayer.create returned null")
                 return
             }
 
@@ -57,7 +58,7 @@ class SoundManager @Inject constructor(
                 mediaPlayer.start()
             }
         } catch (e: Exception) {
-            Log.e("SoundManager", "Failed to play sound ${effect.name}", e)
+            telemetryManager.logError(TAG, "Failed to play sound ${effect.name}: ${e.message}", e)
         }
     }
 
@@ -69,9 +70,13 @@ class SoundManager @Inject constructor(
                 }
                 player.release()
             } catch (e: Exception) {
-                Log.e("SoundManager", "Failed to release media player", e)
+                telemetryManager.logError(TAG, "Failed to release media player: ${e.message}", e)
             }
         }
         mediaPlayers.clear()
+    }
+
+    companion object {
+        private const val TAG = "SoundManager"
     }
 }
