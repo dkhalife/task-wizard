@@ -3,7 +3,9 @@ package com.dkhalife.tasks.ui.components
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.DropdownMenuItem
@@ -92,6 +94,8 @@ fun RecurrenceSection(
             }
         }
 
+        Spacer(modifier = Modifier.height(4.dp))
+
         SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
             val row2 = listOf(FrequencyType.YEARLY, FrequencyType.CUSTOM)
             val row2Labels = listOf(
@@ -110,6 +114,8 @@ fun RecurrenceSection(
         }
 
         if (frequencyType == FrequencyType.CUSTOM) {
+            Spacer(modifier = Modifier.height(8.dp))
+
             SingleChoiceSegmentedButtonRow(modifier = Modifier.fillMaxWidth()) {
                 val subModes = listOf(RepeatOn.INTERVAL, RepeatOn.DAYS_OF_THE_WEEK, RepeatOn.DAY_OF_THE_MONTHS)
                 val subModeLabels = listOf(
@@ -121,12 +127,15 @@ fun RecurrenceSection(
                     SegmentedButton(
                         selected = repeatOn == mode,
                         onClick = { onRepeatOnChange(mode) },
-                        shape = SegmentedButtonDefaults.itemShape(index, subModes.size)
+                        shape = SegmentedButtonDefaults.itemShape(index, subModes.size),
+                        modifier = Modifier.weight(1f)
                     ) {
                         Text(subModeLabels[index])
                     }
                 }
             }
+
+            Spacer(modifier = Modifier.height(8.dp))
 
             when (repeatOn) {
                 RepeatOn.INTERVAL -> {
