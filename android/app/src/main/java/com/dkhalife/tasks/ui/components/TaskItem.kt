@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.EventBusy
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.RadioButtonUnchecked
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material3.AlertDialog
@@ -65,7 +66,8 @@ fun TaskItem(
     onSkip: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
-    onCompleteAndEndRecurrence: () -> Unit,
+    onViewHistory: () -> Unit = {},
+    onCompleteAndEndRecurrence: () -> Unit = {},
     swipeSettings: SwipeSettings = SwipeSettings(),
     inlineCompleteEnabled: Boolean = true
 ){
@@ -78,6 +80,7 @@ fun TaskItem(
     val skipLabel = stringResource(R.string.action_skip)
     val deleteLabel = stringResource(R.string.action_delete)
     val editLabel = stringResource(R.string.action_edit)
+    val historyLabel = stringResource(R.string.action_history)
     val completeEndRecurrenceLabel = stringResource(R.string.action_complete_end_recurrence)
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
@@ -111,6 +114,7 @@ fun TaskItem(
 
     val accessibilityActions = buildList {
         add(CustomAccessibilityAction(completeLabel) { onComplete(); true })
+        add(CustomAccessibilityAction(historyLabel) { onViewHistory(); true })
         if (isRecurring) {
             add(CustomAccessibilityAction(skipLabel) { onSkip(); true })
             add(CustomAccessibilityAction(completeEndRecurrenceLabel) { onCompleteAndEndRecurrence(); true })
@@ -212,6 +216,14 @@ fun TaskItem(
                     onClick = {
                         showContextMenu = false
                         onClick()
+                    }
+                )
+                DropdownMenuItem(
+                    text = { Text(historyLabel) },
+                    leadingIcon = { Icon(Icons.Default.History, contentDescription = null) },
+                    onClick = {
+                        showContextMenu = false
+                        onViewHistory()
                     }
                 )
                 if (isRecurring) {

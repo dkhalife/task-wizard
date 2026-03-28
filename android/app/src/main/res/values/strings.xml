@@ -46,6 +46,7 @@
     <string name="action_delete">Delete</string>
     <string name="action_edit">Edit</string>
     <string name="action_complete_end_recurrence">Complete and end recurrence</string>
+    <string name="action_history">History</string>
     <string name="action_collapse">Collapse</string>
     <string name="action_expand">Expand</string>
 
@@ -252,6 +253,24 @@
     <string name="due_date_today_at">Today at %1$s</string>
     <string name="due_date_tomorrow_at">Tomorrow at %1$s</string>
     <string name="due_date_future">in %1$s</string>
+
+    <!-- Task history screen -->
+    <string name="history_title">History</string>
+    <string name="history_empty_title">No History Yet</string>
+    <string name="history_empty_hint">Once you start completing this task, the history will show up here.</string>
+    <string name="history_summary_title">Summary</string>
+    <string name="history_entries_title">History</string>
+    <string name="history_total_completed">Total Completed</string>
+    <string name="history_usually_within">Usually Within</string>
+    <string name="history_max_delay">Maximum Delay</string>
+    <string name="history_times">%1$d times</string>
+    <string name="history_completed">Completed</string>
+    <string name="history_skipped">Skipped</string>
+    <string name="history_completed_on">on %1$s</string>
+    <string name="history_due_ago">due %1$s ago</string>
+
+    <string name="history_on_time">On time</string>
+    <string name="history_late_suffix">%1$s late</string>
 
     <!-- Recurrence chip fallback labels -->
     <string name="recurrence_custom_label">Custom</string>

@@ -39,10 +39,12 @@ import com.dkhalife.tasks.ui.screen.LabelsScreen
 import com.dkhalife.tasks.ui.screen.SettingsScreen
 import com.dkhalife.tasks.ui.screen.SwipeActionsSettingsScreen
 import com.dkhalife.tasks.ui.screen.TaskFormScreen
+import com.dkhalife.tasks.ui.screen.TaskHistoryScreen
 import com.dkhalife.tasks.ui.screen.TaskListScreen
 import com.dkhalife.tasks.viewmodel.AuthViewModel
 import com.dkhalife.tasks.viewmodel.LabelViewModel
 import com.dkhalife.tasks.viewmodel.TaskFormViewModel
+import com.dkhalife.tasks.viewmodel.TaskHistoryViewModel
 import com.dkhalife.tasks.viewmodel.TaskListViewModel
 
 @Composable
@@ -141,6 +143,7 @@ fun AppNavigation(
                     onDeleteTask = { viewModel.deleteTask(it) },
                     onCompleteAndEndRecurrenceTask = { viewModel.completeTask(it, endRecurrence = true) },
                     onTaskClick = { navController.navigate(Routes.taskFormEdit(it)) },
+                    onViewHistory = { navController.navigate(Routes.taskHistory(it)) },
                     onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
                     onToggleGroup = { viewModel.toggleGroupExpanded(it) },
                     swipeSettings = swipeSettings,
@@ -262,6 +265,37 @@ fun AppNavigation(
                             ))
                         }
                     },
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Routes.TASK_HISTORY,
+                arguments = listOf(navArgument("taskId") {
+                    type = NavType.IntType
+                    defaultValue = -1
+                }),
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                exitTransition = { fadeOut() },
+                popEnterTransition = { fadeIn() },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+            ) { backStackEntry ->
+                val taskId = backStackEntry.arguments?.getInt("taskId") ?: -1
+                val viewModel: TaskHistoryViewModel = hiltViewModel()
+                val history by viewModel.history.collectAsState()
+                val isLoading by viewModel.isLoading.collectAsState()
+
+                LaunchedEffect(taskId) {
+                    if (taskId > 0) {
+                        viewModel.loadHistory(taskId)
+                    } else {
+                        navController.popBackStack()
+                    }
+                }
+
+                TaskHistoryScreen(
+                    history = history,
+                    isLoading = isLoading,
                     onBack = { navController.popBackStack() }
                 )
             }
