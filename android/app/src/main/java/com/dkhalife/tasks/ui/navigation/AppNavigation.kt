@@ -139,6 +139,7 @@ fun AppNavigation(
                     onCompleteTask = { viewModel.completeTask(it) },
                     onSkipTask = { viewModel.skipTask(it) },
                     onDeleteTask = { viewModel.deleteTask(it) },
+                    onCompleteAndEndRecurrenceTask = { viewModel.completeTask(it, endRecurrence = true) },
                     onTaskClick = { navController.navigate(Routes.taskFormEdit(it)) },
                     onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
                     onToggleGroup = { viewModel.toggleGroupExpanded(it) },
