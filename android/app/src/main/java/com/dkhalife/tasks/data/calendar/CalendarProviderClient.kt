@@ -73,6 +73,7 @@ class CalendarProviderClient @Inject constructor() {
         startMillis: Long,
         endMillis: Long,
         syncData: String,
+        hasAlarm: Boolean,
         accountName: String
     ): Long {
         val values = ContentValues().apply {
@@ -81,7 +82,7 @@ class CalendarProviderClient @Inject constructor() {
             put(CalendarContract.Events.DTSTART, startMillis)
             put(CalendarContract.Events.DTEND, endMillis)
             put(CalendarContract.Events.EVENT_TIMEZONE, "UTC")
-            put(CalendarContract.Events.HAS_ALARM, 0)
+            put(CalendarContract.Events.HAS_ALARM, if (hasAlarm) 1 else 0)
             put(CalendarContract.Events.SYNC_DATA1, syncData)
         }
 
@@ -96,12 +97,14 @@ class CalendarProviderClient @Inject constructor() {
         title: String,
         startMillis: Long,
         endMillis: Long,
+        hasAlarm: Boolean,
         accountName: String
     ) {
         val values = ContentValues().apply {
             put(CalendarContract.Events.TITLE, title)
             put(CalendarContract.Events.DTSTART, startMillis)
             put(CalendarContract.Events.DTEND, endMillis)
+            put(CalendarContract.Events.HAS_ALARM, if (hasAlarm) 1 else 0)
         }
 
         val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
@@ -142,6 +145,52 @@ class CalendarProviderClient @Inject constructor() {
                     val eventId = cursor.getLong(0)
                     val syncData = cursor.getString(1) ?: continue
                     result[syncData] = eventId
+                }
+            }
+        } finally {
+            cursor?.close()
+        }
+        return result
+    }
+
+    fun deleteReminders(contentResolver: ContentResolver, eventId: Long, accountName: String) {
+        val selection = "${CalendarContract.Reminders.EVENT_ID} = ?"
+        val selectionArgs = arrayOf(eventId.toString())
+        contentResolver.delete(
+            asSyncAdapter(CalendarContract.Reminders.CONTENT_URI, accountName),
+            selection,
+            selectionArgs
+        )
+    }
+
+    fun insertReminder(contentResolver: ContentResolver, eventId: Long, minutes: Int, accountName: String) {
+        val values = ContentValues().apply {
+            put(CalendarContract.Reminders.EVENT_ID, eventId)
+            put(CalendarContract.Reminders.MINUTES, minutes)
+            put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_DEFAULT)
+        }
+        contentResolver.insert(asSyncAdapter(CalendarContract.Reminders.CONTENT_URI, accountName), values)
+            ?: throw IllegalStateException("Failed to insert reminder for event $eventId")
+    }
+
+    fun getReminders(contentResolver: ContentResolver, eventId: Long): List<Int> {
+        val projection = arrayOf(CalendarContract.Reminders.MINUTES)
+        val selection = "${CalendarContract.Reminders.EVENT_ID} = ?"
+        val selectionArgs = arrayOf(eventId.toString())
+
+        val result = mutableListOf<Int>()
+        var cursor: Cursor? = null
+        try {
+            cursor = contentResolver.query(
+                CalendarContract.Reminders.CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                null
+            )
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    result.add(cursor.getInt(0))
                 }
             }
         } finally {
