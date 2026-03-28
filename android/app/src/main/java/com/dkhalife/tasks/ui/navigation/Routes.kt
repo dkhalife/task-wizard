@@ -17,7 +17,9 @@ sealed class Screen(val route: String, @StringRes val titleRes: Int, val icon: I
 object Routes {
     const val TASK_FORM = "task_form?taskId={taskId}"
     const val TASK_FORM_CREATE = "task_form"
+    const val TASK_HISTORY = "task_history?taskId={taskId}"
     const val SWIPE_SETTINGS = "swipe_settings"
 
     fun taskFormEdit(taskId: Int) = "task_form?taskId=$taskId"
+    fun taskHistory(taskId: Int) = "task_history?taskId=$taskId"
 }
