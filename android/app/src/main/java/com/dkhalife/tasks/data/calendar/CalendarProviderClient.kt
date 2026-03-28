@@ -105,12 +105,18 @@ class CalendarProviderClient @Inject constructor() {
         }
 
         val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
-        contentResolver.update(asSyncAdapter(uri, accountName), values, null, null)
+        val updatedRows = contentResolver.update(asSyncAdapter(uri, accountName), values, null, null)
+        if (updatedRows == 0) {
+            throw IllegalStateException("Failed to update event with id $eventId")
+        }
     }
 
     fun deleteEvent(contentResolver: ContentResolver, eventId: Long, accountName: String) {
         val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
-        contentResolver.delete(asSyncAdapter(uri, accountName), null, null)
+        val deletedRows = contentResolver.delete(asSyncAdapter(uri, accountName), null, null)
+        if (deletedRows == 0) {
+            throw IllegalStateException("Failed to delete event with id $eventId")
+        }
     }
 
     fun getEventsBySyncData(contentResolver: ContentResolver, calendarId: Long): Map<String, Long> {

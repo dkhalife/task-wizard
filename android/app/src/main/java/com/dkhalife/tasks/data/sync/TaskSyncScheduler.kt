@@ -6,6 +6,7 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
 import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
@@ -53,7 +54,11 @@ class TaskSyncScheduler @Inject constructor(
             .addTag(WORK_TAG)
             .build()
 
-        workManager.enqueue(immediateRequest)
+        workManager.enqueueUniqueWork(
+            IMMEDIATE_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            immediateRequest
+        )
     }
 
     fun cancelIfUnneeded(workManager: WorkManager, context: Context) {
@@ -62,6 +67,7 @@ class TaskSyncScheduler @Inject constructor(
 
         if (!calendarSyncEnabled && !hasWidgetInstances) {
             workManager.cancelUniqueWork(WORK_NAME)
+            workManager.cancelUniqueWork(IMMEDIATE_WORK_NAME)
         }
     }
 
@@ -81,6 +87,7 @@ class TaskSyncScheduler @Inject constructor(
     companion object {
         private const val SYNC_INTERVAL_MINUTES = 15L
         private const val WORK_NAME = "task_sync"
+        private const val IMMEDIATE_WORK_NAME = "task_sync_immediate"
         private const val WORK_TAG = "task_sync"
     }
 }
