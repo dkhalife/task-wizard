@@ -125,6 +125,8 @@ fun SettingsScreen(
         ) {
             Spacer(modifier = Modifier.height(4.dp))
 
+            SectionHeader(stringResource(R.string.settings_header_general))
+
             SettingsCard(icon = Icons.Default.Cloud, title = stringResource(R.string.settings_section_server)) {
                 Text(
                     text = serverEndpoint,
@@ -176,6 +178,8 @@ fun SettingsScreen(
                     }
                 }
             }
+
+            SectionHeader(stringResource(R.string.settings_header_tasks))
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Row(
@@ -261,68 +265,6 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(
-                                Icons.Default.Insights,
-                                contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
-                            )
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text(stringResource(R.string.settings_analytics_title), style = MaterialTheme.typography.titleMedium)
-                        }
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.settings_analytics_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = telemetryEnabled,
-                        onCheckedChange = onTelemetryEnabledChanged
-                    )
-                }
-
-                if (telemetryEnabled) {
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
-
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(stringResource(R.string.settings_debug_logging_title), style = MaterialTheme.typography.bodyMedium)
-                            Text(
-                                text = stringResource(R.string.settings_debug_logging_description),
-                                style = MaterialTheme.typography.bodySmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Switch(
-                            checked = debugLoggingEnabled,
-                            onCheckedChange = onDebugLoggingEnabledChanged
-                        )
-                    }
-                }
-            }
-
-            Spacer(modifier = Modifier.height(32.dp))
-
             SettingsCard(icon = Icons.Default.SwipeLeft, title = stringResource(R.string.settings_section_swipe_actions)) {
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -396,7 +338,67 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(32.dp))
+            SectionHeader(stringResource(R.string.settings_header_diagnostics))
+
+            Card(modifier = Modifier.fillMaxWidth()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Icon(
+                                Icons.Default.Insights,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text(stringResource(R.string.settings_analytics_title), style = MaterialTheme.typography.titleMedium)
+                        }
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = stringResource(R.string.settings_analytics_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = telemetryEnabled,
+                        onCheckedChange = onTelemetryEnabledChanged
+                    )
+                }
+
+                if (telemetryEnabled) {
+                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp))
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_debug_logging_title), style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                text = stringResource(R.string.settings_debug_logging_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = debugLoggingEnabled,
+                            onCheckedChange = onDebugLoggingEnabledChanged
+                        )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
 
             TextButton(
                 onClick = { authViewModel.signOut() },
@@ -417,6 +419,16 @@ fun SettingsScreen(
             Spacer(modifier = Modifier.height(16.dp))
         }
     }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        color = MaterialTheme.colorScheme.primary,
+        modifier = Modifier.padding(top = 8.dp)
+    )
 }
 
 @Composable
