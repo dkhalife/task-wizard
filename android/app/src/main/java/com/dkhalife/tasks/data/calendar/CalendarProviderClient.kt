@@ -49,7 +49,7 @@ class CalendarProviderClient @Inject constructor() {
             put(CalendarContract.Calendars.NAME, accountName)
             put(CalendarContract.Calendars.CALENDAR_DISPLAY_NAME, displayName)
             put(CalendarContract.Calendars.CALENDAR_COLOR, color)
-            put(CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL, CalendarContract.Calendars.CAL_ACCESS_OWNER)
+            put(CalendarContract.Calendars.CALENDAR_ACCESS_LEVEL, CalendarContract.Calendars.CAL_ACCESS_READ)
             put(CalendarContract.Calendars.VISIBLE, 1)
             put(CalendarContract.Calendars.SYNC_EVENTS, 1)
             put(CalendarContract.Calendars.OWNER_ACCOUNT, accountName)

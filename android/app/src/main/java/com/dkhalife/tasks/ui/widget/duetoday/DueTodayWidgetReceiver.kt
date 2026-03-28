@@ -19,6 +19,7 @@ class DueTodayWidgetReceiver : GlanceAppWidgetReceiver() {
     override fun onEnabled(context: Context) {
         super.onEnabled(context)
         taskSyncScheduler.ensureScheduled(WorkManager.getInstance(context))
+        taskSyncScheduler.triggerImmediate(WorkManager.getInstance(context))
     }
 
     override fun onDisabled(context: Context) {

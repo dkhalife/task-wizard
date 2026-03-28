@@ -7,6 +7,7 @@ import android.content.SharedPreferences
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.dkhalife.tasks.data.AppPreferences
@@ -40,6 +41,19 @@ class TaskSyncScheduler @Inject constructor(
             ExistingPeriodicWorkPolicy.UPDATE,
             syncRequest
         )
+    }
+
+    fun triggerImmediate(workManager: WorkManager) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val immediateRequest = OneTimeWorkRequestBuilder<TaskSyncWorker>()
+            .setConstraints(constraints)
+            .addTag(WORK_TAG)
+            .build()
+
+        workManager.enqueue(immediateRequest)
     }
 
     fun cancelIfUnneeded(workManager: WorkManager, context: Context) {

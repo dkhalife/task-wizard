@@ -19,5 +19,6 @@ class RefreshWidgetsAction : ActionCallback {
             WidgetEntryPoint::class.java
         )
         entryPoint.taskSyncScheduler().ensureScheduled(WorkManager.getInstance(context))
+        entryPoint.taskSyncScheduler().triggerImmediate(WorkManager.getInstance(context))
     }
 }

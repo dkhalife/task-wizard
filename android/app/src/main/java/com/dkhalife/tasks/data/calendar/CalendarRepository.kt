@@ -61,6 +61,7 @@ class CalendarRepository @Inject constructor(
             }
 
             taskSyncScheduler.ensureScheduled(workManager)
+            taskSyncScheduler.triggerImmediate(workManager)
 
             sharedPreferences.edit { putBoolean(AppPreferences.KEY_CALENDAR_SYNC, true) }
             Result.success(Unit)
