@@ -65,7 +65,7 @@ fun TaskItem(
     onSkip: () -> Unit,
     onDelete: () -> Unit,
     onClick: () -> Unit,
-    onCompleteAndEndRecurrence: () -> Unit = {},
+    onCompleteAndEndRecurrence: () -> Unit,
     swipeSettings: SwipeSettings = SwipeSettings(),
     inlineCompleteEnabled: Boolean = true
 ){
