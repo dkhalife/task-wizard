@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.glance.GlanceId
 import androidx.glance.action.ActionParameters
 import androidx.glance.appwidget.action.ActionCallback
+import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.work.WorkManager
+import com.dkhalife.tasks.data.widget.WidgetSyncEngine
 import dagger.hilt.android.EntryPointAccessors
 
 class CompleteTaskAction : ActionCallback {
@@ -21,17 +23,47 @@ class CompleteTaskAction : ActionCallback {
             WidgetEntryPoint::class.java
         )
 
+        val widgetSyncEngine = entryPoint.widgetSyncEngine()
+        val gson = entryPoint.gson()
+        val telemetryManager = entryPoint.telemetryManager()
+
+        var originalJson: String? = null
+        updateAppWidgetState(context, glanceId) { prefs ->
+            originalJson = prefs[WidgetSyncEngine.KEY_TASKS_JSON]
+        }
+
+        val originalTasks = WidgetSyncEngine.deserializeTasks(gson, originalJson)
+        if (originalTasks.isNotEmpty()) {
+            val optimisticTasks = originalTasks.filter { it.id != taskId }
+            try {
+                widgetSyncEngine.sync(context, optimisticTasks)
+            } catch (_: Exception) {
+                // Optimistic update is best-effort; continue with API call regardless
+            }
+        }
+
+        val workManager = WorkManager.getInstance(context)
         try {
             val response = entryPoint.api().completeTask(taskId)
             if (response.isSuccessful) {
-                entryPoint.taskSyncScheduler().ensureScheduled(WorkManager.getInstance(context))
+                entryPoint.taskSyncScheduler().ensureScheduled(workManager)
+                entryPoint.taskSyncScheduler().triggerImmediate(workManager)
+            } else if (originalTasks.isNotEmpty()) {
+                widgetSyncEngine.sync(context, originalTasks)
             }
-        } catch (_: Exception) {
-            // Silently fail — widget will update on next sync
+        } catch (e: Exception) {
+            if (originalTasks.isNotEmpty()) {
+                try {
+                    widgetSyncEngine.sync(context, originalTasks)
+                } catch (revertEx: Exception) {
+                    telemetryManager.logWarning(TAG, "Failed to revert optimistic widget update after API error: ${revertEx.message}", revertEx)
+                }
+            }
         }
     }
 
     companion object {
+        private const val TAG = "CompleteTaskAction"
         val PARAM_TASK_ID = ActionParameters.Key<Int>("complete_task_id")
     }
 }
