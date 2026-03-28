@@ -12,7 +12,6 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -38,6 +37,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.model.TaskHistory
@@ -176,36 +176,42 @@ private fun HistoryContent(
             )
         }
 
-        item(key = "history_card") {
-            Card(
-                shape = RoundedCornerShape(12.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Column(modifier = Modifier.padding(12.dp)) {
-                    history.forEachIndexed { index, entry ->
+        history.forEachIndexed { index, entry ->
+            item(key = "entry_$index") {
+                Card(
+                    shape = RoundedCornerShape(12.dp),
+                    colors = CardDefaults.cardColors(
+                        containerColor = MaterialTheme.colorScheme.surface
+                    ),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(modifier = Modifier.padding(12.dp)) {
                         HistoryEntryRow(entry, now)
-                        if (index < history.lastIndex) {
-                            val nextEntry = history[index + 1]
-                            val dueZdt = parseIsoDateTime(nextEntry.dueDate)
-                            val dueText = if (dueZdt != null) {
-                                val dueLdt = dueZdt.toLocalDateTime()
-                                stringResource(R.string.history_due_ago, formatDistance(context, dueLdt, now))
-                            } else {
-                                "--"
-                            }
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                            Text(
-                                text = dueText,
-                                style = MaterialTheme.typography.labelSmall,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.align(Alignment.CenterHorizontally)
-                            )
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 8.dp))
-                        }
+                    }
+                }
+            }
+
+            if (index < history.lastIndex) {
+                item(key = "divider_$index") {
+                    val dueZdt = parseIsoDateTime(entry.dueDate)
+                    val dueText = if (dueZdt != null) {
+                        val dueLdt = dueZdt.toLocalDateTime()
+                        stringResource(R.string.history_due_ago, formatDistance(context, dueLdt, now))
+                    } else {
+                        "--"
+                    }
+
+                    Column(modifier = Modifier.fillMaxWidth()) {
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
+                        Text(
+                            text = dueText,
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        HorizontalDivider(modifier = Modifier.padding(vertical = 4.dp))
                     }
                 }
             }
@@ -275,14 +281,20 @@ private fun HistoryEntryRow(entry: TaskHistory, now: LocalDateTime) {
             if (isCompleted) {
                 val dueZdt = parseIsoDateTime(entry.dueDate)
                 if (dueZdt != null) {
-                    val delayHours = ChronoUnit.HOURS.between(dueZdt.toLocalDateTime(), completedZdt.toLocalDateTime())
+                    val delayHours = ChronoUnit.HOURS.between(dueZdt, completedZdt)
                     val chipColor = when {
                         delayHours <= 0 -> MaterialTheme.colorScheme.primary
                         delayHours <= 24 -> MaterialTheme.colorScheme.tertiary
                         else -> MaterialTheme.colorScheme.error
                     }
+                    val delayText = formatDurationHours(context, delayHours)
+                    val statusText = if (delayHours <= 0) {
+                        stringResource(R.string.history_on_time)
+                    } else {
+                        stringResource(R.string.history_late_suffix, delayText)
+                    }
                     Text(
-                        text = if (delayHours <= 0) "On time" else formatDurationHours(context, delayHours) + " late",
+                        text = statusText,
                         style = MaterialTheme.typography.labelSmall,
                         color = chipColor,
                         fontWeight = FontWeight.Bold
@@ -312,23 +324,27 @@ private data class HistoryStats(
 )
 
 private fun computeStats(history: List<TaskHistory>): HistoryStats {
-    val withDates = history.filter { entry ->
+    val delays = history.filter { entry ->
         entry.dueDate != null && entry.completedDate != null
     }.mapNotNull { entry ->
         val due = parseIsoDateTime(entry.dueDate)
         val completed = parseIsoDateTime(entry.completedDate)
         if (due != null && completed != null) {
-            ChronoUnit.HOURS.between(
-                due.withZoneSameInstant(ZoneId.systemDefault()),
-                completed.withZoneSameInstant(ZoneId.systemDefault())
+            kotlin.math.abs(
+                ChronoUnit.HOURS.between(
+                    due.withZoneSameInstant(ZoneId.systemDefault()),
+                    completed.withZoneSameInstant(ZoneId.systemDefault())
+                )
             )
         } else null
     }
 
+    val completedCount = history.count { it.completedDate != null }
+
     return HistoryStats(
-        totalCompleted = history.size,
-        averageDelay = if (withDates.isNotEmpty()) withDates.sum() / withDates.size else null,
-        maxDelay = withDates.maxOrNull()
+        totalCompleted = completedCount,
+        averageDelay = if (delays.isNotEmpty()) delays.sum() / delays.size else null,
+        maxDelay = delays.maxOrNull()
     )
 }
 

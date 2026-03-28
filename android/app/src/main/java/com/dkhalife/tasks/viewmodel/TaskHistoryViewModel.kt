@@ -25,6 +25,7 @@ class TaskHistoryViewModel @Inject constructor(
 
     fun loadHistory(taskId: Int) {
         viewModelScope.launch {
+            _history.value = emptyList()
             _isLoading.value = true
             taskRepository.getTaskHistory(taskId)
                 .onSuccess { _history.value = it }

@@ -288,6 +288,8 @@ fun AppNavigation(
                 LaunchedEffect(taskId) {
                     if (taskId > 0) {
                         viewModel.loadHistory(taskId)
+                    } else {
+                        navController.popBackStack()
                     }
                 }
 
