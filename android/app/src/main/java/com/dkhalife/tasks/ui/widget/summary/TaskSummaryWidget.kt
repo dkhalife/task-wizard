@@ -8,20 +8,18 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
 import androidx.glance.GlanceTheme
-import androidx.glance.ImageProvider
 import androidx.glance.LocalContext
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.components.Scaffold
-import androidx.glance.appwidget.components.TitleBar
 import androidx.glance.appwidget.provideContent
 import androidx.glance.currentState
 import androidx.glance.layout.Alignment
 import androidx.glance.layout.Column
 import androidx.glance.layout.Row
-import androidx.glance.layout.fillMaxWidth
+import androidx.glance.layout.fillMaxSize
 import androidx.glance.layout.padding
 import androidx.glance.state.GlanceStateDefinition
 import androidx.glance.state.PreferencesGlanceStateDefinition
@@ -29,7 +27,6 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import com.dkhalife.tasks.MainActivity
-import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.widget.WidgetSyncEngine
 import com.dkhalife.tasks.ui.utils.taskGroupNameResId
@@ -60,20 +57,16 @@ class TaskSummaryWidget : GlanceAppWidget() {
         val openAppAction = actionStartActivity<MainActivity>()
 
         Scaffold(
-            titleBar = {
-                TitleBar(
-                    startIcon = ImageProvider(R.mipmap.ic_launcher),
-                    title = context.getString(R.string.widget_summary_name),
-                )
-            },
             backgroundColor = GlanceTheme.colors.surface,
+            horizontalPadding = 8.dp,
         ) {
             Row(
                 modifier = GlanceModifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp, vertical = 4.dp)
+                    .fillMaxSize()
+                    .padding(horizontal = 8.dp, vertical = 2.dp)
                     .clickable(openAppAction),
-                horizontalAlignment = Alignment.CenterHorizontally
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 for (group in groups) {
                     val color = WidgetTheme.groupColor(group.key)
@@ -85,7 +78,7 @@ class TaskSummaryWidget : GlanceAppWidget() {
                             text = "${group.tasks.size}",
                             style = TextStyle(
                                 color = color,
-                                fontSize = 20.sp,
+                                fontSize = 28.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         )
@@ -94,7 +87,7 @@ class TaskSummaryWidget : GlanceAppWidget() {
                                 ?.let { context.getString(it) } ?: group.name,
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = 10.sp
+                                fontSize = 13.sp
                             ),
                             maxLines = 1
                         )
