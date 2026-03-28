@@ -53,18 +53,18 @@ class CalendarSyncEngine @Inject constructor(
             val existingEventId = existingEvents[syncKey]
             if (existingEventId != null) {
                 calendarProviderClient.updateEvent(
-                    context.contentResolver, existingEventId, task.title, startMillis, endMillis
+                    context.contentResolver, existingEventId, task.title, startMillis, endMillis, accountName
                 )
             } else {
                 calendarProviderClient.insertEvent(
-                    context.contentResolver, calendarId, task.title, startMillis, endMillis, syncKey
+                    context.contentResolver, calendarId, task.title, startMillis, endMillis, syncKey, accountName
                 )
             }
         }
 
         for ((syncKey, eventId) in existingEvents) {
             if (syncKey !in taskSyncKeys) {
-                calendarProviderClient.deleteEvent(context.contentResolver, eventId)
+                calendarProviderClient.deleteEvent(context.contentResolver, eventId, accountName)
             }
         }
     }
