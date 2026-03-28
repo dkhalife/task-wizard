@@ -49,6 +49,7 @@ fun TaskListScreen(
     onCompleteTask: (Int) -> Unit,
     onSkipTask: (Int) -> Unit,
     onDeleteTask: (Int) -> Unit,
+    onCompleteAndEndRecurrenceTask: (Int) -> Unit,
     onTaskClick: (Int) -> Unit,
     onCreateTask: () -> Unit,
     onToggleGroup: (String) -> Unit,
@@ -143,6 +144,7 @@ fun TaskListScreen(
                                         onSkip = { onSkipTask(task.id) },
                                         onDelete = { onDeleteTask(task.id) },
                                         onClick = { onTaskClick(task.id) },
+                                        onCompleteAndEndRecurrence = { onCompleteAndEndRecurrenceTask(task.id) },
                                         swipeSettings = swipeSettings,
                                         inlineCompleteEnabled = inlineCompleteEnabled
                                     )
