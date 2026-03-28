@@ -4,6 +4,7 @@ import android.app.Application
 import androidx.work.Configuration
 import com.dkhalife.tasks.auth.AuthManager
 import com.dkhalife.tasks.data.sync.TaskSyncWorkerFactory
+import com.dkhalife.tasks.data.sync.WebSocketLifecycleManager
 import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.microsoft.identity.client.IPublicClientApplication
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
@@ -24,6 +25,9 @@ class TaskWizardApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var telemetryManager: TelemetryManager
 
+    @Inject
+    lateinit var webSocketLifecycleManager: WebSocketLifecycleManager
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(taskSyncWorkerFactory)
@@ -34,6 +38,7 @@ class TaskWizardApplication : Application(), Configuration.Provider {
         telemetryManager.initialize(this)
         setupCrashHandler()
         initializeMsal()
+        webSocketLifecycleManager.start()
     }
 
     private fun setupCrashHandler() {

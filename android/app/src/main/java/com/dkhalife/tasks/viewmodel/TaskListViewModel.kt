@@ -59,7 +59,6 @@ class TaskListViewModel @Inject constructor(
                 _error.value = it.message
             }
         }
-        webSocketManager.connect()
         collectWebSocketMessages()
         observeGrouping()
     }
@@ -195,7 +194,6 @@ class TaskListViewModel @Inject constructor(
 
     override fun onCleared() {
         super.onCleared()
-        webSocketManager.disconnect()
         soundManager.release()
     }
 
