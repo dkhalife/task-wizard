@@ -95,6 +95,9 @@ class CalendarSyncEngine @Inject constructor(
         reminderMinutes: List<Int>,
         accountName: String
     ) {
+        val existing = calendarProviderClient.getReminders(contentResolver, eventId)
+        if (existing.sorted() == reminderMinutes.sorted()) return
+
         calendarProviderClient.deleteReminders(contentResolver, eventId, accountName)
         for (minutes in reminderMinutes) {
             calendarProviderClient.insertReminder(contentResolver, eventId, minutes, accountName)

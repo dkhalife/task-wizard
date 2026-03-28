@@ -170,6 +170,33 @@ class CalendarProviderClient @Inject constructor() {
             put(CalendarContract.Reminders.METHOD, CalendarContract.Reminders.METHOD_DEFAULT)
         }
         contentResolver.insert(asSyncAdapter(CalendarContract.Reminders.CONTENT_URI, accountName), values)
+            ?: throw IllegalStateException("Failed to insert reminder for event $eventId")
+    }
+
+    fun getReminders(contentResolver: ContentResolver, eventId: Long): List<Int> {
+        val projection = arrayOf(CalendarContract.Reminders.MINUTES)
+        val selection = "${CalendarContract.Reminders.EVENT_ID} = ?"
+        val selectionArgs = arrayOf(eventId.toString())
+
+        val result = mutableListOf<Int>()
+        var cursor: Cursor? = null
+        try {
+            cursor = contentResolver.query(
+                CalendarContract.Reminders.CONTENT_URI,
+                projection,
+                selection,
+                selectionArgs,
+                null
+            )
+            if (cursor != null) {
+                while (cursor.moveToNext()) {
+                    result.add(cursor.getInt(0))
+                }
+            }
+        } finally {
+            cursor?.close()
+        }
+        return result
     }
 
     private fun asSyncAdapter(uri: Uri, accountName: String): Uri {
