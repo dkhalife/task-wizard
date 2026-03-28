@@ -25,6 +25,7 @@ class CompleteTaskAction : ActionCallback {
 
         val widgetSyncEngine = entryPoint.widgetSyncEngine()
         val gson = entryPoint.gson()
+        val telemetryManager = entryPoint.telemetryManager()
 
         var originalJson: String? = null
         updateAppWidgetState(context, glanceId) { prefs ->
@@ -50,16 +51,19 @@ class CompleteTaskAction : ActionCallback {
             } else if (originalTasks.isNotEmpty()) {
                 widgetSyncEngine.sync(context, originalTasks)
             }
-        } catch (_: Exception) {
+        } catch (e: Exception) {
             if (originalTasks.isNotEmpty()) {
                 try {
                     widgetSyncEngine.sync(context, originalTasks)
-                } catch (_: Exception) {}
+                } catch (revertEx: Exception) {
+                    telemetryManager.logWarning(TAG, "Failed to revert optimistic widget update after API error: ${revertEx.message}", revertEx)
+                }
             }
         }
     }
 
     companion object {
+        private const val TAG = "CompleteTaskAction"
         val PARAM_TASK_ID = ActionParameters.Key<Int>("complete_task_id")
     }
 }
