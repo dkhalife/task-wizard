@@ -60,9 +60,11 @@ class CalendarRepository @Inject constructor(
                 )
             }
 
-            taskSyncScheduler.ensureScheduled(workManager)
-
             sharedPreferences.edit { putBoolean(AppPreferences.KEY_CALENDAR_SYNC, true) }
+
+            taskSyncScheduler.ensureScheduled(workManager)
+            taskSyncScheduler.triggerImmediate(workManager)
+
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to enable calendar sync: ${e.message}", e)

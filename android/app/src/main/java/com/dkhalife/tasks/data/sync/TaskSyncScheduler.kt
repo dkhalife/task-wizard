@@ -6,7 +6,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.work.Constraints
 import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.ExistingWorkPolicy
 import androidx.work.NetworkType
+import androidx.work.OneTimeWorkRequestBuilder
 import androidx.work.PeriodicWorkRequestBuilder
 import androidx.work.WorkManager
 import com.dkhalife.tasks.data.AppPreferences
@@ -42,12 +44,30 @@ class TaskSyncScheduler @Inject constructor(
         )
     }
 
+    fun triggerImmediate(workManager: WorkManager) {
+        val constraints = Constraints.Builder()
+            .setRequiredNetworkType(NetworkType.CONNECTED)
+            .build()
+
+        val immediateRequest = OneTimeWorkRequestBuilder<TaskSyncWorker>()
+            .setConstraints(constraints)
+            .addTag(WORK_TAG)
+            .build()
+
+        workManager.enqueueUniqueWork(
+            IMMEDIATE_WORK_NAME,
+            ExistingWorkPolicy.KEEP,
+            immediateRequest
+        )
+    }
+
     fun cancelIfUnneeded(workManager: WorkManager, context: Context) {
         val calendarSyncEnabled = sharedPreferences.getBoolean(AppPreferences.KEY_CALENDAR_SYNC, false)
         val hasWidgetInstances = hasActiveWidgets(context)
 
         if (!calendarSyncEnabled && !hasWidgetInstances) {
             workManager.cancelUniqueWork(WORK_NAME)
+            workManager.cancelUniqueWork(IMMEDIATE_WORK_NAME)
         }
     }
 
@@ -67,6 +87,7 @@ class TaskSyncScheduler @Inject constructor(
     companion object {
         private const val SYNC_INTERVAL_MINUTES = 15L
         private const val WORK_NAME = "task_sync"
+        private const val IMMEDIATE_WORK_NAME = "task_sync_immediate"
         private const val WORK_TAG = "task_sync"
     }
 }

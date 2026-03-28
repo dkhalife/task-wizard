@@ -72,7 +72,8 @@ class CalendarProviderClient @Inject constructor() {
         title: String,
         startMillis: Long,
         endMillis: Long,
-        syncData: String
+        syncData: String,
+        accountName: String
     ): Long {
         val values = ContentValues().apply {
             put(CalendarContract.Events.CALENDAR_ID, calendarId)
@@ -84,7 +85,7 @@ class CalendarProviderClient @Inject constructor() {
             put(CalendarContract.Events.SYNC_DATA1, syncData)
         }
 
-        val uri = contentResolver.insert(CalendarContract.Events.CONTENT_URI, values)
+        val uri = contentResolver.insert(asSyncAdapter(CalendarContract.Events.CONTENT_URI, accountName), values)
         return uri?.lastPathSegment?.toLongOrNull()
             ?: throw IllegalStateException("Failed to insert event")
     }
@@ -94,7 +95,8 @@ class CalendarProviderClient @Inject constructor() {
         eventId: Long,
         title: String,
         startMillis: Long,
-        endMillis: Long
+        endMillis: Long,
+        accountName: String
     ) {
         val values = ContentValues().apply {
             put(CalendarContract.Events.TITLE, title)
@@ -103,12 +105,18 @@ class CalendarProviderClient @Inject constructor() {
         }
 
         val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
-        contentResolver.update(uri, values, null, null)
+        val updatedRows = contentResolver.update(asSyncAdapter(uri, accountName), values, null, null)
+        if (updatedRows == 0) {
+            throw IllegalStateException("Failed to update event with id $eventId")
+        }
     }
 
-    fun deleteEvent(contentResolver: ContentResolver, eventId: Long) {
+    fun deleteEvent(contentResolver: ContentResolver, eventId: Long, accountName: String) {
         val uri = ContentUris.withAppendedId(CalendarContract.Events.CONTENT_URI, eventId)
-        contentResolver.delete(uri, null, null)
+        val deletedRows = contentResolver.delete(asSyncAdapter(uri, accountName), null, null)
+        if (deletedRows == 0) {
+            throw IllegalStateException("Failed to delete event with id $eventId")
+        }
     }
 
     fun getEventsBySyncData(contentResolver: ContentResolver, calendarId: Long): Map<String, Long> {
