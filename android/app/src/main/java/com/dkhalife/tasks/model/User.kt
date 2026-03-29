@@ -1,7 +1,11 @@
 package com.dkhalife.tasks.model
 
+import com.google.gson.annotations.SerializedName
+
 data class UserProfile(
-    val notifications: NotificationSettings = NotificationSettings()
+    val notifications: NotificationSettings = NotificationSettings(),
+    @SerializedName("deletion_requested_at")
+    val deletionRequestedAt: String? = null
 )
 
 data class NotificationSettings(

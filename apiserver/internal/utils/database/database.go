@@ -86,6 +86,9 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 		if err := db.Exec("PRAGMA busy_timeout=5000;").Error; err != nil {
 			return nil, err
 		}
+		if err := db.Exec("PRAGMA foreign_keys = ON;").Error; err != nil {
+			return nil, err
+		}
 	}
 
 	return db, nil

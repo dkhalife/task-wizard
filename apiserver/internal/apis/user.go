@@ -53,6 +53,16 @@ func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 	log := logging.FromContext(c)
 
+	user, err := h.userRepo.GetUser(c, currentIdentity.UserID)
+	if err != nil {
+		log.Errorf("failed to get user: %s", err.Error())
+		telemetry.TrackError(c, "user_profile_get_failed", "user-handler", err, nil)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to get user profile",
+		})
+		return
+	}
+
 	notificationSettings, err := h.nRepo.GetUserNotificationSettings(c, currentIdentity.UserID)
 	if err != nil {
 		log.Errorf("failed to get notification settings: %s", err.Error())
@@ -65,7 +75,8 @@ func (h *UsersAPIHandler) GetUserProfile(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"user": gin.H{
-			"notifications": notificationSettings,
+			"notifications":         notificationSettings,
+			"deletion_requested_at": user.DeletionRequestedAt,
 		},
 	})
 }
@@ -86,12 +97,26 @@ func (h *UsersAPIHandler) UpdateNotificationSettings(c *gin.Context) {
 	c.JSON(status, response)
 }
 
+func (h *UsersAPIHandler) RequestDeletion(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+	status, response := h.userService.RequestDeletion(c, currentIdentity.UserID)
+	c.JSON(status, response)
+}
+
+func (h *UsersAPIHandler) CancelDeletion(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+	status, response := h.userService.CancelDeletion(c, currentIdentity.UserID)
+	c.JSON(status, response)
+}
+
 func UserRoutes(router *gin.Engine, h *UsersAPIHandler, authMiddleware *authMW.AuthMiddleware, limiter *limiter.Limiter) {
 	userRoutes := router.Group("api/v1/users")
 	userRoutes.Use(authMiddleware.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter))
 	{
 		userRoutes.GET("/profile", authMW.ScopeMiddleware(models.ApiTokenScopeUserRead), h.GetUserProfile)
-		userRoutes.PUT("/notifications", authMW.ScopeMiddleware(models.ApiTokenScopeUserWrite), h.UpdateNotificationSettings)
+		userRoutes.PUT("/notifications", authMW.ScopeMiddleware(models.ApiTokenScopeUserWrite), middleware.DeletionGuardMiddleware(), h.UpdateNotificationSettings)
+		userRoutes.POST("/deletion", authMW.ScopeMiddleware(models.ApiTokenScopeUserWrite), h.RequestDeletion)
+		userRoutes.DELETE("/deletion", authMW.ScopeMiddleware(models.ApiTokenScopeUserWrite), h.CancelDeletion)
 	}
 
 	authRoutes := router.Group("api/v1/auth")

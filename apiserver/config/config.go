@@ -48,9 +48,10 @@ type ServerConfig struct {
 }
 
 type SchedulerConfig struct {
-	DueFrequency        time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
-	OverdueFrequency    time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
-	NotificationCleanup time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
+	DueFrequency            time.Duration `mapstructure:"due_frequency" yaml:"due_frequency" default:"5m"`
+	OverdueFrequency        time.Duration `mapstructure:"overdue_frequency" yaml:"overdue_frequency" default:"1d"`
+	NotificationCleanup     time.Duration `mapstructure:"notification_cleanup" yaml:"notification_cleanup" default:"10m"`
+	AccountDeletionFrequency time.Duration `mapstructure:"account_deletion_frequency" yaml:"account_deletion_frequency" default:"15m"`
 }
 
 func LoadConfig(configFile string) *Config {

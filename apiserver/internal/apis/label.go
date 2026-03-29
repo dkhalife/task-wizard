@@ -9,6 +9,7 @@ import (
 	lService "dkhalife.com/tasks/core/internal/services/labels"
 	"dkhalife.com/tasks/core/internal/telemetry"
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
+	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
 )
 
@@ -87,7 +88,7 @@ func (h *LabelsAPIHandler) deleteLabel(c *gin.Context) {
 
 func LabelRoutes(r *gin.Engine, h *LabelsAPIHandler, authGate *authMW.AuthMiddleware) {
 	labelRoutes := r.Group("api/v1/labels")
-	labelRoutes.Use(authGate.MiddlewareFunc())
+	labelRoutes.Use(authGate.MiddlewareFunc(), middleware.DeletionGuardMiddleware())
 	{
 		labelRoutes.GET("", authMW.ScopeMiddleware(models.ApiTokenScopeLabelRead), h.getLabels)
 		labelRoutes.POST("", authMW.ScopeMiddleware(models.ApiTokenScopeLabelWrite), h.createLabel)

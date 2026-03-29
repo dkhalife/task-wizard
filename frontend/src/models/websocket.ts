@@ -65,6 +65,8 @@ export type WSEvent =
   | 'task_uncompleted'
   | 'task_skipped'
   | 'notification'
+  | 'account_deletion_requested'
+  | 'account_deletion_cancelled'
 
 export interface WSEventPayloads {
   label_created: { label: Label }
@@ -81,6 +83,8 @@ export interface WSEventPayloads {
   task_uncompleted: Task
   task_skipped: Task
   notification: { task_id: number, type: NotificationTrigger }
+  account_deletion_requested: Record<string, never>
+  account_deletion_cancelled: Record<string, never>
 }
 
 export interface WSRequest<T extends WSAction = WSAction> {

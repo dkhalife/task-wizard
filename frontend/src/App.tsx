@@ -11,6 +11,7 @@ import { AppDispatch, store } from './store/store'
 import { connect } from 'react-redux'
 import { fetchUser } from './store/userSlice'
 import { StatusList } from './components/StatusList'
+import { DeletionBannerWrapper } from './components/DeletionBanner'
 import { fetchTasks, initGroups } from './store/tasksSlice'
 import { FIVE_MINUTES_MS } from '@/constants/time'
 
@@ -125,6 +126,7 @@ class AppImpl extends React.Component<AppProps> {
           <NavBar
             pathname={pathname}
           />
+          <DeletionBannerWrapper />
           <Outlet />
           <StatusList />
         </CssVarsProvider>

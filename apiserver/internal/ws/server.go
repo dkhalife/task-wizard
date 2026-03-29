@@ -226,6 +226,16 @@ func Routes(router *gin.Engine, s *WSServer) {
 	router.GET("/ws", s.HandleConnection)
 }
 
+// wsReadOnlyActions contains WS actions that only read data and are always permitted,
+// including for accounts with pending deletion.
+var wsReadOnlyActions = map[string]struct{}{
+	"get_tasks":           {},
+	"get_completed_tasks": {},
+	"get_task":            {},
+	"get_task_history":    {},
+	"get_user_labels":     {},
+}
+
 func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) {
 	s.mu.RLock()
 	handler, ok := s.handlers[msg.Action]
@@ -237,6 +247,21 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 		log.Errorf("no handler registered for action %s", msg.Action)
 		telemetry.TrackWarning(context.Background(), "ws_unknown_action", "ws-server", "No handler for action: "+msg.Action, nil)
 		return
+	}
+
+	if conn.identity.PendingDeletion {
+		if _, readOnly := wsReadOnlyActions[msg.Action]; !readOnly {
+			resp := &WSResponse{
+				Action:    msg.Action,
+				RequestID: msg.RequestID,
+				Status:    http.StatusForbidden,
+				Data:      map[string]string{"error": "Account is pending deletion"},
+			}
+			if err := conn.safeWriteJSON(resp); err != nil {
+				log.Errorf("failed to write JSON to WebSocket: %v", err)
+			}
+			return
+		}
 	}
 
 	resp := handler(ctx, conn.identity.UserID, msg)

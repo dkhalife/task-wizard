@@ -142,9 +142,10 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 	}
 
 	return &models.SignedInIdentity{
-		UserID: user.ID,
-		Type:   models.IdentityTypeUser,
-		Scopes: models.AllUserScopes(),
+		UserID:          user.ID,
+		Type:            models.IdentityTypeUser,
+		Scopes:          models.AllUserScopes(),
+		PendingDeletion: user.DeletionRequestedAt != nil,
 	}, nil
 }
 
@@ -155,9 +156,10 @@ func (m *AuthMiddleware) bypassAuth(ctx context.Context) (*models.SignedInIdenti
 	}
 
 	return &models.SignedInIdentity{
-		UserID: user.ID,
-		Type:   models.IdentityTypeUser,
-		Scopes: models.AllUserScopes(),
+		UserID:          user.ID,
+		Type:            models.IdentityTypeUser,
+		Scopes:          models.AllUserScopes(),
+		PendingDeletion: user.DeletionRequestedAt != nil,
 	}, nil
 }
 

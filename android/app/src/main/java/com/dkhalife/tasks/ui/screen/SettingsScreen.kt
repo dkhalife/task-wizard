@@ -14,6 +14,7 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Palette
@@ -35,7 +36,12 @@ import com.dkhalife.tasks.data.TaskGrouping
 import com.dkhalife.tasks.data.ThemeMode
 import com.dkhalife.tasks.data.calendar.CalendarRepository
 import com.dkhalife.tasks.viewmodel.AuthViewModel
+import com.dkhalife.tasks.viewmodel.UserViewModel
 import kotlinx.coroutines.launch
+import java.time.Instant
+import java.time.ZoneId
+import java.time.format.DateTimeFormatter
+import java.time.format.FormatStyle
 
 private val CALENDAR_PERMISSIONS = arrayOf(
     Manifest.permission.READ_CALENDAR,
@@ -46,6 +52,7 @@ private val CALENDAR_PERMISSIONS = arrayOf(
 @Composable
 fun SettingsScreen(
     authViewModel: AuthViewModel,
+    userViewModel: UserViewModel,
     themeMode: ThemeMode,
     onThemeModeChanged: (ThemeMode) -> Unit,
     taskGrouping: TaskGrouping,
@@ -72,6 +79,11 @@ fun SettingsScreen(
 
     var errorMessage by remember { mutableStateOf<String?>(null) }
 
+    val deletionRequestedAt by userViewModel.deletionRequestedAt.collectAsState()
+    val isDeletionLoading by userViewModel.isLoading.collectAsState()
+    val deletionError by userViewModel.errorMessage.collectAsState()
+    var showDeletionConfirmDialog by remember { mutableStateOf(false) }
+
     val calendarPermissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestMultiplePermissions()
     ) { permissions ->
@@ -96,6 +108,44 @@ fun SettingsScreen(
             confirmButton = {
                 TextButton(onClick = { errorMessage = null }) {
                     Text(stringResource(R.string.btn_ok))
+                }
+            }
+        )
+    }
+
+    if (deletionError != null) {
+        AlertDialog(
+            onDismissRequest = { userViewModel.clearError() },
+            title = { Text(stringResource(R.string.dialog_title_error)) },
+            text = { Text(deletionError ?: "") },
+            confirmButton = {
+                TextButton(onClick = { userViewModel.clearError() }) {
+                    Text(stringResource(R.string.btn_ok))
+                }
+            }
+        )
+    }
+
+    if (showDeletionConfirmDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeletionConfirmDialog = false },
+            icon = { Icon(Icons.Default.DeleteForever, contentDescription = null, tint = MaterialTheme.colorScheme.error) },
+            title = { Text(stringResource(R.string.dialog_title_confirm_deletion)) },
+            text = { Text(stringResource(R.string.dialog_confirm_deletion_message)) },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showDeletionConfirmDialog = false
+                        userViewModel.requestDeletion()
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text(stringResource(R.string.btn_confirm_delete_account))
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeletionConfirmDialog = false }) {
+                    Text(stringResource(R.string.btn_cancel))
                 }
             }
         )
@@ -394,6 +444,58 @@ fun SettingsScreen(
                             checked = debugLoggingEnabled,
                             onCheckedChange = onDebugLoggingEnabledChanged
                         )
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            SectionHeader(stringResource(R.string.settings_header_account))
+
+            SettingsCard(icon = Icons.Default.DeleteForever, title = stringResource(R.string.settings_section_account_deletion)) {
+                if (deletionRequestedAt != null) {
+                    val formattedTime = remember(deletionRequestedAt) {
+                        try {
+                            val instant = Instant.parse(deletionRequestedAt)
+                            val deleteAt = instant.plusSeconds(24 * 60 * 60)
+                            DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                                .withZone(ZoneId.systemDefault())
+                                .format(deleteAt)
+                        } catch (e: Exception) {
+                            deletionRequestedAt ?: ""
+                        }
+                    }
+                    Text(
+                        text = stringResource(R.string.settings_account_deletion_pending_description, formattedTime),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.error
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { userViewModel.cancelDeletion() },
+                        enabled = !isDeletionLoading,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        if (isDeletionLoading) {
+                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                            Spacer(modifier = Modifier.width(8.dp))
+                        }
+                        Text(stringResource(R.string.btn_cancel_deletion))
+                    }
+                } else {
+                    Text(
+                        text = stringResource(R.string.settings_account_deletion_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { showDeletionConfirmDialog = true },
+                        enabled = !isDeletionLoading,
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                    ) {
+                        Text(stringResource(R.string.btn_delete_account))
                     }
                 }
             }

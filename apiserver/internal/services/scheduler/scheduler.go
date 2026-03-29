@@ -7,20 +7,23 @@ import (
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/services/notifications"
+	"dkhalife.com/tasks/core/internal/services/users"
 	"dkhalife.com/tasks/core/internal/telemetry"
 )
 
 type Scheduler struct {
-	stopChan chan bool
-	notifier *notifications.Notifier
-	config   config.SchedulerConfig
+	stopChan    chan bool
+	notifier    *notifications.Notifier
+	userService *users.UserService
+	config      config.SchedulerConfig
 }
 
-func NewScheduler(cfg *config.Config, n *notifications.Notifier) *Scheduler {
+func NewScheduler(cfg *config.Config, n *notifications.Notifier, us *users.UserService) *Scheduler {
 	return &Scheduler{
-		stopChan: make(chan bool),
-		notifier: n,
-		config:   cfg.SchedulerJobs,
+		stopChan:    make(chan bool),
+		notifier:    n,
+		userService: us,
+		config:      cfg.SchedulerJobs,
 	}
 }
 
@@ -31,6 +34,7 @@ func (s *Scheduler) Start(c context.Context) {
 	go s.runScheduler(c, "NOTIFICATION_SCHEDULER", s.notifier.GenerateOverdueNotifications, s.config.OverdueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_SENDER", s.notifier.LoadAndSendNotificationJob, s.config.DueFrequency)
 	go s.runScheduler(c, "NOTIFICATION_CLEANUP", s.notifier.CleanupNotifications, s.config.NotificationCleanup)
+	go s.runScheduler(c, "ACCOUNT_DELETION", s.userService.ProcessDeletions, s.config.AccountDeletionFrequency)
 }
 
 func (s *Scheduler) runScheduler(c context.Context, jobName string, job func(c context.Context) error, interval time.Duration) {
