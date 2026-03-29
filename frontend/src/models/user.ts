@@ -8,4 +8,5 @@ export interface User {
     provider: NotificationType
     triggers: NotificationTriggerOptions
   }
+  deletion_requested_at: string | null
 }

@@ -11,6 +11,7 @@ import { NotificationSettings } from '../Notifications/NotificationSettings'
 import { ThemeToggle } from './ThemeToggle'
 import { FeatureFlagSettings } from './FeatureFlagSettings'
 import { DesktopNotificationToggle } from './DesktopNotificationToggle'
+import { AccountDeletion } from './AccountDeletion'
 import { storeValue } from '@/utils/storage'
 import { getHomeView, HomeView } from '@/utils/navigation'
 import { SelectValue } from '@mui/base'
@@ -90,6 +91,7 @@ export class Settings extends React.Component<SettingsProps, SettingsState> {
 
           <ThemeToggle />
         </Box>
+        <AccountDeletion />
       </Container>
     )
   }

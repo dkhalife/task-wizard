@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"time"
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
@@ -20,6 +21,10 @@ type IUserRepo interface {
 	UpdateNotificationSettings(c context.Context, userID int, provider models.NotificationProvider, triggers models.NotificationTriggerOptions) error
 	DeleteNotificationsForUser(c context.Context, userID int) error
 	GetLastCreatedOrModifiedForUserResources(c context.Context, userID int) (string, error)
+	RequestDeletion(c context.Context, userID int) error
+	CancelDeletion(c context.Context, userID int) error
+	FindUsersForDeletion(c context.Context, gracePeriod time.Duration) ([]models.User, error)
+	DeleteUser(c context.Context, userID int) error
 }
 
 type UserRepository struct {
@@ -124,4 +129,26 @@ func (r *UserRepository) GetLastCreatedOrModifiedForUserResources(c context.Cont
 	`, userID, userID).Scan(&result).Error
 
 	return result, err
+}
+
+func (r *UserRepository) RequestDeletion(c context.Context, userID int) error {
+	now := time.Now().UTC()
+	return r.db.WithContext(c).Model(&models.User{}).Where("id = ?", userID).Update("deletion_requested_at", now).Error
+}
+
+func (r *UserRepository) CancelDeletion(c context.Context, userID int) error {
+	return r.db.WithContext(c).Model(&models.User{}).Where("id = ?", userID).Update("deletion_requested_at", nil).Error
+}
+
+func (r *UserRepository) FindUsersForDeletion(c context.Context, gracePeriod time.Duration) ([]models.User, error) {
+	threshold := time.Now().UTC().Add(-gracePeriod)
+	var users []models.User
+	err := r.db.WithContext(c).
+		Where("deletion_requested_at IS NOT NULL AND deletion_requested_at <= ?", threshold).
+		Find(&users).Error
+	return users, err
+}
+
+func (r *UserRepository) DeleteUser(c context.Context, userID int) error {
+	return r.db.WithContext(c).Delete(&models.User{}, userID).Error
 }

@@ -1,5 +1,10 @@
 import { createAsyncThunk, createSlice, PayloadAction } from '@reduxjs/toolkit'
-import { GetUserProfile, UpdateNotificationSettings } from '@/api/users'
+import {
+  GetUserProfile,
+  UpdateNotificationSettings,
+  RequestAccountDeletion,
+  CancelAccountDeletion,
+} from '@/api/users'
 import { User } from '@/models/user'
 import { NotificationTriggerOptions, NotificationType } from '@/models/notifications'
 import { SyncState } from '@/models/sync'
@@ -16,6 +21,8 @@ export interface UserState {
     provider: NotificationType
     triggers: NotificationTriggerOptions
   }
+  deletionStatus: SyncState | null
+  deletionError: string | null
 }
 
 const initialState: UserState = {
@@ -30,6 +37,7 @@ const initialState: UserState = {
         overdue: false,
       },
     },
+    deletion_requested_at: null,
   },
   status: 'loading',
   lastFetched: null,
@@ -44,6 +52,8 @@ const initialState: UserState = {
       overdue: false,
     },
   },
+  deletionStatus: null,
+  deletionError: null,
 }
 
 export const fetchUser = createAsyncThunk('user/fetchUser', async () => {
@@ -54,6 +64,21 @@ export const fetchUser = createAsyncThunk('user/fetchUser', async () => {
 export const updateNotificationSettings = createAsyncThunk(
   'user/updateNotificationSettings',
   async (settings: { type: NotificationType, options: NotificationTriggerOptions}) => await UpdateNotificationSettings(settings.type, settings.options))
+
+export const requestAccountDeletion = createAsyncThunk(
+  'user/requestAccountDeletion',
+  async () => {
+    await RequestAccountDeletion()
+    return new Date().toISOString()
+  },
+)
+
+export const cancelAccountDeletion = createAsyncThunk(
+  'user/cancelAccountDeletion',
+  async () => {
+    await CancelAccountDeletion()
+  },
+)
 
 const userSlice = createSlice({
   name: 'user',
@@ -81,6 +106,12 @@ const userSlice = createSlice({
     ) {
       state.draftNotificationSettings.provider = action.payload.provider
       state.draftNotificationSettings.triggers = action.payload.triggers
+    },
+    accountDeletionRequested(state) {
+      state.profile.deletion_requested_at = new Date().toISOString()
+    },
+    accountDeletionCancelled(state) {
+      state.profile.deletion_requested_at = null
     },
   },
   extraReducers: builder => {
@@ -122,6 +153,30 @@ const userSlice = createSlice({
           action.error.message ??
           'An unknown error occurred while updating notification settings.'
       })
+      .addCase(requestAccountDeletion.pending, state => {
+        state.deletionStatus = 'loading'
+        state.deletionError = null
+      })
+      .addCase(requestAccountDeletion.fulfilled, (state, action) => {
+        state.deletionStatus = 'succeeded'
+        state.profile.deletion_requested_at = action.payload
+      })
+      .addCase(requestAccountDeletion.rejected, (state, action) => {
+        state.deletionStatus = 'failed'
+        state.deletionError = action.error.message ?? 'Failed to request account deletion.'
+      })
+      .addCase(cancelAccountDeletion.pending, state => {
+        state.deletionStatus = 'loading'
+        state.deletionError = null
+      })
+      .addCase(cancelAccountDeletion.fulfilled, state => {
+        state.deletionStatus = 'succeeded'
+        state.profile.deletion_requested_at = null
+      })
+      .addCase(cancelAccountDeletion.rejected, (state, action) => {
+        state.deletionStatus = 'failed'
+        state.deletionError = action.error.message ?? 'Failed to cancel account deletion.'
+      })
   },
 })
 
@@ -129,7 +184,11 @@ export const { setNotificationSettingsDraft } = userSlice.actions
 
 export const userReducer = userSlice.reducer
 
-const { notificationSettingsUpdated } = userSlice.actions
+const {
+  notificationSettingsUpdated,
+  accountDeletionRequested,
+  accountDeletionCancelled,
+} = userSlice.actions
 
 const onNotificationSettingsUpdated = (
   data: WSEventPayloads['notification_settings_updated'],
@@ -137,10 +196,23 @@ const onNotificationSettingsUpdated = (
   store.dispatch(notificationSettingsUpdated(data))
 }
 
+const onAccountDeletionRequested = () => {
+  store.dispatch(accountDeletionRequested())
+}
+
+const onAccountDeletionCancelled = () => {
+  store.dispatch(accountDeletionCancelled())
+}
+
 export const registerWebSocketListeners = (ws: WebSocketManager) => {
   ws.on('notification_settings_updated', onNotificationSettingsUpdated)
+  ws.on('account_deletion_requested', onAccountDeletionRequested)
+  ws.on('account_deletion_cancelled', onAccountDeletionCancelled)
 }
 
 export const unregisterWebSocketListeners = (ws: WebSocketManager) => {
   ws.off('notification_settings_updated', onNotificationSettingsUpdated)
+  ws.off('account_deletion_requested', onAccountDeletionRequested)
+  ws.off('account_deletion_cancelled', onAccountDeletionCancelled)
 }
+

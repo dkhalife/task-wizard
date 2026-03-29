@@ -10,7 +10,9 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
@@ -18,6 +20,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CheckCircleOutline
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExtendedFloatingActionButton
 import androidx.compose.material3.Icon
@@ -55,7 +58,8 @@ fun TaskListScreen(
     onCreateTask: () -> Unit,
     onToggleGroup: (String) -> Unit,
     swipeSettings: SwipeSettings = SwipeSettings(),
-    inlineCompleteEnabled: Boolean = true
+    inlineCompleteEnabled: Boolean = true,
+    isPendingDeletion: Boolean = false
 ){
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val newTaskLabel = stringResource(R.string.btn_new_task)
@@ -73,22 +77,52 @@ fun TaskListScreen(
             )
         },
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onCreateTask,
-                icon = { Icon(Icons.Default.Add, contentDescription = null) },
-                text = { Text(newTaskLabel) },
-                containerColor = MaterialTheme.colorScheme.primaryContainer,
-                contentColor = MaterialTheme.colorScheme.onPrimaryContainer
-            )
+            if (!isPendingDeletion) {
+                ExtendedFloatingActionButton(
+                    onClick = onCreateTask,
+                    icon = { Icon(Icons.Default.Add, contentDescription = null) },
+                    text = { Text(newTaskLabel) },
+                    containerColor = MaterialTheme.colorScheme.primaryContainer,
+                    contentColor = MaterialTheme.colorScheme.onPrimaryContainer
+                )
+            }
         }
     ) { padding ->
-        PullToRefreshBox(
-            isRefreshing = isRefreshing,
-            onRefresh = onRefresh,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            if (isPendingDeletion) {
+                androidx.compose.material3.Surface(
+                    color = MaterialTheme.colorScheme.errorContainer,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    androidx.compose.foundation.layout.Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Warning,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onErrorContainer,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.settings_section_account_deletion),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                    }
+                }
+            }
+
+            PullToRefreshBox(
+                isRefreshing = isRefreshing,
+                onRefresh = onRefresh,
+                modifier = Modifier.fillMaxSize()
+            ) {
             AnimatedContent(
                 targetState = taskGroups.isEmpty() && !isRefreshing,
                 transitionSpec = { fadeIn() togetherWith fadeOut() },
@@ -141,14 +175,14 @@ fun TaskListScreen(
                                 items(group.tasks, key = { "${group.key}_${it.id}" }) { task ->
                                     TaskItem(
                                         task = task,
-                                        onComplete = { onCompleteTask(task.id) },
-                                        onSkip = { onSkipTask(task.id) },
-                                        onDelete = { onDeleteTask(task.id) },
-                                        onClick = { onTaskClick(task.id) },
+                                        onComplete = if (isPendingDeletion) ({}) else { { onCompleteTask(task.id) } },
+                                        onSkip = if (isPendingDeletion) ({}) else { { onSkipTask(task.id) } },
+                                        onDelete = if (isPendingDeletion) ({}) else { { onDeleteTask(task.id) } },
+                                        onClick = if (isPendingDeletion) ({}) else { { onTaskClick(task.id) } },
                                         onViewHistory = { onViewHistory(task.id) },
-                                        onCompleteAndEndRecurrence = { onCompleteAndEndRecurrenceTask(task.id) },
-                                        swipeSettings = swipeSettings,
-                                        inlineCompleteEnabled = inlineCompleteEnabled
+                                        onCompleteAndEndRecurrence = if (isPendingDeletion) ({}) else { { onCompleteAndEndRecurrenceTask(task.id) } },
+                                        swipeSettings = if (isPendingDeletion) SwipeSettings(enabled = false) else swipeSettings,
+                                        inlineCompleteEnabled = inlineCompleteEnabled && !isPendingDeletion
                                     )
                                 }
                             }
@@ -158,4 +192,5 @@ fun TaskListScreen(
             }
         }
     }
+}
 }

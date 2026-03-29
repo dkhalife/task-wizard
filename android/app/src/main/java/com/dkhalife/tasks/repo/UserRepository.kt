@@ -41,6 +41,36 @@ class UserRepository @Inject constructor(
         }
     }
 
+    suspend fun requestDeletion(): Result<Unit> {
+        return try {
+            val response = api.requestAccountDeletion()
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                telemetryManager.logError(TAG, "Failed to request account deletion: ${response.code()}")
+                Result.failure(Exception("Failed to request account deletion: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to request account deletion: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun cancelDeletion(): Result<Unit> {
+        return try {
+            val response = api.cancelAccountDeletion()
+            if (response.isSuccessful) {
+                Result.success(Unit)
+            } else {
+                telemetryManager.logError(TAG, "Failed to cancel account deletion: ${response.code()}")
+                Result.failure(Exception("Failed to cancel account deletion: ${response.code()}"))
+            }
+        } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to cancel account deletion: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
     companion object {
         private const val TAG = "UserRepository"
     }

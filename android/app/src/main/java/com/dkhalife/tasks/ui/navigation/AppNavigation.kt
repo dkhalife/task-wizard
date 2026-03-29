@@ -46,6 +46,7 @@ import com.dkhalife.tasks.viewmodel.LabelViewModel
 import com.dkhalife.tasks.viewmodel.TaskFormViewModel
 import com.dkhalife.tasks.viewmodel.TaskHistoryViewModel
 import com.dkhalife.tasks.viewmodel.TaskListViewModel
+import com.dkhalife.tasks.viewmodel.UserViewModel
 
 @Composable
 fun AppNavigation(
@@ -125,9 +126,11 @@ fun AppNavigation(
         ) {
             composable(Screen.Tasks.route) {
                 val viewModel: TaskListViewModel = hiltViewModel()
+                val userViewModel: UserViewModel = hiltViewModel()
                 val isRefreshing by viewModel.isRefreshing.collectAsState()
                 val taskGroups by viewModel.taskGroups.collectAsState()
                 val expandedGroups by viewModel.expandedGroups.collectAsState()
+                val deletionRequestedAt by userViewModel.deletionRequestedAt.collectAsState()
 
                 LaunchedEffect(taskGrouping) {
                     viewModel.setTaskGrouping(taskGrouping)
@@ -147,7 +150,8 @@ fun AppNavigation(
                     onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
                     onToggleGroup = { viewModel.toggleGroupExpanded(it) },
                     swipeSettings = swipeSettings,
-                    inlineCompleteEnabled = inlineCompleteEnabled
+                    inlineCompleteEnabled = inlineCompleteEnabled,
+                    isPendingDeletion = deletionRequestedAt != null
                 )
             }
 
@@ -168,8 +172,10 @@ fun AppNavigation(
 
             composable(Screen.Settings.route) {
                 val authViewModel: AuthViewModel = hiltViewModel()
+                val userViewModel: UserViewModel = hiltViewModel()
                 SettingsScreen(
                     authViewModel = authViewModel,
+                    userViewModel = userViewModel,
                     themeMode = themeMode,
                     onThemeModeChanged = onThemeModeChanged,
                     taskGrouping = taskGrouping,

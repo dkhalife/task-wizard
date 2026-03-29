@@ -25,3 +25,9 @@ export const UpdateNotificationSettings = async (
       }),
     ws: (ws) => ws.request('update_notification_settings', { provider, triggers }),
   })
+
+export const RequestAccountDeletion = async () =>
+  await Request<void>(`/users/deletion`, 'POST')
+
+export const CancelAccountDeletion = async () =>
+  await Request<void>(`/users/deletion`, 'DELETE')

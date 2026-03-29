@@ -217,3 +217,228 @@ func (s *UserTestSuite) TestUpdateNotificationSettings() {
 	s.True(updated.Triggers.DueDate)
 	s.True(updated.Triggers.PreDue)
 }
+
+func (s *UserTestSuite) TestRequestDeletion() {
+	ctx := context.Background()
+
+	user := &models.User{
+		DirectoryID: "del-dir",
+		ObjectID:    "del-obj",
+		CreatedAt:   time.Now(),
+	}
+	s.Require().NoError(s.DB.Create(user).Error)
+
+	before := time.Now()
+	err := s.repo.RequestDeletion(ctx, user.ID)
+	s.Require().NoError(err)
+
+	var updated models.User
+	s.Require().NoError(s.DB.First(&updated, user.ID).Error)
+	s.Require().NotNil(updated.DeletionRequestedAt)
+	s.True(updated.DeletionRequestedAt.After(before) || updated.DeletionRequestedAt.Equal(before))
+}
+
+func (s *UserTestSuite) TestCancelDeletion() {
+	ctx := context.Background()
+
+	now := time.Now()
+	user := &models.User{
+		DirectoryID:         "cancel-dir",
+		ObjectID:            "cancel-obj",
+		CreatedAt:           time.Now(),
+		DeletionRequestedAt: &now,
+	}
+	s.Require().NoError(s.DB.Create(user).Error)
+
+	err := s.repo.CancelDeletion(ctx, user.ID)
+	s.Require().NoError(err)
+
+	var updated models.User
+	s.Require().NoError(s.DB.First(&updated, user.ID).Error)
+	s.Nil(updated.DeletionRequestedAt)
+}
+
+func (s *UserTestSuite) TestFindUsersForDeletion_ReturnsExpired() {
+	ctx := context.Background()
+
+	past := time.Now().Add(-25 * time.Hour)
+	user := &models.User{
+		DirectoryID:         "expired-dir",
+		ObjectID:            "expired-obj",
+		CreatedAt:           time.Now(),
+		DeletionRequestedAt: &past,
+	}
+	s.Require().NoError(s.DB.Create(user).Error)
+
+	users, err := s.repo.FindUsersForDeletion(ctx, 24*time.Hour)
+	s.Require().NoError(err)
+	s.Require().Len(users, 1)
+	s.Equal(user.ID, users[0].ID)
+}
+
+func (s *UserTestSuite) TestFindUsersForDeletion_ExcludesWithinGracePeriod() {
+	ctx := context.Background()
+
+	recent := time.Now().Add(-1 * time.Hour)
+	user := &models.User{
+		DirectoryID:         "recent-dir",
+		ObjectID:            "recent-obj",
+		CreatedAt:           time.Now(),
+		DeletionRequestedAt: &recent,
+	}
+	s.Require().NoError(s.DB.Create(user).Error)
+
+	users, err := s.repo.FindUsersForDeletion(ctx, 24*time.Hour)
+	s.Require().NoError(err)
+	s.Empty(users)
+}
+
+func (s *UserTestSuite) TestFindUsersForDeletion_ExcludesNoDeletionRequested() {
+	ctx := context.Background()
+
+	user := &models.User{
+		DirectoryID: "normal-dir",
+		ObjectID:    "normal-obj",
+		CreatedAt:   time.Now(),
+	}
+	s.Require().NoError(s.DB.Create(user).Error)
+
+	users, err := s.repo.FindUsersForDeletion(ctx, 24*time.Hour)
+	s.Require().NoError(err)
+	s.Empty(users)
+}
+
+func (s *UserTestSuite) TestDeleteUser() {
+	ctx := context.Background()
+
+	user := &models.User{
+		DirectoryID: "todelete-dir",
+		ObjectID:    "todelete-obj",
+		CreatedAt:   time.Now(),
+	}
+	s.Require().NoError(s.DB.Create(user).Error)
+
+	err := s.repo.DeleteUser(ctx, user.ID)
+	s.Require().NoError(err)
+
+	var count int64
+	s.DB.Model(&models.User{}).Where("id = ?", user.ID).Count(&count)
+	s.Zero(count)
+}
+
+// TestDeleteUser_CascadesAllUserData verifies that deleting a user removes all
+// associated data from every user-owned table with no orphaned records left behind.
+func (s *UserTestSuite) TestDeleteUser_CascadesAllUserData() {
+	ctx := context.Background()
+
+	// Create user with default notification settings via repo so all FKs are consistent.
+	user := &models.User{
+		DirectoryID: "cascade-dir",
+		ObjectID:    "cascade-obj",
+		CreatedAt:   time.Now(),
+	}
+	s.Require().NoError(s.repo.CreateUser(ctx, user))
+
+	// Create a label
+	label := &models.Label{
+		Name:      "test-label",
+		Color:     "#ff0000",
+		CreatedBy: user.ID,
+	}
+	s.Require().NoError(s.DB.Create(label).Error)
+
+	// Create a task linked to that label
+	dueDate := time.Now().Add(24 * time.Hour)
+	task := &models.Task{
+		Title:     "test-task",
+		CreatedBy: user.ID,
+		IsActive:  true,
+		NextDueDate: &dueDate,
+	}
+	s.Require().NoError(s.DB.Create(task).Error)
+
+	// Link task to label via task_labels join table
+	taskLabel := &models.TaskLabel{TaskID: task.ID, LabelID: label.ID}
+	s.Require().NoError(s.DB.Create(taskLabel).Error)
+
+	// Create task history
+	completedDate := time.Now()
+	history := &models.TaskHistory{
+		TaskID:        task.ID,
+		CompletedDate: &completedDate,
+		DueDate:       &dueDate,
+	}
+	s.Require().NoError(s.DB.Create(history).Error)
+
+	// Create a notification linked to the task and user
+	notification := &models.Notification{
+		TaskID:       task.ID,
+		UserID:       user.ID,
+		Text:         "Task due soon",
+		Type:         models.NotificationTypeDueDate,
+		ScheduledFor: time.Now().Add(1 * time.Hour),
+	}
+	s.Require().NoError(s.DB.Create(notification).Error)
+
+	// Verify data exists before deletion
+	s.assertRowCount("users", user.ID, 1)
+	s.assertRowCount("labels", user.ID, 1)
+	s.assertTaskRowCount(task.ID, 1)
+	s.assertTaskLabelRowCount(task.ID, 1)
+	s.assertTaskHistoryRowCount(task.ID, 1)
+	s.assertNotificationUserRowCount(user.ID, 1)
+	s.assertNotificationSettingsRowCount(user.ID, 1)
+
+	// Delete the user
+	s.Require().NoError(s.repo.DeleteUser(ctx, user.ID))
+
+	// Verify ALL user data is gone
+	s.assertRowCount("users", user.ID, 0)
+	s.assertRowCount("labels", user.ID, 0)
+	s.assertTaskRowCount(task.ID, 0)
+	s.assertTaskLabelRowCount(task.ID, 0)
+	s.assertTaskHistoryRowCount(task.ID, 0)
+	s.assertNotificationUserRowCount(user.ID, 0)
+	s.assertNotificationSettingsRowCount(user.ID, 0)
+}
+
+func (s *UserTestSuite) assertRowCount(table string, userID int, expected int) {
+	var count int64
+	column := "id"
+	if table == "labels" {
+		column = "created_by"
+	}
+	s.DB.Table(table).Where(column+" = ?", userID).Count(&count)
+	s.Equal(int64(expected), count, "expected %d row(s) in %s for user %d", expected, table, userID)
+}
+
+func (s *UserTestSuite) assertTaskRowCount(taskID, expected int) {
+	var count int64
+	s.DB.Model(&models.Task{}).Where("id = ?", taskID).Count(&count)
+	s.Equal(int64(expected), count, "expected %d task row(s) for task %d", expected, taskID)
+}
+
+func (s *UserTestSuite) assertTaskLabelRowCount(taskID, expected int) {
+	var count int64
+	s.DB.Model(&models.TaskLabel{}).Where("task_id = ?", taskID).Count(&count)
+	s.Equal(int64(expected), count, "expected %d task_label row(s) for task %d", expected, taskID)
+}
+
+func (s *UserTestSuite) assertTaskHistoryRowCount(taskID, expected int) {
+	var count int64
+	s.DB.Model(&models.TaskHistory{}).Where("task_id = ?", taskID).Count(&count)
+	s.Equal(int64(expected), count, "expected %d task_history row(s) for task %d", expected, taskID)
+}
+
+func (s *UserTestSuite) assertNotificationUserRowCount(userID, expected int) {
+	var count int64
+	s.DB.Model(&models.Notification{}).Where("user_id = ?", userID).Count(&count)
+	s.Equal(int64(expected), count, "expected %d notification row(s) for user %d", expected, userID)
+}
+
+func (s *UserTestSuite) assertNotificationSettingsRowCount(userID, expected int) {
+	var count int64
+	s.DB.Model(&models.NotificationSettings{}).Where("user_id = ?", userID).Count(&count)
+	s.Equal(int64(expected), count, "expected %d notification_settings row(s) for user %d", expected, userID)
+}
+

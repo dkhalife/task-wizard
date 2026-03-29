@@ -68,4 +68,10 @@ interface TaskWizardApi {
 
     @PUT("api/v1/users/notifications")
     suspend fun updateNotificationSettings(@Body req: NotificationUpdateRequest): Response<Void>
+
+    @POST("api/v1/users/deletion")
+    suspend fun requestAccountDeletion(): Response<Void>
+
+    @DELETE("api/v1/users/deletion")
+    suspend fun cancelAccountDeletion(): Response<Void>
 }
