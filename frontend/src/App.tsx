@@ -1,6 +1,6 @@
 import { NavBar } from './views/Navigation/NavBar'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { initializeMsal, isAuthEnabled, loginSilently } from './utils/msal'
+import { hasCachedAccounts, initializeMsal, isAuthEnabled, loginSilently, loginWithRedirect } from './utils/msal'
 import { NavigationPaths } from './utils/navigation'
 import React from 'react'
 import { CssBaseline, CssVarsProvider } from '@mui/joy'
@@ -87,8 +87,12 @@ class AppImpl extends React.Component<AppProps> {
     const silentOk = await loginSilently()
     if (silentOk) {
       await this.initializeAuthenticated()
-    } else if (isAuthEnabled() && this.props.pathname !== NavigationPaths.Login && this.props.pathname !== NavigationPaths.Privacy) {
-      this.props.navigate(NavigationPaths.Login)
+    } else if (isAuthEnabled() && this.props.pathname !== NavigationPaths.Privacy) {
+      if (await hasCachedAccounts()) {
+        await loginWithRedirect()
+      } else if (this.props.pathname !== NavigationPaths.Login) {
+        this.props.navigate(NavigationPaths.Login)
+      }
     }
 
     document.addEventListener('visibilitychange', this.onVisibilityChange)

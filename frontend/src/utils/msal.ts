@@ -56,12 +56,24 @@ const getScopes = (): string[] => {
 }
 
 const ensureActiveAccount = (pca: IPublicClientApplication): AccountInfo => {
+  if (!authConfig) {
+    throw new Error('Authentication is not configured')
+  }
+
   const activeAccount = pca.getActiveAccount()
-  if (activeAccount) return activeAccount
-  const [firstAccount] = pca.getAllAccounts()
-  if (!firstAccount) throw new Error('No accounts found')
-  pca.setActiveAccount(firstAccount)
-  return firstAccount
+  if (activeAccount?.tenantId === authConfig.tenant_id) {
+    return activeAccount
+  }
+
+  const tenantAccount = pca.getAllAccounts().find(a => a.tenantId === authConfig!.tenant_id)
+  if (!tenantAccount) {
+    if (activeAccount) {
+      pca.setActiveAccount(null)
+    }
+    throw new Error('No accounts found for configured tenant')
+  }
+  pca.setActiveAccount(tenantAccount)
+  return tenantAccount
 }
 
 export const isAuthEnabled = (): boolean => {
@@ -74,6 +86,12 @@ export const loginWithRedirect = async () => {
   await pca.loginRedirect({ scopes: getScopes() })
 }
 
+export const hasCachedAccounts = async (): Promise<boolean> => {
+  if (!authConfig?.enabled || !pcaPromise) return false
+  const pca = await pcaPromise
+  return pca.getAllAccounts().some(a => a.tenantId === authConfig?.tenant_id)
+}
+
 export const loginSilently = async (): Promise<boolean> => {
   if (!authConfig?.enabled || !pcaPromise) return true
   const pca = await pcaPromise
@@ -82,7 +100,21 @@ export const loginSilently = async (): Promise<boolean> => {
     cachedAuthResult = await pca.acquireTokenSilent({ scopes: getScopes(), account })
     return true
   } catch {
-    return false
+    // acquireTokenSilent failed — try ssoSilent as a fallback (works when browser
+    // still has a valid session cookie for login.microsoftonline.com)
+    try {
+      const account = pca.getActiveAccount() ?? pca.getAllAccounts().find(a => a.tenantId === authConfig?.tenant_id)
+      cachedAuthResult = await pca.ssoSilent({
+        scopes: getScopes(),
+        loginHint: account?.username,
+      })
+      if (cachedAuthResult.account) {
+        pca.setActiveAccount(cachedAuthResult.account)
+      }
+      return true
+    } catch {
+      return false
+    }
   }
 }
 
