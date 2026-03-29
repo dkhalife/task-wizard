@@ -56,10 +56,22 @@ const getScopes = (): string[] => {
 }
 
 const ensureActiveAccount = (pca: IPublicClientApplication): AccountInfo => {
+  if (!authConfig) {
+    throw new Error('Authentication is not configured')
+  }
+
   const activeAccount = pca.getActiveAccount()
-  if (activeAccount) return activeAccount
-  const tenantAccount = pca.getAllAccounts().find(a => a.tenantId === authConfig?.tenant_id)
-  if (!tenantAccount) throw new Error('No accounts found for configured tenant')
+  if (activeAccount?.tenantId === authConfig.tenant_id) {
+    return activeAccount
+  }
+
+  const tenantAccount = pca.getAllAccounts().find(a => a.tenantId === authConfig!.tenant_id)
+  if (!tenantAccount) {
+    if (activeAccount) {
+      pca.setActiveAccount(null)
+    }
+    throw new Error('No accounts found for configured tenant')
+  }
   pca.setActiveAccount(tenantAccount)
   return tenantAccount
 }

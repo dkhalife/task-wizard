@@ -39,9 +39,13 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
       this.props.navigate(NavigationPaths.HomeView())
       return
     }
-    if (await hasCachedAccounts()) {
-      await loginWithRedirect()
-      return
+    try {
+      if (await hasCachedAccounts()) {
+        await loginWithRedirect()
+        return
+      }
+    } catch (error) {
+      this.props.pushStatus((error as Error).message, 'error', 5000)
     }
     this.setState({ authReady: true })
   }
