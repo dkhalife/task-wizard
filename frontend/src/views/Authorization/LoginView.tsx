@@ -9,7 +9,7 @@ import {
 } from '@mui/joy'
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { initializeMsal, loginSilently, loginWithRedirect } from '@/utils/msal'
+import { hasCachedAccounts, initializeMsal, loginSilently, loginWithRedirect } from '@/utils/msal'
 import { setTitle } from '@/utils/dom'
 import { NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
@@ -37,6 +37,10 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
     const silentOk = await loginSilently()
     if (silentOk) {
       this.props.navigate(NavigationPaths.HomeView())
+      return
+    }
+    if (await hasCachedAccounts()) {
+      await loginWithRedirect()
       return
     }
     this.setState({ authReady: true })
