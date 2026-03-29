@@ -296,3 +296,16 @@ func (s *WSServer) BroadcastToUser(userID int, resp WSResponse) {
 		}
 	}()
 }
+
+// SetPendingDeletionForUser updates the PendingDeletion flag on all active
+// connections for a user so the WS write-guard reflects current deletion state
+// without requiring a reconnect.
+func (s *WSServer) SetPendingDeletionForUser(userID int, pending bool) {
+	s.mu.RLock()
+	conns := s.userConnections[userID]
+	s.mu.RUnlock()
+
+	for _, c := range conns {
+		c.identity.PendingDeletion = pending
+	}
+}

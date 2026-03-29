@@ -2,10 +2,10 @@ import React from 'react'
 import { Alert, Button, Typography } from '@mui/joy'
 import { WarningAmberRounded } from '@mui/icons-material'
 import { connect } from 'react-redux'
+import { Link } from 'react-router-dom'
 import { AppDispatch, RootState } from '@/store/store'
 import { cancelAccountDeletion } from '@/store/userSlice'
 import { NavigationPaths } from '@/utils/navigation'
-import { useNavigate } from 'react-router-dom'
 
 type DeletionBannerProps = {
   deletionRequestedAt: string | null
@@ -46,9 +46,9 @@ class DeletionBannerImpl extends React.Component<DeletionBannerProps> {
           Your account is scheduled for deletion on{' '}
           <strong>{this.formatDeletionTime(deletionRequestedAt)}</strong>.
           Writes are disabled. Visit{' '}
-          <a href={NavigationPaths.Settings} style={{ color: 'inherit' }}>
+          <Link to={NavigationPaths.Settings} style={{ color: 'inherit' }}>
             Settings
-          </a>{' '}
+          </Link>{' '}
           to manage this.
         </Typography>
       </Alert>
@@ -69,10 +69,3 @@ export const DeletionBanner = connect(
   mapStateToProps,
   mapDispatchToProps,
 )(DeletionBannerImpl)
-
-// Functional wrapper needed to access useNavigate hook
-export const DeletionBannerWrapper: React.FC = () => {
-  const navigate = useNavigate()
-  void navigate // referenced to avoid unused warning
-  return <DeletionBanner />
-}

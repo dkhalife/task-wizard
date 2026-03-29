@@ -12,7 +12,6 @@ import (
 )
 
 var ErrDisabledUser = errors.New("account is disabled")
-var ErrPendingDeletion = errors.New("account is pending deletion")
 
 type IUserRepo interface {
 	CreateUser(c context.Context, user *models.User) error

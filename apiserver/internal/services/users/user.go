@@ -2,6 +2,7 @@ package users
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"time"
 
@@ -67,6 +68,7 @@ func (s *UserService) RequestDeletion(ctx context.Context, userID int) (int, int
 		}
 	}
 
+	s.ws.SetPendingDeletionForUser(userID, true)
 	s.ws.BroadcastToUser(userID, ws.WSResponse{
 		Action: "account_deletion_requested",
 		Data:   gin.H{},
@@ -85,6 +87,7 @@ func (s *UserService) CancelDeletion(ctx context.Context, userID int) (int, inte
 		}
 	}
 
+	s.ws.SetPendingDeletionForUser(userID, false)
 	s.ws.BroadcastToUser(userID, ws.WSResponse{
 		Action: "account_deletion_cancelled",
 		Data:   gin.H{},
@@ -102,11 +105,11 @@ func (s *UserService) ProcessDeletions(ctx context.Context) error {
 	}
 
 	for _, user := range users {
-		log.Infof("deleting account for user %d (requested at %s)", user.ID, user.DeletionRequestedAt)
+		log.Infof("deleting account for user %d (requested at %v)", user.ID, user.DeletionRequestedAt)
 		if err := s.r.DeleteUser(ctx, user.ID); err != nil {
 			log.Errorf("failed to delete user %d: %s", user.ID, err.Error())
 			telemetry.TrackError(ctx, "account_deletion_failed", "user-service", err, map[string]string{
-				"user_id": string(rune(user.ID)),
+				"user_id": fmt.Sprint(user.ID),
 			})
 		}
 	}

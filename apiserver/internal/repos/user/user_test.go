@@ -404,7 +404,11 @@ func (s *UserTestSuite) TestDeleteUser_CascadesAllUserData() {
 
 func (s *UserTestSuite) assertRowCount(table string, userID int, expected int) {
 	var count int64
-	s.DB.Table(table).Where("id = ?", userID).Count(&count)
+	column := "id"
+	if table == "labels" {
+		column = "created_by"
+	}
+	s.DB.Table(table).Where(column+" = ?", userID).Count(&count)
 	s.Equal(int64(expected), count, "expected %d row(s) in %s for user %d", expected, table, userID)
 }
 
