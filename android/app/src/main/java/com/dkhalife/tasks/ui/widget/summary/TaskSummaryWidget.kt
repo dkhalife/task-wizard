@@ -71,14 +71,16 @@ class TaskSummaryWidget : GlanceAppWidget() {
                 for (group in groups) {
                     val color = WidgetTheme.groupColor(group.key)
                     Column(
-                        modifier = GlanceModifier.padding(horizontal = 6.dp),
+                        modifier = GlanceModifier
+                            .defaultWeight()
+                            .padding(horizontal = 2.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
                         Text(
                             text = "${group.tasks.size}",
                             style = TextStyle(
                                 color = color,
-                                fontSize = 28.sp,
+                                fontSize = 24.sp,
                                 fontWeight = FontWeight.Bold
                             )
                         )
@@ -87,7 +89,7 @@ class TaskSummaryWidget : GlanceAppWidget() {
                                 ?.let { context.getString(it) } ?: group.name,
                             style = TextStyle(
                                 color = GlanceTheme.colors.onSurfaceVariant,
-                                fontSize = 13.sp
+                                fontSize = 11.sp
                             ),
                             maxLines = 1
                         )
