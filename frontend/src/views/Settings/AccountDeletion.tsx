@@ -82,10 +82,12 @@ class AccountDeletionImpl extends React.Component<
               startDecorator={<WarningAmberRounded />}
               sx={{ mb: 1 }}
             >
-              Your account is scheduled for permanent deletion on{' '}
-              <strong>{this.formatDeletionTime(deletionRequestedAt!)}</strong>.
-              All your tasks, labels, and data will be permanently erased. You
-              can cancel below to restore full access.
+              <span>
+                Your account is scheduled for permanent deletion on{' '}
+                <strong>{this.formatDeletionTime(deletionRequestedAt!)}</strong>.
+                All your tasks, labels, and data will be permanently erased. You
+                can cancel below to restore full access.
+              </span>
             </Alert>
             <Button
               color='neutral'
