@@ -37,12 +37,14 @@ window.onunhandledrejection = async (event) => {
   }
 }
 
-ReactDOM.createRoot(useRoot()).render(
-  <React.StrictMode>
-    <ErrorBoundary>
-      <Provider store={store}>
-        <RouterContext />
-      </Provider>
-    </ErrorBoundary>
-  </React.StrictMode>,
-)
+if (window.self === window.top) {
+  ReactDOM.createRoot(useRoot()).render(
+    <React.StrictMode>
+      <ErrorBoundary>
+        <Provider store={store}>
+          <RouterContext />
+        </Provider>
+      </ErrorBoundary>
+    </React.StrictMode>,
+  )
+}
