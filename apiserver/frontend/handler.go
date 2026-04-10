@@ -34,7 +34,7 @@ func Routes(router *gin.Engine, h *Handler) {
 
 func isPublicPath(path string) bool {
 	for _, p := range publicPaths {
-		if strings.HasPrefix(path, p) {
+		if path == p || strings.HasPrefix(path, p+"/") {
 			return true
 		}
 	}
@@ -54,17 +54,21 @@ func staticMiddleware(root string) gin.HandlerFunc {
 
 	}
 }
+const authCookieName = "tw_auth"
+
 func staticMiddlewareNoRoute(root string) gin.HandlerFunc {
 	fileServer := http.FileServer(getFileSystem(root))
 
 	return func(c *gin.Context) {
 		if !isPublicPath(c.Request.URL.Path) {
-			target := "/login"
-			if q := c.Request.URL.RawQuery; q != "" {
-				target += "?" + q
+			if _, err := c.Cookie(authCookieName); err != nil {
+				target := "/login?return_to=" + c.Request.URL.Path
+				if q := c.Request.URL.RawQuery; q != "" {
+					target += "&" + q
+				}
+				c.Redirect(http.StatusFound, target)
+				return
 			}
-			c.Redirect(http.StatusFound, target)
-			return
 		}
 
 		c.Request.URL.Path = "/"

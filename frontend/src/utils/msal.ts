@@ -92,16 +92,25 @@ export const hasCachedAccounts = async (): Promise<boolean> => {
   return pca.getAllAccounts().some(a => a.tenantId === authConfig?.tenant_id)
 }
 
+const AUTH_COOKIE = 'tw_auth'
+
+const setAuthCookie = () => {
+  document.cookie = `${AUTH_COOKIE}=1; path=/; SameSite=Strict; max-age=31536000`
+}
+
+const clearAuthCookie = () => {
+  document.cookie = `${AUTH_COOKIE}=; path=/; SameSite=Strict; max-age=0`
+}
+
 export const loginSilently = async (): Promise<boolean> => {
   if (!authConfig?.enabled || !pcaPromise) return true
   const pca = await pcaPromise
   try {
     const account = ensureActiveAccount(pca)
     cachedAuthResult = await pca.acquireTokenSilent({ scopes: getScopes(), account })
+    setAuthCookie()
     return true
   } catch {
-    // acquireTokenSilent failed — try ssoSilent as a fallback (works when browser
-    // still has a valid session cookie for login.microsoftonline.com)
     try {
       const account = pca.getActiveAccount() ?? pca.getAllAccounts().find(a => a.tenantId === authConfig?.tenant_id)
       cachedAuthResult = await pca.ssoSilent({
@@ -111,8 +120,10 @@ export const loginSilently = async (): Promise<boolean> => {
       if (cachedAuthResult.account) {
         pca.setActiveAccount(cachedAuthResult.account)
       }
+      setAuthCookie()
       return true
     } catch {
+      clearAuthCookie()
       return false
     }
   }
@@ -131,11 +142,12 @@ export const acquireAccessToken = async (): Promise<string> => {
 }
 
 export const logout = async () => {
+  clearAuthCookie()
   if (!authConfig?.enabled || !pcaPromise) {
     window.location.href = '/'
     return
   }
   const pca = await pcaPromise
   cachedAuthResult = null
-  await pca.logoutRedirect({ postLogoutRedirectUri: window.location.origin })
+  await pca.logoutRedirect({ postLogoutRedirectUri: `${window.location.origin}/login` })
 }

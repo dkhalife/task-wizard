@@ -11,7 +11,7 @@ import React from 'react'
 import { Link } from 'react-router-dom'
 import { hasCachedAccounts, initializeMsal, loginSilently, loginWithRedirect } from '@/utils/msal'
 import { setTitle } from '@/utils/dom'
-import { NavigationPaths, WithNavigate } from '@/utils/navigation'
+import { getQuery, NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
 import { AppDispatch } from '@/store/store'
 import { pushStatus } from '@/store/statusSlice'
@@ -31,12 +31,17 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
     this.state = { authReady: false }
   }
 
+  private getReturnPath = (): string => {
+    const returnTo = getQuery('return_to')
+    return returnTo || NavigationPaths.HomeView()
+  }
+
   async componentDidMount(): Promise<void> {
     setTitle('Login')
     await initializeMsal()
     const silentOk = await loginSilently()
     if (silentOk) {
-      this.props.navigate(NavigationPaths.HomeView())
+      this.props.navigate(this.getReturnPath())
       return
     }
     try {
