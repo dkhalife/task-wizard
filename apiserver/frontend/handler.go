@@ -4,6 +4,7 @@ import (
 	"embed"
 	"io/fs"
 	"net/http"
+	"strings"
 
 	config "dkhalife.com/tasks/core/config"
 	"github.com/gin-gonic/gin"
@@ -11,6 +12,8 @@ import (
 
 //go:embed dist
 var embeddedFiles embed.FS
+
+var publicPaths = []string{"/login", "/privacy"}
 
 type Handler struct {
 	ServeFrontend bool
@@ -27,6 +30,15 @@ func Routes(router *gin.Engine, h *Handler) {
 		router.Use(staticMiddleware("dist"))
 		router.NoRoute(staticMiddlewareNoRoute("dist"))
 	}
+}
+
+func isPublicPath(path string) bool {
+	for _, p := range publicPaths {
+		if strings.HasPrefix(path, p) {
+			return true
+		}
+	}
+	return false
 }
 
 func staticMiddleware(root string) gin.HandlerFunc {
@@ -46,6 +58,15 @@ func staticMiddlewareNoRoute(root string) gin.HandlerFunc {
 	fileServer := http.FileServer(getFileSystem(root))
 
 	return func(c *gin.Context) {
+		if !isPublicPath(c.Request.URL.Path) {
+			target := "/login"
+			if q := c.Request.URL.RawQuery; q != "" {
+				target += "?" + q
+			}
+			c.Redirect(http.StatusFound, target)
+			return
+		}
+
 		c.Request.URL.Path = "/"
 		fileServer.ServeHTTP(c.Writer, c.Request)
 	}

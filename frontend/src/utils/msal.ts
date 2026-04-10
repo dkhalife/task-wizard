@@ -27,7 +27,7 @@ const doInitializeMsal = async () => {
     auth: {
       clientId: authConfig.client_id,
       authority: `https://login.microsoftonline.com/${authConfig.tenant_id}`,
-      redirectUri: window.location.origin,
+      redirectUri: `${window.location.origin}/login`,
     },
     cache: {
       cacheLocation: 'localStorage',
