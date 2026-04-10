@@ -133,7 +133,7 @@
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
                     android:host="com.dkhalife.tasks"
-                    android:path="/sOIkLOwynQaOvaTd0Nz5bdDlRgg="
+                    android:path="/OQxz/rlBJ5+G501Zg0md55cCrIY="
                     android:scheme="msauth" />
             </intent-filter>
         </activity>
