@@ -41,6 +41,9 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -140,6 +143,52 @@ fun TaskFormScreen(
     val isRecurring = frequencyType != FrequencyType.ONCE
     val isEditing = existingTask != null
 
+    val canSubmit = title.isNotBlank() && !isSaving
+    val submitForm: () -> Unit = submit@{
+        if (!canSubmit) return@submit
+        val frequency = when (frequencyType) {
+            FrequencyType.CUSTOM -> when (repeatOn) {
+                RepeatOn.INTERVAL -> Frequency(
+                    type = FrequencyType.CUSTOM,
+                    on = RepeatOn.INTERVAL,
+                    every = intervalEvery.toIntOrNull()?.coerceAtLeast(1) ?: 1,
+                    unit = intervalUnit
+                )
+                RepeatOn.DAYS_OF_THE_WEEK -> Frequency(
+                    type = FrequencyType.CUSTOM,
+                    on = RepeatOn.DAYS_OF_THE_WEEK,
+                    days = selectedDays.sorted()
+                )
+                RepeatOn.DAY_OF_THE_MONTHS -> Frequency(
+                    type = FrequencyType.CUSTOM,
+                    on = RepeatOn.DAY_OF_THE_MONTHS,
+                    months = selectedMonths.sorted()
+                )
+                else -> Frequency(type = frequencyType)
+            }
+            else -> Frequency(type = frequencyType)
+        }
+        val notification = if (notificationsEnabled) {
+            NotificationTriggerOptions(
+                enabled = true,
+                dueDate = notifyDueDate,
+                preDue = notifyPreDue,
+                overdue = notifyOverdue
+            )
+        } else {
+            NotificationTriggerOptions()
+        }
+        onSave(
+            title,
+            if (hasDueDate) dueDate?.toIsoString() else null,
+            if (hasDueDate && isRecurring && hasEndDate) endDate?.toIsoString() else null,
+            frequency,
+            if (hasDueDate) notification else NotificationTriggerOptions(),
+            selectedLabelIds.toList(),
+            isRolling
+        )
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
@@ -163,50 +212,8 @@ fun TaskFormScreen(
                 elevation = CardDefaults.cardElevation(defaultElevation = 8.dp)
             ) {
                 Button(
-                    onClick = {
-                        val frequency = when (frequencyType) {
-                            FrequencyType.CUSTOM -> when (repeatOn) {
-                                RepeatOn.INTERVAL -> Frequency(
-                                    type = FrequencyType.CUSTOM,
-                                    on = RepeatOn.INTERVAL,
-                                    every = intervalEvery.toIntOrNull()?.coerceAtLeast(1) ?: 1,
-                                    unit = intervalUnit
-                                )
-                                RepeatOn.DAYS_OF_THE_WEEK -> Frequency(
-                                    type = FrequencyType.CUSTOM,
-                                    on = RepeatOn.DAYS_OF_THE_WEEK,
-                                    days = selectedDays.sorted()
-                                )
-                                RepeatOn.DAY_OF_THE_MONTHS -> Frequency(
-                                    type = FrequencyType.CUSTOM,
-                                    on = RepeatOn.DAY_OF_THE_MONTHS,
-                                    months = selectedMonths.sorted()
-                                )
-                                else -> Frequency(type = frequencyType)
-                            }
-                            else -> Frequency(type = frequencyType)
-                        }
-                        val notification = if (notificationsEnabled) {
-                            NotificationTriggerOptions(
-                                enabled = true,
-                                dueDate = notifyDueDate,
-                                preDue = notifyPreDue,
-                                overdue = notifyOverdue
-                            )
-                        } else {
-                            NotificationTriggerOptions()
-                        }
-                        onSave(
-                            title,
-                            if (hasDueDate) dueDate?.toIsoString() else null,
-                            if (hasDueDate && isRecurring && hasEndDate) endDate?.toIsoString() else null,
-                            frequency,
-                            if (hasDueDate) notification else NotificationTriggerOptions(),
-                            selectedLabelIds.toList(),
-                            isRolling
-                        )
-                    },
-                    enabled = title.isNotBlank() && !isSaving,
+                    onClick = { submitForm() },
+                    enabled = canSubmit,
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(16.dp)
@@ -249,6 +256,8 @@ fun TaskFormScreen(
                 label = { Text(stringResource(R.string.label_task_title)) },
                 singleLine = true,
                 shape = RoundedCornerShape(12.dp),
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Done),
+                keyboardActions = KeyboardActions(onDone = { submitForm() }),
                 modifier = Modifier.fillMaxWidth()
             )
 
