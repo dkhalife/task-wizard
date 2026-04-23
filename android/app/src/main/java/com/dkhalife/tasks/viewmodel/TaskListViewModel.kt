@@ -70,12 +70,6 @@ class TaskListViewModel @Inject constructor(
 
     init {
         refreshTasks()
-        viewModelScope.launch {
-            labelRepository.refreshLabels().onFailure {
-                telemetryManager.logError(TAG, "Failed to refresh labels: ${it.message}", it)
-                _error.value = it.message
-            }
-        }
         collectWebSocketMessages()
         observeGrouping()
     }

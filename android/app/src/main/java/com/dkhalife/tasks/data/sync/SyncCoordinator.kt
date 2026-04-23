@@ -1,7 +1,9 @@
 package com.dkhalife.tasks.data.sync
 
+import androidx.room.withTransaction
 import com.dkhalife.tasks.api.TaskWizardApi
 import com.dkhalife.tasks.data.db.LocalState
+import com.dkhalife.tasks.data.db.TaskWizardDatabase
 import com.dkhalife.tasks.data.db.dao.LabelDao
 import com.dkhalife.tasks.data.db.dao.OutboxDao
 import com.dkhalife.tasks.data.db.dao.TaskDao
@@ -40,6 +42,7 @@ import javax.inject.Singleton
 @Singleton
 class SyncCoordinator @Inject constructor(
     private val api: TaskWizardApi,
+    private val db: TaskWizardDatabase,
     private val taskDao: TaskDao,
     private val labelDao: LabelDao,
     private val outboxDao: OutboxDao,
@@ -326,8 +329,10 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun refreshAll() {
-        refreshLabels()
-        refreshTasks()
+        db.withTransaction {
+            refreshLabels()
+            refreshTasks()
+        }
     }
 
     private suspend fun refreshTasks() {
