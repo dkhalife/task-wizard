@@ -8,6 +8,7 @@ import com.dkhalife.tasks.data.sync.SyncCoordinator
 import com.dkhalife.tasks.data.sync.TaskSyncWorkerFactory
 import com.dkhalife.tasks.data.sync.WebSocketLifecycleManager
 import com.dkhalife.tasks.telemetry.TelemetryManager
+import com.microsoft.identity.client.IAccount
 import com.microsoft.identity.client.IPublicClientApplication
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.PublicClientApplication
@@ -86,13 +87,13 @@ class TaskWizardApplication : Application(), Configuration.Provider {
 
     private fun loadCurrentAccount(app: ISingleAccountPublicClientApplication) {
         app.getCurrentAccountAsync(object : ISingleAccountPublicClientApplication.CurrentAccountCallback {
-            override fun onAccountLoaded(activeAccount: com.microsoft.identity.client.IAccount?) {
+            override fun onAccountLoaded(activeAccount: IAccount?) {
                 authManager.updateAccount(activeAccount)
             }
 
             override fun onAccountChanged(
-                priorAccount: com.microsoft.identity.client.IAccount?,
-                currentAccount: com.microsoft.identity.client.IAccount?
+                priorAccount: IAccount?,
+                currentAccount: IAccount?
             ) {
                 authManager.updateAccount(currentAccount)
             }
