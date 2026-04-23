@@ -86,6 +86,22 @@ func (s *TaskService) GetTasksByLabel(ctx context.Context, userID int, labelID i
 	}
 }
 
+func (s *TaskService) SearchTasksByTitle(ctx context.Context, userID int, query string) (int, interface{}) {
+	log := logging.FromContext(ctx)
+	tasks, err := s.t.SearchTasksByTitle(ctx, userID, query)
+	if err != nil {
+		log.Errorf("error searching tasks by title %q: %s", query, err.Error())
+		telemetry.TrackError(ctx, "task_search_failed", "task-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error searching tasks",
+		}
+	}
+
+	return http.StatusOK, gin.H{
+		"tasks": tasks,
+	}
+}
+
 func (s *TaskService) GetCompletedTasks(ctx context.Context, userID, limit, page int) (int, interface{}) {
 	log := logging.FromContext(ctx)
 	offset := (page - 1) * limit

@@ -109,4 +109,9 @@ public class TaskTools(ApiProxyService api)
     public Task<string> ListTasksByLabel(
         [Description("Label ID")] int labelId) =>
         api.GetTasksByLabel(labelId);
+
+    [McpServerTool, Description("Search active tasks by a case-insensitive substring of their title")]
+    public Task<string> SearchTasksByTitle(
+        [Description("Substring to match against task titles (case-insensitive)")] string query) =>
+        api.SearchTasksByTitle(query);
 }

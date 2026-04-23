@@ -3,6 +3,7 @@ package apis
 import (
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
@@ -70,6 +71,22 @@ func (h *TasksAPIHandler) getTasksByLabel(c *gin.Context) {
 	}
 
 	status, response := h.tService.GetTasksByLabel(c, currentIdentity.UserID, labelID)
+	c.JSON(status, response)
+}
+
+func (h *TasksAPIHandler) searchTasks(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+
+	query := strings.TrimSpace(c.Query("q"))
+	if query == "" {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Missing 'q' query parameter", nil)
+		c.JSON(http.StatusBadRequest, gin.H{
+			"error": "'q' query parameter is required",
+		})
+		return
+	}
+
+	status, response := h.tService.SearchTasksByTitle(c, currentIdentity.UserID, query)
 	c.JSON(status, response)
 }
 
@@ -275,6 +292,7 @@ func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddlew
 		tasksRoutes.GET("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasks)
 		tasksRoutes.GET("/due", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksDueBefore)
 		tasksRoutes.GET("/label/:labelId", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksByLabel)
+		tasksRoutes.GET("/search", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.searchTasks)
 		tasksRoutes.GET("/completed", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getCompletedTasks)
 		tasksRoutes.PUT("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.editTask)
 		tasksRoutes.POST("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.createTask)
