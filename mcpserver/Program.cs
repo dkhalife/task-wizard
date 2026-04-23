@@ -86,7 +86,7 @@ builder.Services
         {
             return await next(context, cancellationToken);
         }
-        catch (OperationCanceledException) when (cancellationToken.IsCancellationRequested)
+        catch (OperationCanceledException)
         {
             throw;
         }

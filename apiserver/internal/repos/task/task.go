@@ -87,13 +87,16 @@ func (r *TaskRepository) GetTasksByLabel(c context.Context, userID int, labelID 
 func (r *TaskRepository) SearchTasksByTitle(c context.Context, userID int, query string) ([]*models.Task, error) {
 	var tasks []*models.Task
 
-	escaped := strings.ReplaceAll(query, `\`, `\\`)
-	escaped = strings.ReplaceAll(escaped, "%", `\%`)
-	escaped = strings.ReplaceAll(escaped, "_", `\_`)
+	// Escape LIKE wildcards so they match literally. Use '!' as the escape
+	// character because backslash has dialect-specific meaning inside MySQL
+	// string literals by default and would produce a SQL syntax error.
+	escaped := strings.ReplaceAll(query, "!", "!!")
+	escaped = strings.ReplaceAll(escaped, "%", "!%")
+	escaped = strings.ReplaceAll(escaped, "_", "!_")
 	pattern := "%" + strings.ToLower(escaped) + "%"
 
 	if err := r.db.WithContext(c).
-		Where(`created_by = ? AND is_active = 1 AND LOWER(title) LIKE ? ESCAPE '\'`, userID, pattern).
+		Where("created_by = ? AND is_active = 1 AND LOWER(title) LIKE ? ESCAPE '!'", userID, pattern).
 		Order("next_due_date ASC").
 		Preload("Labels").
 		Find(&tasks).Error; err != nil {
