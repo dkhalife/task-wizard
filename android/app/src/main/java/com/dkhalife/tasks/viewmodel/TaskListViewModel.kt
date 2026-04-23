@@ -6,6 +6,9 @@ import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.TaskGrouping
+import com.dkhalife.tasks.data.db.LocalState
+import com.dkhalife.tasks.data.db.dao.OutboxDao
+import com.dkhalife.tasks.data.network.NetworkMonitor
 import com.dkhalife.tasks.model.Label
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.repo.LabelRepository
@@ -17,9 +20,12 @@ import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
 
@@ -30,11 +36,22 @@ class TaskListViewModel @Inject constructor(
     private val groupingRepository: GroupingRepository,
     private val webSocketManager: WebSocketManager,
     private val soundManager: SoundManager,
-    private val telemetryManager: TelemetryManager
+    private val telemetryManager: TelemetryManager,
+    private val outboxDao: OutboxDao,
+    networkMonitor: NetworkMonitor,
 ) : ViewModel() {
 
     val tasks: StateFlow<List<Task>> = taskRepository.tasks
     val completedTasks: StateFlow<List<Task>> = taskRepository.completedTasks
+
+    val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
+
+    val pendingSyncCount: StateFlow<Int> = outboxDao.observeCount()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
+
+    val pendingSyncTaskIds: StateFlow<Set<Int>> = taskRepository.taskStates
+        .map { list -> list.filter { it.pendingSync }.map { it.task.id }.toSet() }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing

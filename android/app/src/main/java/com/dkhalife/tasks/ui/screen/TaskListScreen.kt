@@ -40,6 +40,7 @@ import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.SwipeSettings
 import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.ui.components.GroupHeader
+import com.dkhalife.tasks.ui.components.SyncStatusBanner
 import com.dkhalife.tasks.ui.components.TaskItem
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -59,7 +60,9 @@ fun TaskListScreen(
     onToggleGroup: (String) -> Unit,
     swipeSettings: SwipeSettings = SwipeSettings(),
     inlineCompleteEnabled: Boolean = true,
-    isPendingDeletion: Boolean = false
+    isPendingDeletion: Boolean = false,
+    isOnline: Boolean = true,
+    pendingSyncCount: Int = 0,
 ){
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val newTaskLabel = stringResource(R.string.btn_new_task)
@@ -93,6 +96,7 @@ fun TaskListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            SyncStatusBanner(isOnline = isOnline, pendingSyncCount = pendingSyncCount)
             if (isPendingDeletion) {
                 androidx.compose.material3.Surface(
                     color = MaterialTheme.colorScheme.errorContainer,

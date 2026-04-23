@@ -3,6 +3,8 @@ package com.dkhalife.tasks
 import android.app.Application
 import androidx.work.Configuration
 import com.dkhalife.tasks.auth.AuthManager
+import com.dkhalife.tasks.data.network.NetworkMonitor
+import com.dkhalife.tasks.data.sync.SyncCoordinator
 import com.dkhalife.tasks.data.sync.TaskSyncWorkerFactory
 import com.dkhalife.tasks.data.sync.WebSocketLifecycleManager
 import com.dkhalife.tasks.telemetry.TelemetryManager
@@ -28,6 +30,12 @@ class TaskWizardApplication : Application(), Configuration.Provider {
     @Inject
     lateinit var webSocketLifecycleManager: WebSocketLifecycleManager
 
+    @Inject
+    lateinit var syncCoordinator: SyncCoordinator
+
+    @Inject
+    lateinit var networkMonitor: NetworkMonitor
+
     override val workManagerConfiguration: Configuration
         get() = Configuration.Builder()
             .setWorkerFactory(taskSyncWorkerFactory)
@@ -39,6 +47,8 @@ class TaskWizardApplication : Application(), Configuration.Provider {
         setupCrashHandler()
         initializeMsal()
         webSocketLifecycleManager.start()
+        networkMonitor.addOnAvailableListener { syncCoordinator.syncOnce() }
+        syncCoordinator.syncOnce()
     }
 
     private fun setupCrashHandler() {

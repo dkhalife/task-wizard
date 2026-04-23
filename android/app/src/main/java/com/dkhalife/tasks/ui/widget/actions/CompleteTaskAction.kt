@@ -44,8 +44,8 @@ class CompleteTaskAction : ActionCallback {
 
         val workManager = WorkManager.getInstance(context)
         try {
-            val response = entryPoint.api().completeTask(taskId)
-            if (response.isSuccessful) {
+            val result = entryPoint.taskRepository().completeTask(taskId)
+            if (result.isSuccess) {
                 entryPoint.taskSyncScheduler().ensureScheduled(workManager)
                 entryPoint.taskSyncScheduler().triggerImmediate(workManager)
             } else if (originalTasks.isNotEmpty()) {
