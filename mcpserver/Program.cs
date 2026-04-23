@@ -1,7 +1,10 @@
+using System.Text.Json;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
+using ModelContextProtocol;
 using ModelContextProtocol.AspNetCore;
 using ModelContextProtocol.AspNetCore.Authentication;
+using ModelContextProtocol.Protocol;
 using TaskWizard.McpServer.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -76,7 +79,46 @@ builder.Services.AddAuthorization();
 builder.Services
     .AddMcpServer()
     .WithHttpTransport()
-    .WithToolsFromAssembly();
+    .WithToolsFromAssembly()
+    .WithRequestFilters(filters => filters.AddCallToolFilter(next => async (context, cancellationToken) =>
+    {
+        try
+        {
+            return await next(context, cancellationToken);
+        }
+        catch (OperationCanceledException)
+        {
+            throw;
+        }
+        catch (McpException)
+        {
+            // Already surfaced with a descriptive message by the SDK.
+            throw;
+        }
+        catch (JsonException ex)
+        {
+            var toolName = context.Params?.Name ?? "<unknown>";
+            var message =
+                $"Invalid arguments for tool '{toolName}': {ex.Message} " +
+                "Check that each argument matches the declared type in the tool schema " +
+                "(for example, booleans must be sent as true/false, not as quoted strings).";
+            return new CallToolResult
+            {
+                IsError = true,
+                Content = [new TextContentBlock { Text = message }],
+            };
+        }
+        catch (Exception ex)
+        {
+            var toolName = context.Params?.Name ?? "<unknown>";
+            var message = $"Tool '{toolName}' failed: {ex.GetType().Name}: {ex.Message}";
+            return new CallToolResult
+            {
+                IsError = true,
+                Content = [new TextContentBlock { Text = message }],
+            };
+        }
+    }));
 
 var app = builder.Build();
 

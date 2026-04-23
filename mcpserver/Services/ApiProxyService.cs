@@ -63,6 +63,9 @@ public class ApiProxyService(IHttpClientFactory httpClientFactory, IHttpContextA
     public Task<string> GetTasksByLabel(int labelId) =>
         SendAsync(HttpMethod.Get, $"api/v1/tasks/label/{labelId}");
 
+    public Task<string> SearchTasksByTitle(string query) =>
+        SendAsync(HttpMethod.Get, $"api/v1/tasks/search?q={Uri.EscapeDataString(query)}");
+
     public Task<string> GetTask(int id) =>
         SendAsync(HttpMethod.Get, $"api/v1/tasks/{id}");
 

@@ -801,3 +801,72 @@ func (s *TaskTestSuite) TestGetTasksByLabel() {
 	// All labels are preloaded (not just the filtered one)
 	s.Require().Len(result[1].Labels, 2)
 }
+
+func (s *TaskTestSuite) TestSearchTasksByTitle() {
+	ctx := context.Background()
+
+	now := time.Now().UTC()
+	due1 := now.Add(24 * time.Hour)
+	due2 := now.Add(48 * time.Hour)
+
+	groceries := &models.Task{
+		Title:       "Buy groceries",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due2,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	s.Require().NoError(s.DB.Create(groceries).Error)
+
+	grocerySort := &models.Task{
+		Title:       "Sort Groceries in pantry",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	s.Require().NoError(s.DB.Create(grocerySort).Error)
+
+	unrelated := &models.Task{
+		Title:       "Walk the dog",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	s.Require().NoError(s.DB.Create(unrelated).Error)
+
+	inactive := &models.Task{
+		ID:          60,
+		Title:       "Old groceries list",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	s.Require().NoError(s.DB.Create(inactive).Error)
+	s.Require().NoError(s.DB.Model(&models.Task{}).Where("id = ?", 60).Update("is_active", false).Error)
+
+	otherUser := &models.User{}
+	s.Require().NoError(s.DB.Create(otherUser).Error)
+	otherUserTask := &models.Task{
+		Title:       "Their groceries",
+		CreatedBy:   otherUser.ID,
+		NextDueDate: &due1,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
+	}
+	s.Require().NoError(s.DB.Create(otherUserTask).Error)
+
+	// Case-insensitive, matches substring, only active tasks for this user
+	result, err := s.repo.SearchTasksByTitle(ctx, s.testUser.ID, "grocer")
+	s.Require().NoError(err)
+	s.Require().Len(result, 2)
+	s.Equal("Sort Groceries in pantry", result[0].Title)
+	s.Equal("Buy groceries", result[1].Title)
+
+	// LIKE wildcards in query are treated literally
+	resultLiteral, err := s.repo.SearchTasksByTitle(ctx, s.testUser.ID, "%")
+	s.Require().NoError(err)
+	s.Require().Len(resultLiteral, 0)
+}
