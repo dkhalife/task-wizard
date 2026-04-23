@@ -9,6 +9,7 @@ import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import java.util.concurrent.CopyOnWriteArrayList
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -21,7 +22,7 @@ class NetworkMonitor @Inject constructor(
     private val _isOnline = MutableStateFlow(currentlyOnline())
     val isOnline: StateFlow<Boolean> = _isOnline.asStateFlow()
 
-    private val listeners = mutableListOf<() -> Unit>()
+    private val listeners = CopyOnWriteArrayList<() -> Unit>()
 
     init {
         val request = NetworkRequest.Builder()
@@ -30,9 +31,10 @@ class NetworkMonitor @Inject constructor(
         cm.registerNetworkCallback(request, object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
                 val previouslyOffline = !_isOnline.value
-                _isOnline.value = true
-                if (previouslyOffline) {
-                    listeners.toList().forEach { runCatching { it() } }
+                val onlineNow = currentlyOnline()
+                _isOnline.value = onlineNow
+                if (previouslyOffline && onlineNow) {
+                    listeners.forEach { runCatching { it() } }
                 }
             }
 
@@ -41,7 +43,12 @@ class NetworkMonitor @Inject constructor(
             }
 
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
-                _isOnline.value = currentlyOnline()
+                val previouslyOffline = !_isOnline.value
+                val onlineNow = currentlyOnline()
+                _isOnline.value = onlineNow
+                if (previouslyOffline && onlineNow) {
+                    listeners.forEach { runCatching { it() } }
+                }
             }
         })
     }

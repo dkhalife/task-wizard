@@ -19,7 +19,6 @@ import com.dkhalife.tasks.model.UpdateDueDateReq
 import com.dkhalife.tasks.model.UpdateLabelReq
 import com.dkhalife.tasks.model.UpdateTaskReq
 import com.dkhalife.tasks.telemetry.TelemetryManager
-import com.google.gson.Gson
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -46,7 +45,6 @@ class SyncCoordinator @Inject constructor(
     private val outboxDao: OutboxDao,
     private val networkMonitor: NetworkMonitor,
     private val telemetryManager: TelemetryManager,
-    private val gson: Gson,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mutex = Mutex()
@@ -85,9 +83,7 @@ class SyncCoordinator @Inject constructor(
 
     private suspend fun flushOutbox() {
         while (true) {
-            val ops = outboxDao.getAll()
-            if (ops.isEmpty()) return
-            val op = ops.first()
+            val op = outboxDao.peekNext() ?: return
             val ok = try {
                 processOp(op)
             } catch (e: Exception) {

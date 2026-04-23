@@ -19,6 +19,9 @@ interface OutboxDao {
     @Query("SELECT * FROM outbox ORDER BY id ASC")
     suspend fun getAll(): List<OutboxEntity>
 
+    @Query("SELECT * FROM outbox ORDER BY id ASC LIMIT 1")
+    suspend fun peekNext(): OutboxEntity?
+
     @Query("SELECT * FROM outbox ORDER BY id ASC")
     fun observeAll(): Flow<List<OutboxEntity>>
 

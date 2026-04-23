@@ -1,6 +1,7 @@
 package com.dkhalife.tasks.di
 
 import android.content.Context
+import android.content.pm.ApplicationInfo
 import androidx.room.Room
 import com.dkhalife.tasks.data.db.TaskWizardDatabase
 import com.dkhalife.tasks.data.db.dao.LabelDao
@@ -19,10 +20,20 @@ object DatabaseModule {
 
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext context: Context): TaskWizardDatabase =
-        Room.databaseBuilder(context, TaskWizardDatabase::class.java, TaskWizardDatabase.DB_NAME)
-            .fallbackToDestructiveMigration(dropAllTables = true)
-            .build()
+    fun provideDatabase(@ApplicationContext context: Context): TaskWizardDatabase {
+        val builder =
+            Room.databaseBuilder(context, TaskWizardDatabase::class.java, TaskWizardDatabase.DB_NAME)
+
+        val isDebuggable =
+            (context.applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE) != 0
+        if (isDebuggable) {
+            // Release builds must preserve pending offline changes across schema bumps; provide
+            // real migrations when the schema version increments beyond 1.
+            builder.fallbackToDestructiveMigration(dropAllTables = true)
+        }
+
+        return builder.build()
+    }
 
     @Provides
     fun provideTaskDao(db: TaskWizardDatabase): TaskDao = db.taskDao()
