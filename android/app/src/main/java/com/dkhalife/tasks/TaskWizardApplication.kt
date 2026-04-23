@@ -49,6 +49,9 @@ class TaskWizardApplication : Application(), Configuration.Provider {
         initializeMsal()
         webSocketLifecycleManager.start()
         networkMonitor.addOnAvailableListener { syncCoordinator.syncOnce() }
+        if (networkMonitor.isOnline.value) {
+            syncCoordinator.syncOnce()
+        }
     }
 
     private fun setupCrashHandler() {

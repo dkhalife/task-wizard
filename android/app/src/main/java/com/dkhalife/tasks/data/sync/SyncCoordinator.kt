@@ -329,60 +329,80 @@ class SyncCoordinator @Inject constructor(
     }
 
     private suspend fun refreshAll() {
+        val labels = fetchLabelsForRefresh()
+        val tasks = fetchTasksForRefresh()
+        if (labels == null && tasks == null) return
         db.withTransaction {
-            refreshLabels()
-            refreshTasks()
+            labels?.let { applyLabelsToDb(it) }
+            tasks?.let { applyTasksToDb(it) }
         }
     }
 
-    private suspend fun refreshTasks() {
+    private suspend fun fetchTasksForRefresh(): List<TaskRefreshPayload>? {
         val response = api.getTasks()
         if (!response.isSuccessful) {
             telemetryManager.logWarning(TAG, "Refresh tasks failed: HTTP ${response.code()}")
-            return
+            return null
         }
-        val tasks = response.body()?.tasks ?: emptyList()
+        return response.body()?.tasks?.map { task ->
+            TaskRefreshPayload(
+                entity = task.toEntity(localState = LocalState.SYNCED),
+                labelIds = task.labels.map { it.id },
+            )
+        } ?: emptyList()
+    }
+
+    private suspend fun applyTasksToDb(tasks: List<TaskRefreshPayload>) {
         val dirtyIds = taskDao.dirtyIds().toSet()
-        val serverIds = tasks.map { it.id }.toSet()
+        val serverIds = tasks.map { it.entity.id }.toSet()
 
         taskDao.allIds()
             .filter { it !in serverIds && it !in dirtyIds }
             .forEach { taskDao.deleteById(it) }
 
-        for (t in tasks) {
-            if (t.id in dirtyIds) continue
-            taskDao.upsert(t.toEntity(localState = LocalState.SYNCED))
-            taskDao.replaceLabels(t.id, t.labels.map { it.id })
+        for (task in tasks) {
+            if (task.entity.id in dirtyIds) continue
+            taskDao.upsert(task.entity)
+            taskDao.replaceLabels(task.entity.id, task.labelIds)
         }
     }
 
-    private suspend fun refreshLabels() {
+    private suspend fun fetchLabelsForRefresh(): List<LabelEntity>? {
         val response = api.getLabels()
         if (!response.isSuccessful) {
             telemetryManager.logWarning(TAG, "Refresh labels failed: HTTP ${response.code()}")
-            return
+            return null
         }
-        val labels = response.body()?.labels ?: emptyList()
+        return response.body()?.labels?.map { label ->
+            LabelEntity(
+                id = label.id,
+                localId = null,
+                name = label.name,
+                color = label.color,
+                createdAt = label.createdAt,
+                updatedAt = label.updatedAt,
+                localState = LocalState.SYNCED,
+            )
+        } ?: emptyList()
+    }
+
+    private suspend fun applyLabelsToDb(labels: List<LabelEntity>) {
         val dirtyIds = labelDao.dirtyIds().toSet()
         val serverIds = labels.map { it.id }.toSet()
         labelDao.allIds()
             .filter { it !in serverIds && it !in dirtyIds }
             .forEach { labelDao.deleteById(it) }
-        for (l in labels) {
-            if (l.id in dirtyIds) continue
-            labelDao.upsert(
-                LabelEntity(
-                    id = l.id,
-                    localId = null,
-                    name = l.name,
-                    color = l.color,
-                    createdAt = l.createdAt,
-                    updatedAt = l.updatedAt,
-                    localState = LocalState.SYNCED,
-                )
-            )
+        for (label in labels) {
+            if (label.id in dirtyIds) continue
+            labelDao.upsert(label)
         }
     }
+
+    private data class TaskRefreshPayload(
+        val entity: TaskEntity,
+        val labelIds: List<Int>,
+    )
+
 
     companion object {
         private const val TAG = "SyncCoordinator"
