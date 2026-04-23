@@ -1,9 +1,9 @@
 package com.dkhalife.tasks.data.sync
 
 import android.content.Context
-import com.dkhalife.tasks.api.TaskWizardApi
 import com.dkhalife.tasks.data.calendar.CalendarSyncEngine
 import com.dkhalife.tasks.data.widget.WidgetSyncEngine
+import com.dkhalife.tasks.repo.TaskRepository
 import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -21,7 +21,8 @@ import javax.inject.Singleton
 class WebSocketSyncBridge @Inject constructor(
     @ApplicationContext private val context: Context,
     private val webSocketManager: WebSocketManager,
-    private val api: TaskWizardApi,
+    private val taskRepository: TaskRepository,
+    private val syncCoordinator: SyncCoordinator,
     private val widgetSyncEngine: WidgetSyncEngine,
     private val calendarSyncEngine: CalendarSyncEngine,
     private val telemetryManager: TelemetryManager
@@ -50,12 +51,8 @@ class WebSocketSyncBridge @Inject constructor(
 
     private suspend fun syncAll() {
         try {
-            val response = api.getTasks()
-            if (!response.isSuccessful) {
-                telemetryManager.logWarning(TAG, "Failed to fetch tasks for sync: ${response.code()}")
-                return
-            }
-            val tasks = response.body()?.tasks ?: emptyList()
+            syncCoordinator.syncOnceBlocking()
+            val tasks = taskRepository.tasks.value
             try {
                 widgetSyncEngine.sync(context, tasks)
             } catch (e: Exception) {
@@ -84,3 +81,4 @@ class WebSocketSyncBridge @Inject constructor(
         )
     }
 }
+

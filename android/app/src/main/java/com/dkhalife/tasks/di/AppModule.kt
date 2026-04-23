@@ -19,6 +19,11 @@ object AppModule {
 
     @Provides
     @Singleton
+    fun provideLocalIdGenerator(prefs: android.content.SharedPreferences): com.dkhalife.tasks.data.LocalIdGenerator =
+        com.dkhalife.tasks.data.LocalIdGenerator(prefs)
+
+    @Provides
+    @Singleton
     fun provideSharedPreferences(@ApplicationContext context: Context): SharedPreferences {
         return context.getSharedPreferences(AppPreferences.PREFS_NAME, Context.MODE_PRIVATE)
     }

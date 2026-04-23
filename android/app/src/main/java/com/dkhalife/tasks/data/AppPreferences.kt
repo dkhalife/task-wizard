@@ -14,6 +14,7 @@ object AppPreferences {
     const val KEY_TELEMETRY_ENABLED = "telemetry_enabled"
     const val KEY_DEBUG_LOGGING_ENABLED = "debug_logging_enabled"
     const val KEY_DEVICE_IDENTIFIER = "device_identifier"
+    const val KEY_LOCAL_ID_COUNTER = "local_id_counter"
 }
 
 enum class ThemeMode {

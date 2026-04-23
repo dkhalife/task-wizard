@@ -1,6 +1,10 @@
 <resources>
     <string name="app_name">Task Wizard</string>
 
+    <string name="sync_banner_offline">Offline - changes will sync when you\'re back online.</string>
+    <string name="sync_banner_offline_pending">Offline - %1$d change(s) pending sync.</string>
+    <string name="sync_banner_pending">Syncing %1$d pending change(s)…</string>
+
     <!-- Widget metadata -->
     <string name="widget_task_list_name">Task List</string>
     <string name="widget_task_list_description">Scrollable grouped task list with quick complete</string>

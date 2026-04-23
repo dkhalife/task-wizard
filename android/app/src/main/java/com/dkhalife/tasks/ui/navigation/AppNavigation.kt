@@ -131,6 +131,8 @@ fun AppNavigation(
                 val taskGroups by viewModel.taskGroups.collectAsState()
                 val expandedGroups by viewModel.expandedGroups.collectAsState()
                 val deletionRequestedAt by userViewModel.deletionRequestedAt.collectAsState()
+                val isOnline by viewModel.isOnline.collectAsState()
+                val pendingSyncCount by viewModel.pendingSyncCount.collectAsState()
 
                 LaunchedEffect(taskGrouping) {
                     viewModel.setTaskGrouping(taskGrouping)
@@ -151,7 +153,9 @@ fun AppNavigation(
                     onToggleGroup = { viewModel.toggleGroupExpanded(it) },
                     swipeSettings = swipeSettings,
                     inlineCompleteEnabled = inlineCompleteEnabled,
-                    isPendingDeletion = deletionRequestedAt != null
+                    isPendingDeletion = deletionRequestedAt != null,
+                    isOnline = isOnline,
+                    pendingSyncCount = pendingSyncCount,
                 )
             }
 
