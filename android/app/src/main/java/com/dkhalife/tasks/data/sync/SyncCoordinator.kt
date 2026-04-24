@@ -72,14 +72,41 @@ class SyncCoordinator @Inject constructor(
 
     suspend fun syncOnceBlocking(): Boolean {
         if (!networkMonitor.isOnline.value) return false
-        return mutex.withLock {
-            try {
-                flushOutbox()
-                refreshAll()
-                true
-            } catch (e: Exception) {
-                telemetryManager.logError(TAG, "Sync cycle failed: ${e.message}", e)
-                false
+        activeJob?.takeIf { it.isActive }?.let {
+            it.join()
+            return true
+        }
+        val job = scope.launch {
+            mutex.withLock {
+                try {
+                    flushOutbox()
+                    refreshAll()
+                } catch (e: Exception) {
+                    telemetryManager.logError(TAG, "Sync cycle failed: ${e.message}", e)
+                }
+            }
+        }
+        activeJob = job
+        job.join()
+        return true
+    }
+
+    /**
+     * Flush-only path for locally-initiated mutations. No server refresh — the server's
+     * WebSocket echo (handled by [WebSocketSyncBridge]) triggers reconciliation. If a full
+     * sync is already running, its outbox loop will drain the newly inserted row, so we
+     * can skip launching an additional cycle.
+     */
+    fun flushPending() {
+        if (!networkMonitor.isOnline.value) return
+        if (activeJob?.isActive == true) return
+        activeJob = scope.launch {
+            mutex.withLock {
+                try {
+                    flushOutbox()
+                } catch (e: Exception) {
+                    telemetryManager.logError(TAG, "Outbox flush failed: ${e.message}", e)
+                }
             }
         }
     }

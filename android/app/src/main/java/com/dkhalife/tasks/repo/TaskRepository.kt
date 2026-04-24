@@ -153,7 +153,7 @@ class TaskRepository @Inject constructor(
                     )
                 )
             }
-            syncCoordinator.syncOnce()
+            syncCoordinator.flushPending()
             Result.success(placeholderId)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to create task locally: ${e.message}", e)
@@ -197,7 +197,7 @@ class TaskRepository @Inject constructor(
                     )
                 }
             }
-            syncCoordinator.syncOnce()
+            syncCoordinator.flushPending()
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to update task locally: ${e.message}", e)
@@ -226,7 +226,7 @@ class TaskRepository @Inject constructor(
                     enqueued = true
                 }
             }
-            if (enqueued) syncCoordinator.syncOnce()
+            if (enqueued) syncCoordinator.flushPending()
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to delete task locally: ${e.message}", e)
@@ -256,7 +256,7 @@ class TaskRepository @Inject constructor(
                     )
                 )
             }
-            syncCoordinator.syncOnce()
+            syncCoordinator.flushPending()
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to update due date locally: ${e.message}", e)
@@ -277,7 +277,7 @@ class TaskRepository @Inject constructor(
                     )
                 )
             }
-            syncCoordinator.syncOnce()
+            syncCoordinator.flushPending()
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to enqueue $opType locally: ${e.message}", e)
@@ -285,12 +285,8 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    fun updateTasksFromWebSocket(@Suppress("UNUSED_PARAMETER") tasks: List<Task>) {
-        // WebSocket pushes trigger a full sync via SyncCoordinator; DB updates flow from there.
-        syncCoordinator.syncOnce()
-    }
-
     companion object {
         private const val TAG = "TaskRepository"
     }
 }
+
