@@ -118,8 +118,8 @@ class TaskListViewModel @Inject constructor(
             webSocketManager.messages.collect { message ->
                 // The in-progress task list is kept fresh by WebSocketSyncBridge -> SyncCoordinator,
                 // which updates the Room DB that `tasks` observes. Completed tasks are fetched via a
-                // separate endpoint not covered by the coordinator, so refresh them here on relevant
-                // lifecycle events.
+                // separate endpoint not covered by the coordinator, so refresh them here when
+                // relevant WebSocket task actions are received.
                 when (message.action) {
                     "task_completed",
                     "task_uncompleted",
