@@ -53,12 +53,12 @@ class SyncCoordinator @Inject constructor(
     private val mutex = Mutex()
 
     @Volatile
-    private var activeJob: Job? = null
+    private var activeFullJob: Job? = null
 
     fun syncOnce() {
         if (!networkMonitor.isOnline.value) return
-        if (activeJob?.isActive == true) return
-        activeJob = scope.launch {
+        if (activeFullJob?.isActive == true) return
+        activeFullJob = scope.launch {
             mutex.withLock {
                 try {
                     flushOutbox()
@@ -72,14 +72,41 @@ class SyncCoordinator @Inject constructor(
 
     suspend fun syncOnceBlocking(): Boolean {
         if (!networkMonitor.isOnline.value) return false
-        return mutex.withLock {
-            try {
-                flushOutbox()
-                refreshAll()
-                true
-            } catch (e: Exception) {
-                telemetryManager.logError(TAG, "Sync cycle failed: ${e.message}", e)
-                false
+        activeFullJob?.takeIf { it.isActive }?.let {
+            it.join()
+            return true
+        }
+        val job = scope.launch {
+            mutex.withLock {
+                try {
+                    flushOutbox()
+                    refreshAll()
+                } catch (e: Exception) {
+                    telemetryManager.logError(TAG, "Sync cycle failed: ${e.message}", e)
+                }
+            }
+        }
+        activeFullJob = job
+        job.join()
+        return true
+    }
+
+    /**
+     * Flush-only path for locally-initiated mutations. No server refresh — the server's
+     * WebSocket echo (handled by [WebSocketSyncBridge]) triggers reconciliation. Always
+     * launches a coroutine so newly-enqueued rows are never stranded; concurrent flushes
+     * serialize through [mutex] and each pass drains the full outbox, so redundant calls
+     * collapse into cheap no-ops rather than missed work.
+     */
+    fun flushPending() {
+        if (!networkMonitor.isOnline.value) return
+        scope.launch {
+            mutex.withLock {
+                try {
+                    flushOutbox()
+                } catch (e: Exception) {
+                    telemetryManager.logError(TAG, "Outbox flush failed: ${e.message}", e)
+                }
             }
         }
     }

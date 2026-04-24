@@ -37,7 +37,7 @@ class WebSocketSyncBridge @Inject constructor(
             webSocketManager.messages
                 .debounce(DEBOUNCE_MS)
                 .collect { message ->
-                    if (message.action in TASK_EVENTS) {
+                    if (message.action in SYNC_EVENTS) {
                         syncAll()
                     }
                 }
@@ -71,13 +71,16 @@ class WebSocketSyncBridge @Inject constructor(
     companion object {
         private const val TAG = "WebSocketSyncBridge"
         private const val DEBOUNCE_MS = 500L
-        private val TASK_EVENTS = setOf(
+        private val SYNC_EVENTS = setOf(
             "task_created",
             "task_updated",
             "task_deleted",
             "task_completed",
             "task_uncompleted",
-            "task_skipped"
+            "task_skipped",
+            "label_created",
+            "label_updated",
+            "label_deleted",
         )
     }
 }

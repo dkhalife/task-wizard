@@ -80,7 +80,7 @@ class LabelRepository @Inject constructor(
                     )
                 )
             }
-            syncCoordinator.syncOnce()
+            syncCoordinator.flushPending()
             Result.success(placeholderId)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to create label locally: ${e.message}", e)
@@ -114,7 +114,7 @@ class LabelRepository @Inject constructor(
                     )
                 }
             }
-            syncCoordinator.syncOnce()
+            syncCoordinator.flushPending()
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to update label locally: ${e.message}", e)
@@ -144,7 +144,7 @@ class LabelRepository @Inject constructor(
                     enqueued = true
                 }
             }
-            if (enqueued) syncCoordinator.syncOnce()
+            if (enqueued) syncCoordinator.flushPending()
             Result.success(Unit)
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to delete label locally: ${e.message}", e)
@@ -152,11 +152,8 @@ class LabelRepository @Inject constructor(
         }
     }
 
-    fun updateLabelsFromWebSocket(@Suppress("UNUSED_PARAMETER") labels: List<Label>) {
-        syncCoordinator.syncOnce()
-    }
-
     companion object {
         private const val TAG = "LabelRepository"
     }
 }
+
