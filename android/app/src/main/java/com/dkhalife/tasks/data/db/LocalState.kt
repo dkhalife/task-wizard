@@ -5,4 +5,6 @@ object LocalState {
     const val PENDING_CREATE = "PENDING_CREATE"
     const val PENDING_UPDATE = "PENDING_UPDATE"
     const val PENDING_DELETE = "PENDING_DELETE"
+    const val PENDING_COMPLETE = "PENDING_COMPLETE"
+    const val PENDING_SKIP = "PENDING_SKIP"
 }

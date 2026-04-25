@@ -231,10 +231,17 @@ class SyncCoordinator @Inject constructor(
                 val endRecurrence = op.payloadJson?.toBooleanStrictOrNull() ?: false
                 val response = api.completeTask(id, endRecurrence)
                 if (!response.isSuccessful) {
+                    taskDao.setState(id, LocalState.PENDING_UPDATE)
                     recordFailure(op, "HTTP ${response.code()}")
                     return false
                 }
-                taskDao.setState(id, LocalState.SYNCED)
+                val returnedTask = response.body()?.task
+                if (returnedTask?.nextDueDate != null) {
+                    taskDao.upsert(returnedTask.toEntity())
+                    taskDao.replaceLabels(id, returnedTask.labels.map { it.id })
+                } else {
+                    taskDao.deleteById(id)
+                }
                 outboxDao.deleteById(op.id)
             }
             OutboxOpType.UNCOMPLETE -> {
@@ -248,7 +255,13 @@ class SyncCoordinator @Inject constructor(
                     recordFailure(op, "HTTP ${response.code()}")
                     return false
                 }
-                taskDao.setState(id, LocalState.SYNCED)
+                val returnedTask = response.body()?.task
+                if (returnedTask != null) {
+                    taskDao.upsert(returnedTask.toEntity())
+                    taskDao.replaceLabels(id, returnedTask.labels.map { it.id })
+                } else {
+                    taskDao.setState(id, LocalState.SYNCED)
+                }
                 outboxDao.deleteById(op.id)
             }
             OutboxOpType.SKIP -> {
@@ -259,10 +272,17 @@ class SyncCoordinator @Inject constructor(
                 }
                 val response = api.skipTask(id)
                 if (!response.isSuccessful) {
+                    taskDao.setState(id, LocalState.PENDING_UPDATE)
                     recordFailure(op, "HTTP ${response.code()}")
                     return false
                 }
-                taskDao.setState(id, LocalState.SYNCED)
+                val returnedTask = response.body()?.task
+                if (returnedTask?.nextDueDate != null) {
+                    taskDao.upsert(returnedTask.toEntity())
+                    taskDao.replaceLabels(id, returnedTask.labels.map { it.id })
+                } else {
+                    taskDao.deleteById(id)
+                }
                 outboxDao.deleteById(op.id)
             }
             OutboxOpType.DUE_DATE -> {
