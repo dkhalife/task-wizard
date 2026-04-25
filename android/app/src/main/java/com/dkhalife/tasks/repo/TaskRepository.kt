@@ -252,7 +252,7 @@ class TaskRepository @Inject constructor(
         return try {
             db.withTransaction {
                 val existing = taskDao.getTaskById(id)?.task
-                val resolvedState = if (existing?.localState == LocalState.PENDING_CREATE) {
+                val resolvedState = if (existing?.localState == LocalState.PENDING_CREATE && localState == LocalState.PENDING_UPDATE) {
                     LocalState.PENDING_CREATE
                 } else {
                     localState
