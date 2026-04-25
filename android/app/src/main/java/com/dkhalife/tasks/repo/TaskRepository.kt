@@ -31,11 +31,6 @@ import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
-data class TaskWithSyncState(
-    val task: Task,
-    val pendingSync: Boolean,
-)
-
 @Singleton
 class TaskRepository @Inject constructor(
     private val api: TaskWizardApi,
@@ -48,17 +43,6 @@ class TaskRepository @Inject constructor(
     private val telemetryManager: TelemetryManager,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
-
-    val taskStates: StateFlow<List<TaskWithSyncState>> = taskDao.observeTasks()
-        .map { rows ->
-            rows.map { r ->
-                TaskWithSyncState(
-                    task = r.toDomain(),
-                    pendingSync = r.task.localState != LocalState.SYNCED,
-                )
-            }
-        }
-        .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     val tasks: StateFlow<List<Task>> = taskDao.observeTasks()
         .map { rows -> rows.map { it.toDomain() } }
@@ -235,13 +219,13 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun completeTask(id: Int, endRecurrence: Boolean = false): Result<Unit> =
-        enqueueTaskOp(id, OutboxOpType.COMPLETE, endRecurrence.toString())
+        enqueueTaskOp(id, OutboxOpType.COMPLETE, endRecurrence.toString(), LocalState.PENDING_COMPLETE)
 
     suspend fun uncompleteTask(id: Int): Result<Unit> =
         enqueueTaskOp(id, OutboxOpType.UNCOMPLETE, null)
 
     suspend fun skipTask(id: Int): Result<Unit> =
-        enqueueTaskOp(id, OutboxOpType.SKIP, null)
+        enqueueTaskOp(id, OutboxOpType.SKIP, null, LocalState.PENDING_SKIP)
 
     suspend fun updateDueDate(id: Int, dueDate: String): Result<Unit> {
         return try {
@@ -264,10 +248,16 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    private suspend fun enqueueTaskOp(id: Int, opType: String, payload: String?): Result<Unit> {
+    private suspend fun enqueueTaskOp(id: Int, opType: String, payload: String?, localState: String = LocalState.PENDING_UPDATE): Result<Unit> {
         return try {
             db.withTransaction {
-                taskDao.setState(id, LocalState.PENDING_UPDATE)
+                val existing = taskDao.getTaskById(id)?.task
+                val resolvedState = if (existing?.localState == LocalState.PENDING_CREATE) {
+                    LocalState.PENDING_CREATE
+                } else {
+                    localState
+                }
+                taskDao.setState(id, resolvedState)
                 outboxDao.insert(
                     OutboxEntity(
                         entityType = OutboxEntityType.TASK,

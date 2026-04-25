@@ -13,7 +13,7 @@ import kotlinx.coroutines.flow.Flow
 @Dao
 interface TaskDao {
     @Transaction
-    @Query("SELECT * FROM tasks WHERE localState != 'PENDING_DELETE' ORDER BY id")
+    @Query("SELECT * FROM tasks WHERE localState NOT IN ('PENDING_DELETE', 'PENDING_COMPLETE', 'PENDING_SKIP') ORDER BY id")
     fun observeTasks(): Flow<List<TaskWithLabels>>
 
     @Transaction
@@ -36,7 +36,7 @@ interface TaskDao {
     @Query("UPDATE tasks SET localState = :state WHERE id = :id")
     suspend fun setState(id: Int, state: String)
 
-    @Query("UPDATE tasks SET id = :newId, localId = NULL, localState = 'SYNCED' WHERE id = :oldId")
+    @Query("UPDATE tasks SET id = :newId, localId = NULL, localState = CASE WHEN localState = 'PENDING_CREATE' THEN 'SYNCED' ELSE localState END WHERE id = :oldId")
     suspend fun remapId(oldId: Int, newId: Int)
 
     @Query("DELETE FROM tasks WHERE id = :id")

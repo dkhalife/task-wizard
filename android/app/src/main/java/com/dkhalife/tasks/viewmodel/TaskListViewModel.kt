@@ -6,7 +6,6 @@ import com.dkhalife.tasks.data.GroupingRepository
 import com.dkhalife.tasks.data.TaskGroup
 import com.dkhalife.tasks.data.TaskGrouper
 import com.dkhalife.tasks.data.TaskGrouping
-import com.dkhalife.tasks.data.db.LocalState
 import com.dkhalife.tasks.data.db.dao.OutboxDao
 import com.dkhalife.tasks.data.network.NetworkMonitor
 import com.dkhalife.tasks.model.Label
@@ -24,7 +23,6 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flowOn
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -48,10 +46,6 @@ class TaskListViewModel @Inject constructor(
 
     val pendingSyncCount: StateFlow<Int> = outboxDao.observeCount()
         .stateIn(viewModelScope, SharingStarted.Eagerly, 0)
-
-    val pendingSyncTaskIds: StateFlow<Set<Int>> = taskRepository.taskStates
-        .map { list -> list.filter { it.pendingSync }.map { it.task.id }.toSet() }
-        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
 
     private val _isRefreshing = MutableStateFlow(false)
     val isRefreshing: StateFlow<Boolean> = _isRefreshing

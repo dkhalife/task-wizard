@@ -37,13 +37,13 @@ interface TaskWizardApi {
     suspend fun completeTask(
         @Path("id") id: Int,
         @Query("endRecurrence") endRecurrence: Boolean = false
-    ): Response<Void>
+    ): Response<TaskResponse>
 
     @POST("api/v1/tasks/{id}/undo")
-    suspend fun uncompleteTask(@Path("id") id: Int): Response<Void>
+    suspend fun uncompleteTask(@Path("id") id: Int): Response<TaskResponse>
 
     @POST("api/v1/tasks/{id}/skip")
-    suspend fun skipTask(@Path("id") id: Int): Response<Void>
+    suspend fun skipTask(@Path("id") id: Int): Response<TaskResponse>
 
     @PUT("api/v1/tasks/{id}/dueDate")
     suspend fun updateDueDate(
