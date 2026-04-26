@@ -98,5 +98,11 @@ func (m *UniqueLabelNamesMigration) Up(ctx context.Context, db *gorm.DB) error {
 }
 
 func (m *UniqueLabelNamesMigration) Down(ctx context.Context, db *gorm.DB) error {
-	return db.WithContext(ctx).Exec("DROP INDEX IF EXISTS idx_labels_created_by_name").Error
+	dbCtx := db.WithContext(ctx)
+
+	if db.Dialector.Name() == "mysql" {
+		return dbCtx.Exec("DROP INDEX idx_labels_created_by_name ON labels").Error
+	}
+
+	return dbCtx.Exec("DROP INDEX IF EXISTS idx_labels_created_by_name").Error
 }

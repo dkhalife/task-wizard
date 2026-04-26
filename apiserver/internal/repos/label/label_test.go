@@ -70,6 +70,34 @@ func (s *LabelTestSuite) TestCreateLabels() {
 	s.Equal(int64(2), count)
 }
 
+func (s *LabelTestSuite) TestLabelExistsByName() {
+	ctx := context.Background()
+
+	label := &models.Label{Name: "Work", Color: "#FF0000", CreatedBy: s.testUser.ID}
+	err := s.DB.Create(label).Error
+	s.Require().NoError(err)
+
+	exists, err := s.repo.LabelExistsByName(ctx, s.testUser.ID, "Work", 0)
+	s.Require().NoError(err)
+	s.True(exists)
+
+	exists, err = s.repo.LabelExistsByName(ctx, s.testUser.ID, "Nonexistent", 0)
+	s.Require().NoError(err)
+	s.False(exists)
+
+	exists, err = s.repo.LabelExistsByName(ctx, s.testUser.ID, "Work", label.ID)
+	s.Require().NoError(err)
+	s.False(exists)
+
+	anotherUser := &models.User{}
+	err = s.DB.Create(anotherUser).Error
+	s.Require().NoError(err)
+
+	exists, err = s.repo.LabelExistsByName(ctx, anotherUser.ID, "Work", 0)
+	s.Require().NoError(err)
+	s.False(exists)
+}
+
 func (s *LabelTestSuite) TestAreLabelsAssignableByUser() {
 	ctx := context.Background()
 
