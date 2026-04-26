@@ -87,8 +87,15 @@ const labelsSlice = createSlice({
       })
       .addCase(createLabel.fulfilled, (state, action) => {
         state.status = 'succeeded'
+
+        const labelId = action.payload.label
+        const label: Label = {
+          ...action.meta.arg,
+          id: labelId,
+        }
+
         labelsSlice.caseReducers.labelUpserted(state, {
-          payload: action.payload.label,
+          payload: label,
           type: 'labels/labelUpserted',
         })
         state.error = null
@@ -103,9 +110,8 @@ const labelsSlice = createSlice({
       })
       .addCase(updateLabel.fulfilled, (state, action) => {
         state.status = 'succeeded'
-        const label = action.payload.label
         labelsSlice.caseReducers.labelUpserted(state, {
-          payload: label,
+          payload: action.payload.label,
           type: 'labels/labelUpserted',
         })
         state.error = null

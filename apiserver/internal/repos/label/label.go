@@ -30,6 +30,18 @@ func (r *LabelRepository) CreateLabels(ctx context.Context, labels []*models.Lab
 	return r.db.WithContext(ctx).Create(&labels).Error
 }
 
+func (r *LabelRepository) LabelExistsByName(ctx context.Context, userID int, name string, excludeLabelID int) (bool, error) {
+	var count int64
+	q := r.db.WithContext(ctx).Model(&models.Label{}).Where("created_by = ? AND name = ?", userID, name)
+	if excludeLabelID > 0 {
+		q = q.Where("id != ?", excludeLabelID)
+	}
+	if err := q.Count(&count).Error; err != nil {
+		return false, err
+	}
+	return count > 0, nil
+}
+
 func (r *LabelRepository) AreLabelsAssignableByUser(ctx context.Context, userID int, labels []int) bool {
 	var count int64
 
