@@ -53,6 +53,12 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
   }
 
   private logout = async () => {
+    try {
+      const { DeleteSession } = await import('@/api/auth')
+      await DeleteSession()
+    } catch {
+      // Best effort
+    }
     const { logout } = await import('@/utils/msal')
     await logout()
   }

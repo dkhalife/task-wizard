@@ -71,7 +71,7 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		scheme := effectiveScheme(c)
-		if scheme == "http" {
+		if scheme == "http" && hostName != "" {
 			target := fmt.Sprintf("https://%s", hostName)
 			if port != 443 {
 				target = fmt.Sprintf("%s:%d", target, port)

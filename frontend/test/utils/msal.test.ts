@@ -27,14 +27,12 @@ describe('msal utils', () => {
     getAllAccounts: jest.Mock
     setActiveAccount: jest.Mock
     acquireTokenSilent: jest.Mock
-    ssoSilent: jest.Mock
     loginRedirect: jest.Mock
     logoutRedirect: jest.Mock
   }
 
   let initializeMsal: () => Promise<void>
-  let loginSilently: () => Promise<boolean>
-  let hasCachedAccounts: () => Promise<boolean>
+  let acquireAccessToken: () => Promise<string>
 
   beforeEach(async () => {
     jest.resetModules()
@@ -45,7 +43,6 @@ describe('msal utils', () => {
       getAllAccounts: jest.fn().mockReturnValue([]),
       setActiveAccount: jest.fn(),
       acquireTokenSilent: jest.fn(),
-      ssoSilent: jest.fn(),
       loginRedirect: jest.fn(),
       logoutRedirect: jest.fn(),
     }
@@ -65,64 +62,17 @@ describe('msal utils', () => {
 
     const module = await import('@/utils/msal')
     initializeMsal = module.initializeMsal
-    loginSilently = module.loginSilently
-    hasCachedAccounts = module.hasCachedAccounts
+    acquireAccessToken = module.acquireAccessToken
   })
 
-  describe('hasCachedAccounts', () => {
-    it('returns false when no accounts are cached', async () => {
-      await initializeMsal()
-      expect(await hasCachedAccounts()).toBe(false)
-    })
-
-    it('returns false when only accounts from other tenants are cached', async () => {
-      await initializeMsal()
-      mockPca.getAllAccounts.mockReturnValue([otherAccount])
-      expect(await hasCachedAccounts()).toBe(false)
-    })
-
-    it('returns true when a cached account matches the configured tenant', async () => {
-      await initializeMsal()
-      mockPca.getAllAccounts.mockReturnValue([tenantAccount])
-      expect(await hasCachedAccounts()).toBe(true)
-    })
-
-    it('returns true when mixed accounts include one for the configured tenant', async () => {
-      await initializeMsal()
-      mockPca.getAllAccounts.mockReturnValue([otherAccount, tenantAccount])
-      expect(await hasCachedAccounts()).toBe(true)
-    })
-  })
-
-  describe('loginSilently', () => {
-    it('returns true when acquireTokenSilent succeeds', async () => {
+  describe('acquireAccessToken', () => {
+    it('returns token when acquireTokenSilent succeeds', async () => {
       await initializeMsal()
       mockPca.getAllAccounts.mockReturnValue([tenantAccount])
       mockPca.acquireTokenSilent.mockResolvedValue(authResult)
 
-      expect(await loginSilently()).toBe(true)
-      expect(mockPca.ssoSilent).not.toHaveBeenCalled()
-    })
-
-    it('falls back to ssoSilent when acquireTokenSilent fails', async () => {
-      await initializeMsal()
-      mockPca.getAllAccounts.mockReturnValue([tenantAccount])
-      mockPca.acquireTokenSilent.mockRejectedValue(new Error('token expired'))
-      mockPca.ssoSilent.mockResolvedValue({ ...authResult })
-
-      expect(await loginSilently()).toBe(true)
-      expect(mockPca.ssoSilent).toHaveBeenCalledWith(
-        expect.objectContaining({ loginHint: tenantAccount.username }),
-      )
-    })
-
-    it('returns false when both acquireTokenSilent and ssoSilent fail', async () => {
-      await initializeMsal()
-      mockPca.getAllAccounts.mockReturnValue([tenantAccount])
-      mockPca.acquireTokenSilent.mockRejectedValue(new Error('token expired'))
-      mockPca.ssoSilent.mockRejectedValue(new Error('sso failed'))
-
-      expect(await loginSilently()).toBe(false)
+      const token = await acquireAccessToken()
+      expect(token).toBe('access-token')
     })
 
     it('selects the tenant-matching account when multiple accounts are cached', async () => {
@@ -130,18 +80,18 @@ describe('msal utils', () => {
       mockPca.getAllAccounts.mockReturnValue([otherAccount, tenantAccount])
       mockPca.acquireTokenSilent.mockResolvedValue(authResult)
 
-      await loginSilently()
+      await acquireAccessToken()
 
       expect(mockPca.setActiveAccount).toHaveBeenCalledWith(tenantAccount)
       expect(mockPca.setActiveAccount).not.toHaveBeenCalledWith(otherAccount)
     })
 
-    it('clears a wrong active account before throwing when no tenant account exists', async () => {
+    it('throws when no tenant account exists', async () => {
       await initializeMsal()
       mockPca.getActiveAccount.mockReturnValue(otherAccount)
       mockPca.getAllAccounts.mockReturnValue([otherAccount])
 
-      expect(await loginSilently()).toBe(false)
+      await expect(acquireAccessToken()).rejects.toThrow()
       expect(mockPca.setActiveAccount).toHaveBeenCalledWith(null)
     })
   })

@@ -83,50 +83,7 @@ export const isAuthEnabled = (): boolean => {
 export const loginWithRedirect = async () => {
   if (!authConfig?.enabled || !pcaPromise) return
   const pca = await pcaPromise
-  await pca.loginRedirect({ scopes: getScopes() })
-}
-
-export const hasCachedAccounts = async (): Promise<boolean> => {
-  if (!authConfig?.enabled || !pcaPromise) return false
-  const pca = await pcaPromise
-  return pca.getAllAccounts().some(a => a.tenantId === authConfig?.tenant_id)
-}
-
-const AUTH_COOKIE = 'tw_auth'
-
-const setAuthCookie = () => {
-  document.cookie = `${AUTH_COOKIE}=1; path=/; SameSite=Strict; max-age=31536000`
-}
-
-const clearAuthCookie = () => {
-  document.cookie = `${AUTH_COOKIE}=; path=/; SameSite=Strict; max-age=0`
-}
-
-export const loginSilently = async (): Promise<boolean> => {
-  if (!authConfig?.enabled || !pcaPromise) return true
-  const pca = await pcaPromise
-  try {
-    const account = ensureActiveAccount(pca)
-    cachedAuthResult = await pca.acquireTokenSilent({ scopes: getScopes(), account })
-    setAuthCookie()
-    return true
-  } catch {
-    try {
-      const account = pca.getActiveAccount() ?? pca.getAllAccounts().find(a => a.tenantId === authConfig?.tenant_id)
-      cachedAuthResult = await pca.ssoSilent({
-        scopes: getScopes(),
-        loginHint: account?.username,
-      })
-      if (cachedAuthResult.account) {
-        pca.setActiveAccount(cachedAuthResult.account)
-      }
-      setAuthCookie()
-      return true
-    } catch {
-      clearAuthCookie()
-      return false
-    }
-  }
+  await pca.loginRedirect({ scopes: getScopes(), prompt: 'select_account' })
 }
 
 export const acquireAccessToken = async (): Promise<string> => {
@@ -142,7 +99,6 @@ export const acquireAccessToken = async (): Promise<string> => {
 }
 
 export const logout = async () => {
-  clearAuthCookie()
   if (!authConfig?.enabled || !pcaPromise) {
     window.location.href = '/'
     return

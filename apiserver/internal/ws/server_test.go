@@ -50,7 +50,7 @@ func (s *WSServerTestSuite) SetupTest() {
 	}
 
 	mockRepo := &mockWSUserRepo{}
-	authMiddleware, err := authMW.NewAuthMiddleware(cfg, mockRepo)
+	authMiddleware, err := authMW.NewAuthMiddleware(cfg, mockRepo, nil)
 	s.Require().NoError(err)
 
 	s.server = NewWSServer(authMiddleware, nil, nil, mockRepo)

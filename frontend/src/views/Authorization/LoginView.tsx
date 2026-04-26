@@ -1,4 +1,3 @@
-import { Loading } from '@/Loading'
 import { Logo } from '@/Logo'
 import { Sheet } from '@mui/joy'
 import {
@@ -9,7 +8,8 @@ import {
 } from '@mui/joy'
 import React from 'react'
 import { Link } from 'react-router-dom'
-import { hasCachedAccounts, initializeMsal, loginSilently, loginWithRedirect } from '@/utils/msal'
+import { initializeMsal, isAuthEnabled, loginWithRedirect, acquireAccessToken } from '@/utils/msal'
+import { CreateSession } from '@/api/auth'
 import { setTitle } from '@/utils/dom'
 import { getQuery, NavigationPaths, WithNavigate } from '@/utils/navigation'
 import { connect } from 'react-redux'
@@ -22,13 +22,13 @@ type LoginViewProps = WithNavigate & {
 }
 
 type LoginViewState = {
-  authReady: boolean
+  msalReady: boolean
 }
 
 class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
   constructor(props: LoginViewProps) {
     super(props)
-    this.state = { authReady: false }
+    this.state = { msalReady: false }
   }
 
   private getReturnPath = (): string => {
@@ -38,21 +38,26 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
 
   async componentDidMount(): Promise<void> {
     setTitle('Login')
+
     await initializeMsal()
-    const silentOk = await loginSilently()
-    if (silentOk) {
-      this.props.navigate(this.getReturnPath())
-      return
-    }
-    try {
-      if (await hasCachedAccounts()) {
-        await loginWithRedirect()
-        return
+    this.setState({ msalReady: true })
+
+    if (isAuthEnabled()) {
+      try {
+        const token = await acquireAccessToken()
+        if (token) {
+          try {
+            await CreateSession()
+          } catch {
+            // Session creation is best-effort
+          }
+          this.props.navigate(this.getReturnPath())
+          return
+        }
+      } catch {
+        // No cached MSAL tokens; show sign-in button
       }
-    } catch (error) {
-      this.props.pushStatus((error as Error).message, 'error', 5000)
     }
-    this.setState({ authReady: true })
   }
 
   private handleLogin = async () => {
@@ -64,9 +69,7 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
   }
 
   render(): React.ReactNode {
-    if (!this.state.authReady) {
-      return <Loading />
-    }
+    const { msalReady } = this.state
 
     return (
       <Container
@@ -101,6 +104,8 @@ class LoginViewImpl extends React.Component<LoginViewProps, LoginViewState> {
               fullWidth
               size='lg'
               variant='solid'
+              disabled={!msalReady}
+              loading={!msalReady}
               sx={{
                 width: '100%',
                 mt: 3,

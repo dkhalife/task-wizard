@@ -11,6 +11,7 @@ import (
 
 	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
+	sRepo "dkhalife.com/tasks/core/internal/repos/session"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/telemetry"
 	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
@@ -18,14 +19,17 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
+const SessionCookieName = "tw_session"
+
 type AuthMiddleware struct {
-	enabled  bool
-	keySet   oidc.KeySet
-	issuer   string
-	audience string
-	tenantID string
-	clientID string
-	userRepo uRepo.IUserRepo
+	enabled     bool
+	keySet      oidc.KeySet
+	issuer      string
+	audience    string
+	tenantID    string
+	clientID    string
+	userRepo    uRepo.IUserRepo
+	sessionRepo sRepo.ISessionRepo
 }
 
 type accessTokenClaims struct {
@@ -36,10 +40,11 @@ type accessTokenClaims struct {
 	ObjectID  string `json:"oid"`
 }
 
-func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo) (*AuthMiddleware, error) {
+func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo, sessionRepo sRepo.ISessionRepo) (*AuthMiddleware, error) {
 	m := &AuthMiddleware{
-		enabled:  cfg.Entra.Enabled,
-		userRepo: userRepo,
+		enabled:     cfg.Entra.Enabled,
+		userRepo:    userRepo,
+		sessionRepo: sessionRepo,
 	}
 
 	if !cfg.Entra.Enabled {
@@ -93,12 +98,21 @@ func (m *AuthMiddleware) authenticate(c *gin.Context) (*models.SignedInIdentity,
 		return m.bypassAuth(c.Request.Context())
 	}
 
+	// Prefer bearer token when present (explicit auth takes precedence)
 	token := extractBearerToken(c)
-	if token == "" {
-		return nil, fmt.Errorf("missing authorization token")
+	if token != "" {
+		return m.verifyAccessToken(c.Request.Context(), token)
 	}
 
-	return m.verifyAccessToken(c.Request.Context(), token)
+	// Fall back to session cookie
+	if sessionToken, err := c.Cookie(SessionCookieName); err == nil && sessionToken != "" {
+		identity, err := m.authenticateSession(c.Request.Context(), sessionToken)
+		if err == nil {
+			return identity, nil
+		}
+	}
+
+	return nil, fmt.Errorf("missing authorization token")
 }
 
 func extractBearerToken(c *gin.Context) string {
@@ -124,7 +138,7 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 		return nil, fmt.Errorf("invalid token issuer")
 	}
 
-	if claims.Audience != m.audience {
+	if claims.Audience != m.audience && claims.Audience != m.clientID {
 		return nil, fmt.Errorf("invalid token audience")
 	}
 
@@ -139,6 +153,29 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 	user, err := m.userRepo.EnsureUser(ctx, claims.TenantID, claims.ObjectID)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve user identity: %s", err.Error())
+	}
+
+	return &models.SignedInIdentity{
+		UserID:          user.ID,
+		Type:            models.IdentityTypeUser,
+		Scopes:          models.AllUserScopes(),
+		PendingDeletion: user.DeletionRequestedAt != nil,
+	}, nil
+}
+
+func (m *AuthMiddleware) authenticateSession(ctx context.Context, rawToken string) (*models.SignedInIdentity, error) {
+	session, err := m.sessionRepo.ValidateSession(ctx, rawToken)
+	if err != nil {
+		return nil, fmt.Errorf("invalid session: %s", err.Error())
+	}
+
+	user, err := m.userRepo.GetUser(ctx, session.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to resolve session user: %s", err.Error())
+	}
+
+	if user.Disabled {
+		return nil, fmt.Errorf("account is disabled")
 	}
 
 	return &models.SignedInIdentity{
