@@ -6,13 +6,17 @@ type LabelsResponse = {
   labels: Label[]
 }
 
+type LabelIdResponse = {
+  label: number
+}
+
 type SingleLabelResponse = {
   label: Label
 }
 
 export const CreateLabel = async (label: Omit<Label, 'id'>) =>
   await transport({
-    http: () => Request<SingleLabelResponse>(`/labels`, 'POST', label),
+    http: () => Request<LabelIdResponse>(`/labels`, 'POST', label),
     ws: (ws) => ws.request('create_label', label),
   })
 

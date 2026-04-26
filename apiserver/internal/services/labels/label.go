@@ -3,6 +3,7 @@ package labels
 import (
 	"context"
 	"net/http"
+	"strings"
 
 	"dkhalife.com/tasks/core/internal/models"
 	repos "dkhalife.com/tasks/core/internal/repos/label"
@@ -49,6 +50,21 @@ func (s *LabelService) GetUserLabels(ctx context.Context, userID int) (int, inte
 func (s *LabelService) CreateLabel(ctx context.Context, userId int, req models.CreateLabelReq) (int, interface{}) {
 	log := logging.FromContext(ctx)
 
+	exists, err := s.r.LabelExistsByName(ctx, userId, req.Name, 0)
+	if err != nil {
+		log.Errorf("Failed to check label existence: %s", err.Error())
+		telemetry.TrackError(ctx, "label_check_failed", "label-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Failed to create label",
+		}
+	}
+
+	if exists {
+		return http.StatusConflict, gin.H{
+			"error": "A label with this name already exists",
+		}
+	}
+
 	label := &models.Label{
 		Name:      req.Name,
 		Color:     req.Color,
@@ -56,6 +72,12 @@ func (s *LabelService) CreateLabel(ctx context.Context, userId int, req models.C
 	}
 
 	if err := s.r.CreateLabels(ctx, []*models.Label{label}); err != nil {
+		if isDuplicateKeyError(err) {
+			return http.StatusConflict, gin.H{
+				"error": "A label with this name already exists",
+			}
+		}
+
 		log.Errorf("Failed to create label: %s", err.Error())
 		telemetry.TrackError(ctx, "label_create_failed", "label-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
@@ -76,7 +98,9 @@ func (s *LabelService) CreateLabel(ctx context.Context, userId int, req models.C
 		Data:   newLabel,
 	})
 
-	return http.StatusCreated, newLabel
+	return http.StatusCreated, gin.H{
+		"label": label.ID,
+	}
 }
 
 func (s *LabelService) UpdateLabel(ctx context.Context, userId int, req models.UpdateLabelReq) (int, interface{}) {
@@ -95,7 +119,28 @@ func (s *LabelService) UpdateLabel(ctx context.Context, userId int, req models.U
 		}
 	}
 
+	exists, err := s.r.LabelExistsByName(ctx, userId, req.Name, req.ID)
+	if err != nil {
+		log.Errorf("Failed to check label existence: %s", err.Error())
+		telemetry.TrackError(ctx, "label_check_failed", "label-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error updating label",
+		}
+	}
+
+	if exists {
+		return http.StatusConflict, gin.H{
+			"error": "A label with this name already exists",
+		}
+	}
+
 	if err := s.r.UpdateLabel(ctx, userId, label); err != nil {
+		if isDuplicateKeyError(err) {
+			return http.StatusConflict, gin.H{
+				"error": "A label with this name already exists",
+			}
+		}
+
 		log.Errorf("Failed to update label: %s", err.Error())
 		telemetry.TrackError(ctx, "label_update_failed", "label-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
@@ -136,4 +181,13 @@ func (s *LabelService) DeleteLabel(ctx context.Context, userID int, labelID int)
 		},
 	})
 	return http.StatusNoContent, nil
+}
+
+func isDuplicateKeyError(err error) bool {
+	msg := err.Error()
+	// SQLite: "UNIQUE constraint failed: ..."
+	// MySQL: "Error 1062 (23000): Duplicate entry ..."
+	return strings.Contains(msg, "UNIQUE constraint failed") ||
+		strings.Contains(msg, "Duplicate entry") ||
+		strings.Contains(msg, "Error 1062")
 }
