@@ -47,17 +47,25 @@ func (m *SessionsMigration) Up(ctx context.Context, db *gorm.DB) error {
 		}
 		return nil
 	case "mysql":
-		return dbCtx.Exec(`CREATE TABLE sessions (
-			id INT AUTO_INCREMENT PRIMARY KEY,
-			user_id INT NOT NULL,
-			token_hash VARCHAR(64) NOT NULL,
-			expires_at DATETIME NOT NULL,
-			created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-			UNIQUE INDEX idx_sessions_token_hash (token_hash),
-			INDEX idx_sessions_user_id (user_id),
-			INDEX idx_sessions_expires_at (expires_at),
-			FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-		)`).Error
+		stmts := []string{
+			`CREATE TABLE sessions (
+				id INTEGER PRIMARY KEY AUTO_INCREMENT,
+				user_id INTEGER NOT NULL,
+				token_hash VARCHAR(64) NOT NULL,
+				expires_at DATETIME NOT NULL,
+				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+				CONSTRAINT fk_users_sessions FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+			)`,
+			`CREATE UNIQUE INDEX idx_sessions_token_hash ON sessions(token_hash)`,
+			`CREATE INDEX idx_sessions_user_id ON sessions(user_id)`,
+			`CREATE INDEX idx_sessions_expires_at ON sessions(expires_at)`,
+		}
+		for _, stmt := range stmts {
+			if err := dbCtx.Exec(stmt).Error; err != nil {
+				return err
+			}
+		}
+		return nil
 	default:
 		return fmt.Errorf("unsupported dialect: %s", dialect)
 	}
