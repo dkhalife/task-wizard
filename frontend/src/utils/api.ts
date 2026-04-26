@@ -11,6 +11,8 @@ type FailureResponse = {
 
 let redirectingToLogin = false
 
+export const isRedirectingToLogin = () => redirectingToLogin
+
 export async function Request<SuccessfulResponse>(
   url: string,
   method: RequestMethod = 'GET',
@@ -27,13 +29,11 @@ export async function Request<SuccessfulResponse>(
   if (requiresAuth && isAuthEnabled()) {
     try {
       const token = await acquireAccessToken()
-      headers['Authorization'] = 'Bearer ' + token
-    } catch {
-      if (!redirectingToLogin) {
-        redirectingToLogin = true
-        window.location.href = NavigationPaths.Login
+      if (token) {
+        headers['Authorization'] = 'Bearer ' + token
       }
-      throw new Error('Authentication required')
+    } catch {
+      // MSAL token not available; server session cookie will provide authentication
     }
   }
 
@@ -41,6 +41,7 @@ export async function Request<SuccessfulResponse>(
     method,
     headers,
     cache: 'no-store',
+    credentials: 'include',
   }
 
   if (method !== 'GET') {
@@ -48,6 +49,16 @@ export async function Request<SuccessfulResponse>(
   }
 
   const response: Response = await fetch(fullURL, options)
+
+  if (response.status === 401) {
+    if (!redirectingToLogin) {
+      redirectingToLogin = true
+      const returnTo = encodeURIComponent(window.location.pathname)
+      window.location.href = `${NavigationPaths.Login}?return_to=${returnTo}`
+    }
+    throw new Error('Authentication required')
+  }
+
   const HTTP_STATUS_NO_CONTENT = 204
   if (response.status === HTTP_STATUS_NO_CONTENT) {
     return {} as SuccessfulResponse

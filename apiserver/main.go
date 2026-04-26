@@ -27,6 +27,7 @@ import (
 	apis "dkhalife.com/tasks/core/internal/apis"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
+	sRepo "dkhalife.com/tasks/core/internal/repos/session"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	lService "dkhalife.com/tasks/core/internal/services/labels"
@@ -66,6 +67,7 @@ func main() {
 		fx.Provide(tRepo.NewTaskRepository),
 		fx.Provide(apis.TasksAPI),
 		fx.Provide(uRepo.NewUserRepository),
+		fx.Provide(sRepo.NewSessionRepository),
 		fx.Provide(nRepo.NewNotificationRepository),
 		fx.Provide(apis.UsersAPI),
 

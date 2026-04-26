@@ -2,6 +2,7 @@ package notifier
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -21,6 +22,9 @@ func NewNotificationRepository(db *gorm.DB) *NotificationRepository {
 func (r *NotificationRepository) GetUserNotificationSettings(c context.Context, userID int) (*models.NotificationSettings, error) {
 	var settings models.NotificationSettings
 	if err := r.db.WithContext(c).Model(&models.NotificationSettings{}).First(&settings, userID).Error; err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return &models.NotificationSettings{UserID: userID}, nil
+		}
 		return nil, err
 	}
 	return &settings, nil

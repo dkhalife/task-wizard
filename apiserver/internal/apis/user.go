@@ -2,11 +2,13 @@ package apis
 
 import (
 	"net/http"
+	"time"
 
 	"dkhalife.com/tasks/core/config"
 	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
 	"dkhalife.com/tasks/core/internal/models"
 	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
+	sRepo "dkhalife.com/tasks/core/internal/repos/session"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/services/users"
@@ -19,14 +21,16 @@ import (
 
 type UsersAPIHandler struct {
 	userRepo    uRepo.IUserRepo
+	sessionRepo sRepo.ISessionRepo
 	userService *users.UserService
 	nRepo       *nRepo.NotificationRepository
 	cfg         *config.Config
 }
 
-func UsersAPI(ur uRepo.IUserRepo, nRepo *nRepo.NotificationRepository, us *users.UserService, cfg *config.Config) *UsersAPIHandler {
+func UsersAPI(ur uRepo.IUserRepo, sr sRepo.ISessionRepo, nRepo *nRepo.NotificationRepository, us *users.UserService, cfg *config.Config) *UsersAPIHandler {
 	return &UsersAPIHandler{
 		userRepo:    ur,
+		sessionRepo: sr,
 		userService: us,
 		nRepo:       nRepo,
 		cfg:         cfg,
@@ -109,6 +113,43 @@ func (h *UsersAPIHandler) CancelDeletion(c *gin.Context) {
 	c.JSON(status, response)
 }
 
+func (h *UsersAPIHandler) CreateSession(c *gin.Context) {
+	currentIdentity := auth.CurrentIdentity(c)
+	log := logging.FromContext(c)
+
+	duration := h.cfg.Server.SessionDuration
+	if duration == 0 {
+		duration = 30 * 24 * time.Hour
+	}
+
+	rawToken, err := h.sessionRepo.CreateSession(c, currentIdentity.UserID, duration)
+	if err != nil {
+		log.Errorf("failed to create session: %s", err.Error())
+		telemetry.TrackError(c, "session_create_failed", "user-handler", err, nil)
+		c.JSON(http.StatusInternalServerError, gin.H{
+			"error": "Failed to create session",
+		})
+		return
+	}
+
+	secure := h.cfg.Server.HostName != ""
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(authMW.SessionCookieName, rawToken, int(duration.Seconds()), "/", "", secure, true)
+	c.Status(http.StatusCreated)
+}
+
+func (h *UsersAPIHandler) DeleteCurrentSession(c *gin.Context) {
+	sessionToken, err := c.Cookie(authMW.SessionCookieName)
+	if err == nil && sessionToken != "" {
+		_ = h.sessionRepo.DeleteSession(c, sessionToken)
+	}
+
+	secure := h.cfg.Server.HostName != ""
+	c.SetSameSite(http.SameSiteLaxMode)
+	c.SetCookie(authMW.SessionCookieName, "", -1, "/", "", secure, true)
+	c.Status(http.StatusNoContent)
+}
+
 func UserRoutes(router *gin.Engine, h *UsersAPIHandler, authMiddleware *authMW.AuthMiddleware, limiter *limiter.Limiter) {
 	userRoutes := router.Group("api/v1/users")
 	userRoutes.Use(authMiddleware.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter))
@@ -123,5 +164,7 @@ func UserRoutes(router *gin.Engine, h *UsersAPIHandler, authMiddleware *authMW.A
 	authRoutes.Use(middleware.RateLimitMiddleware(limiter))
 	{
 		authRoutes.GET("/config", h.GetAuthConfig)
+		authRoutes.POST("/session", authMiddleware.MiddlewareFunc(), h.CreateSession)
+		authRoutes.DELETE("/session", authMiddleware.MiddlewareFunc(), h.DeleteCurrentSession)
 	}
 }

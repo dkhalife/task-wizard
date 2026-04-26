@@ -1,6 +1,7 @@
 import { NavBar } from './views/Navigation/NavBar'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
-import { hasCachedAccounts, initializeMsal, isAuthEnabled, loginSilently, loginWithRedirect } from './utils/msal'
+import { initializeMsal, isAuthEnabled, acquireAccessToken } from './utils/msal'
+import { CreateSession } from './api/auth'
 import { NavigationPaths } from './utils/navigation'
 import React from 'react'
 import { CssBaseline, CssVarsProvider } from '@mui/joy'
@@ -14,6 +15,7 @@ import { StatusList } from './components/StatusList'
 import { DeletionBanner } from './components/DeletionBanner'
 import { fetchTasks, initGroups } from './store/tasksSlice'
 import { FIVE_MINUTES_MS } from '@/constants/time'
+import { isRedirectingToLogin } from './utils/api'
 
 type AppProps = {
   pathname: string
@@ -25,9 +27,22 @@ type AppProps = {
   initGroups: () => void
 }
 
-class AppImpl extends React.Component<AppProps> {
+type AppState = {
+  ready: boolean
+}
+
+class AppImpl extends React.Component<AppProps, AppState> {
   private initializedAuthenticated = false
   private initializingAuthenticated = false
+
+  constructor(props: AppProps) {
+    super(props)
+    this.state = { ready: false }
+  }
+
+  private isPublicRoute = (): boolean => {
+    return this.props.pathname === NavigationPaths.Privacy || this.props.pathname === NavigationPaths.Login
+  }
 
   private onVisibilityChange = () => {
     if (!document.hidden && this.initializedAuthenticated) {
@@ -84,17 +99,29 @@ class AppImpl extends React.Component<AppProps> {
 
   async componentDidMount(): Promise<void> {
     await initializeMsal()
-    const silentOk = await loginSilently()
-    if (silentOk) {
-      await this.initializeAuthenticated()
-    } else if (isAuthEnabled() && this.props.pathname !== NavigationPaths.Privacy) {
-      if (await hasCachedAccounts()) {
-        await loginWithRedirect()
-      } else if (this.props.pathname !== NavigationPaths.Login) {
-        this.props.navigate(NavigationPaths.Login)
+
+    if (!this.isPublicRoute()) {
+      if (isAuthEnabled()) {
+        try {
+          const token = await acquireAccessToken()
+          if (token) {
+            try {
+              await CreateSession()
+            } catch {
+              // Session creation is best-effort
+            }
+          }
+        } catch {
+          // No MSAL tokens; will rely on session cookie
+        }
       }
+
+      await this.initializeAuthenticated()
     }
 
+    if (!isRedirectingToLogin()) {
+      this.setState({ ready: true })
+    }
     document.addEventListener('visibilitychange', this.onVisibilityChange)
   }
 
@@ -117,6 +144,11 @@ class AppImpl extends React.Component<AppProps> {
 
   render() {
     const { pathname } = this.props
+    const { ready } = this.state
+
+    if (!ready && !this.isPublicRoute()) {
+      return null
+    }
 
     return (
       <div style={{ minHeight: '100vh' }}>
