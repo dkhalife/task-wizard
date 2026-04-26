@@ -47,15 +47,29 @@ func (m *SessionsMigration) Up(ctx context.Context, db *gorm.DB) error {
 		}
 		return nil
 	case "mysql":
+		// Detect the actual column type of users.id. Existing deployments may
+		// have users.id as BIGINT (e.g. created by an earlier GORM AutoMigrate)
+		// while fresh installs have INT. InnoDB requires the FK column type to
+		// match exactly, so derive sessions.user_id from users.id at runtime.
+		var userIDType string
+		row := dbCtx.Raw(`SELECT COLUMN_TYPE FROM information_schema.COLUMNS
+			WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'users' AND COLUMN_NAME = 'id'`).Row()
+		if err := row.Scan(&userIDType); err != nil {
+			return fmt.Errorf("failed to detect users.id column type: %s", err.Error())
+		}
+		if userIDType == "" {
+			return fmt.Errorf("users.id column type could not be determined")
+		}
+
 		stmts := []string{
-			`CREATE TABLE sessions (
-				id INTEGER PRIMARY KEY AUTO_INCREMENT,
-				user_id INTEGER NOT NULL,
+			fmt.Sprintf(`CREATE TABLE sessions (
+				id %s AUTO_INCREMENT PRIMARY KEY,
+				user_id %s NOT NULL,
 				token_hash VARCHAR(64) NOT NULL,
 				expires_at DATETIME NOT NULL,
 				created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
 				CONSTRAINT fk_users_sessions FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-			)`,
+			)`, userIDType, userIDType),
 			`CREATE UNIQUE INDEX idx_sessions_token_hash ON sessions(token_hash)`,
 			`CREATE INDEX idx_sessions_user_id ON sessions(user_id)`,
 			`CREATE INDEX idx_sessions_expires_at ON sessions(expires_at)`,
