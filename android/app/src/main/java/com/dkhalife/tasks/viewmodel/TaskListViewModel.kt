@@ -62,6 +62,12 @@ class TaskListViewModel @Inject constructor(
     private val _expandedGroups = MutableStateFlow(groupingRepository.getExpandedGroups())
     val expandedGroups: StateFlow<Set<String>> = _expandedGroups
 
+    private val _searchQuery = MutableStateFlow("")
+    val searchQuery: StateFlow<String> = _searchQuery
+
+    private val _isSearchActive = MutableStateFlow(false)
+    val isSearchActive: StateFlow<Boolean> = _isSearchActive
+
     init {
         refreshTasks()
         collectWebSocketMessages()
@@ -73,6 +79,17 @@ class TaskListViewModel @Inject constructor(
         _taskGrouping.value = grouping
         _expandedGroups.value = emptySet()
         groupingRepository.setExpandedGroups(emptySet())
+    }
+
+    fun setSearchQuery(query: String) {
+        _searchQuery.value = query
+    }
+
+    fun setSearchActive(active: Boolean) {
+        _isSearchActive.value = active
+        if (!active) {
+            _searchQuery.value = ""
+        }
     }
 
     fun toggleGroupExpanded(groupKey: String) {
@@ -88,8 +105,9 @@ class TaskListViewModel @Inject constructor(
 
     private fun observeGrouping() {
         viewModelScope.launch {
-            combine(tasks, _taskGrouping, labelRepository.labels) { tasks, grouping, labels ->
-                computeGroups(tasks, grouping, labels)
+            combine(tasks, _taskGrouping, labelRepository.labels, _searchQuery) { tasks, grouping, labels, query ->
+                val filtered = if (query.isBlank()) tasks else tasks.filter { it.title.contains(query, ignoreCase = true) }
+                computeGroups(filtered, grouping, labels)
             }.flowOn(Dispatchers.Default).collect { groups ->
                 _taskGroups.value = groups
             }

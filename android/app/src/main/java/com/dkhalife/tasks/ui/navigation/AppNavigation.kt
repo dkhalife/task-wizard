@@ -133,6 +133,8 @@ fun AppNavigation(
                 val deletionRequestedAt by userViewModel.deletionRequestedAt.collectAsState()
                 val isOnline by viewModel.isOnline.collectAsState()
                 val pendingSyncCount by viewModel.pendingSyncCount.collectAsState()
+                val searchQuery by viewModel.searchQuery.collectAsState()
+                val isSearchActive by viewModel.isSearchActive.collectAsState()
 
                 LaunchedEffect(taskGrouping) {
                     viewModel.setTaskGrouping(taskGrouping)
@@ -151,6 +153,10 @@ fun AppNavigation(
                     onViewHistory = { navController.navigate(Routes.taskHistory(it)) },
                     onCreateTask = { navController.navigate(Routes.TASK_FORM_CREATE) },
                     onToggleGroup = { viewModel.toggleGroupExpanded(it) },
+                    searchQuery = searchQuery,
+                    isSearchActive = isSearchActive,
+                    onSearchQueryChange = { viewModel.setSearchQuery(it) },
+                    onSearchActiveChange = { viewModel.setSearchActive(it) },
                     swipeSettings = swipeSettings,
                     inlineCompleteEnabled = inlineCompleteEnabled,
                     isPendingDeletion = deletionRequestedAt != null,
