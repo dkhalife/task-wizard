@@ -61,6 +61,11 @@
     <!-- Task list screen -->
     <string name="task_list_empty_title">All caught up!</string>
     <string name="task_list_empty_hint">Tap \"%1$s\" to create one</string>
+    <string name="search_hint">Search tasks…</string>
+    <string name="search_no_results_title">No tasks match your search</string>
+    <string name="search_no_results_hint">Try a different search term</string>
+    <string name="search_icon_description">Search</string>
+    <string name="search_clear_description">Clear search</string>
 
     <!-- Labels screen -->
     <string name="labels_empty_title">No labels yet</string>
