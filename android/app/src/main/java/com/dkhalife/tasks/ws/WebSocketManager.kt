@@ -74,8 +74,10 @@ class WebSocketManager @Inject constructor(
             data = data
         )
         val sent = webSocket?.send(gson.toJson(message))
-        if (sent == false) {
-            telemetryManager.logWarning(TAG, "Failed to send WebSocket message: action=$action, requestId=$requestId")
+        when (sent) {
+            null -> telemetryManager.logWarning(TAG, "Dropped WebSocket message (not connected): action=$action, requestId=$requestId")
+            false -> telemetryManager.logWarning(TAG, "Failed to send WebSocket message: action=$action, requestId=$requestId")
+            true -> Unit
         }
         return requestId
     }
