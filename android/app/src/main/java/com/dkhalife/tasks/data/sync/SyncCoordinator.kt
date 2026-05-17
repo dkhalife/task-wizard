@@ -76,11 +76,13 @@ class SyncCoordinator @Inject constructor(
             it.join()
             return true
         }
+        var success = false
         val job = scope.launch {
             mutex.withLock {
                 try {
                     flushOutbox()
                     refreshAll()
+                    success = true
                 } catch (e: Exception) {
                     telemetryManager.logError(TAG, "Sync cycle failed: ${e.message}", e)
                 }
@@ -88,7 +90,7 @@ class SyncCoordinator @Inject constructor(
         }
         activeFullJob = job
         job.join()
-        return true
+        return success
     }
 
     /**

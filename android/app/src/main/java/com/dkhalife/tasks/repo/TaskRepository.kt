@@ -56,8 +56,12 @@ class TaskRepository @Inject constructor(
             return Result.success(tasks.value)
         }
         return try {
-            syncCoordinator.syncOnceBlocking()
-            Result.success(tasks.value)
+            val ok = syncCoordinator.syncOnceBlocking()
+            if (ok) {
+                Result.success(tasks.value)
+            } else {
+                Result.failure(Exception("Sync cycle failed"))
+            }
         } catch (e: Exception) {
             telemetryManager.logError(TAG, "Failed to refresh tasks: ${e.message}", e)
             Result.failure(e)
