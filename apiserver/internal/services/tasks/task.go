@@ -123,6 +123,9 @@ func (s *TaskService) GetTask(ctx context.Context, userID, taskID int) (int, int
 
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
 		log.Errorf("error getting task: %s", err.Error())
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
@@ -267,6 +270,9 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 	oldTask, err := s.t.GetTask(ctx, taskId)
 
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
 		log.Errorf("error getting task: %s", err.Error())
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
@@ -356,10 +362,20 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 	log := logging.FromContext(ctx)
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
 		log.Errorf("error getting task: %s", err.Error())
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
+		}
+	}
+
+	if userID != task.CreatedBy {
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to skip task", nil)
+		return http.StatusForbidden, gin.H{
+			"error": "You are not allowed to skip this task",
 		}
 	}
 
@@ -416,6 +432,9 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
 		log.Errorf("error getting task: %s", err.Error())
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
@@ -472,10 +491,20 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
 		log.Errorf("error getting task: %s", err.Error())
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
+		}
+	}
+
+	if userID != task.CreatedBy {
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to complete task", nil)
+		return http.StatusForbidden, gin.H{
+			"error": "You are not allowed to complete this task",
 		}
 	}
 
@@ -529,6 +558,9 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 	log := logging.FromContext(ctx)
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
 		log.Errorf("error getting task: %s", err.Error())
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
