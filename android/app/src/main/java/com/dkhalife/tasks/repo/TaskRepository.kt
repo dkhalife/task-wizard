@@ -86,7 +86,13 @@ class TaskRepository @Inject constructor(
         return try {
             val response = api.getTask(id)
             if (response.isSuccessful) {
-                Result.success(response.body()!!.task)
+                val task = response.body()?.task
+                if (task != null) {
+                    Result.success(task)
+                } else {
+                    telemetryManager.logError(TAG, "Failed to fetch task: empty body")
+                    Result.failure(Exception("Failed to fetch task: empty body"))
+                }
             } else {
                 Result.failure(Exception("Failed to fetch task: ${response.code()}"))
             }
