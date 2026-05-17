@@ -448,6 +448,7 @@ func (s *TaskTestSuite) TestScheduleNextDueDate() {
 		completedDate time.Time
 		expectedType  string
 		expectedDelta time.Duration
+		expectError   bool
 	}{
 		{
 			name: "Once frequency",
@@ -548,13 +549,41 @@ func (s *TaskTestSuite) TestScheduleNextDueDate() {
 			completedDate: now,
 			expectedType:  "nil", // Should not calculate a next due date
 		},
+		{
+			name: "Nil NextDueDate with non-rolling task",
+			task: &models.Task{
+				NextDueDate: nil,
+				IsRolling:   false,
+				Frequency: models.Frequency{
+					Type: models.RepeatDaily,
+				},
+			},
+			completedDate: now,
+			expectError:   true,
+		},
+		{
+			name: "Nil NextDueDate with rolling task",
+			task: &models.Task{
+				NextDueDate: nil,
+				IsRolling:   true,
+				Frequency: models.Frequency{
+					Type: models.RepeatDaily,
+				},
+			},
+			completedDate: now,
+			expectedType:  "time",
+			expectedDelta: 24 * time.Hour,
+		},
 	}
 
 	for _, tc := range testCases {
 		s.Run(tc.name, func() {
 			nextDueDate, err := ScheduleNextDueDate(tc.task, tc.completedDate)
 
-			if tc.expectedType == "nil" {
+			if tc.expectError {
+				s.Require().Error(err)
+				s.Nil(nextDueDate)
+			} else if tc.expectedType == "nil" {
 				s.Nil(nextDueDate)
 				s.Nil(err)
 			} else {

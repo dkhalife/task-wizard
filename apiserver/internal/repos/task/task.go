@@ -196,9 +196,14 @@ func ScheduleNextDueDate(task *models.Task, completedDate time.Time) (*time.Time
 		return nil, nil
 	}
 
-	var baseDate time.Time = *task.NextDueDate
+	var baseDate time.Time
 	if task.IsRolling {
 		baseDate = completedDate
+	} else {
+		if task.NextDueDate == nil {
+			return nil, errors.New("task has no next due date")
+		}
+		baseDate = *task.NextDueDate
 	}
 
 	if baseDate.IsZero() {

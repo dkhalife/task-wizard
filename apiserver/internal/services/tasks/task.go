@@ -379,6 +379,13 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 		}
 	}
 
+	if task.NextDueDate == nil {
+		telemetry.TrackWarning(ctx, "task_skip_failed", "task-service", "Task has no due date to skip", nil)
+		return http.StatusBadRequest, gin.H{
+			"error": "Task has no due date to skip",
+		}
+	}
+
 	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
 	if err != nil {
 		log.Errorf("error scheduling next due date: %s", err.Error())
