@@ -15,7 +15,13 @@ class UserRepository @Inject constructor(
         return try {
             val response = api.getUserProfile()
             if (response.isSuccessful) {
-                Result.success(response.body()!!.user)
+                val user = response.body()?.user
+                if (user != null) {
+                    Result.success(user)
+                } else {
+                    telemetryManager.logError(TAG, "Failed to fetch profile: empty body")
+                    Result.failure(Exception("Failed to fetch profile: empty body"))
+                }
             } else {
                 telemetryManager.logError(TAG, "Failed to fetch profile: ${response.code()}")
                 Result.failure(Exception("Failed to fetch profile: ${response.code()}"))
