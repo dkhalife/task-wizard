@@ -363,6 +363,13 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 		}
 	}
 
+	if userID != task.CreatedBy {
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to skip task", nil)
+		return http.StatusForbidden, gin.H{
+			"error": "You are not allowed to skip this task",
+		}
+	}
+
 	nextDueDate, err := tRepo.ScheduleNextDueDate(task, task.NextDueDate.UTC())
 	if err != nil {
 		log.Errorf("error scheduling next due date: %s", err.Error())
@@ -469,6 +476,13 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 		telemetry.TrackError(ctx, "task_get_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
 			"error": "Error getting task",
+		}
+	}
+
+	if userID != task.CreatedBy {
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to complete task", nil)
+		return http.StatusForbidden, gin.H{
+			"error": "You are not allowed to complete this task",
 		}
 	}
 
