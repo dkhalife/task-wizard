@@ -152,6 +152,26 @@ jobs:
           tags: ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:canary, ${{ secrets.ACR_NAME }}.azurecr.io/task-wizard-mcp:${{ github.ref_name }}
           platforms: linux/amd64
 
+      - name: Cleanup old ACR images
+        run: |
+          CUTOFF_DATE=$(date -u -d '3 days ago' +%Y-%m-%dT%H:%M:%SZ)
+          echo "Cleaning up images older than $CUTOFF_DATE"
+
+          for REPO in task-wizard-api task-wizard-mcp; do
+            echo "Scanning $REPO"
+            az acr manifest list-metadata \
+              --registry ${{ secrets.ACR_NAME }} \
+              --name "$REPO" \
+              --query "[?lastUpdateTime<'$CUTOFF_DATE' && !contains(tags, 'canary') && !contains(tags, 'release')].digest" \
+              -o tsv | \
+            while read digest; do
+              if [ -n "$digest" ]; then
+                echo "Deleting $REPO@$digest"
+                az acr repository delete --name ${{ secrets.ACR_NAME }} --image "$REPO@$digest" --yes
+              fi
+            done
+          done
+
       - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
