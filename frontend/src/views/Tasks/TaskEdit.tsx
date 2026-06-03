@@ -236,10 +236,16 @@ class TaskEditImpl extends React.Component<TaskEditProps, TaskEditState> {
   }
 
   private onKeyDown = (e: KeyboardEvent) => {
-    if (e.key === 'Escape') {
-      e.preventDefault()
-      this.onCancelClicked()
+    if (e.key !== 'Escape' || e.defaultPrevented) {
+      return
     }
+
+    if (this.confirmModalRef.current?.isOpen) {
+      return
+    }
+
+    e.preventDefault()
+    this.onCancelClicked()
   }
 
   private onTitleChanged = (e: ChangeEvent<HTMLInputElement>) => {
