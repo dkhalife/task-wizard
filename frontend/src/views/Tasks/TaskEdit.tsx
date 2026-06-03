@@ -227,6 +227,19 @@ class TaskEditImpl extends React.Component<TaskEditProps, TaskEditState> {
     this.init()
 
     moveFocusToJoyInput(this.titleInputRef)
+
+    document.addEventListener('keydown', this.onKeyDown)
+  }
+
+  componentWillUnmount(): void {
+    document.removeEventListener('keydown', this.onKeyDown)
+  }
+
+  private onKeyDown = (e: KeyboardEvent) => {
+    if (e.key === 'Escape') {
+      e.preventDefault()
+      this.onCancelClicked()
+    }
   }
 
   private onTitleChanged = (e: ChangeEvent<HTMLInputElement>) => {
