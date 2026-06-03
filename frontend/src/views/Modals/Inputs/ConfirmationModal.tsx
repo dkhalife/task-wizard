@@ -45,6 +45,10 @@ export class ConfirmationModal extends React.Component<
     }
   }
 
+  public get isOpen(): boolean {
+    return this.state.isOpen
+  }
+
   public async open(onClose: ConfirmedHandler): Promise<void> {
     await this.setState({
       isOpen: true,
