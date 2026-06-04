@@ -29,6 +29,15 @@ type TaskHistory struct {
 	DueDate       *time.Time `json:"due_date" gorm:"column:due_date"`
 }
 
+type ActivityEntry struct {
+	ID            int        `json:"id"`
+	TaskID        int        `json:"task_id"`
+	TaskTitle     string     `json:"task_title"`
+	CompletedDate *time.Time `json:"completed_date"`
+	DueDate       *time.Time `json:"due_date"`
+	IsLatest      bool       `json:"is_latest"`
+}
+
 type TaskLabel struct {
 	TaskID  int `json:"task_id" gorm:"primaryKey"`
 	LabelID int `json:"label_id" gorm:"primaryKey"`

@@ -15,7 +15,6 @@ import com.dkhalife.tasks.repo.TaskRepository
 import com.dkhalife.tasks.telemetry.TelemetryManager
 import com.dkhalife.tasks.utils.SoundEffect
 import com.dkhalife.tasks.utils.SoundManager
-import com.dkhalife.tasks.ws.WebSocketManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,7 +31,6 @@ class TaskListViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val labelRepository: LabelRepository,
     private val groupingRepository: GroupingRepository,
-    private val webSocketManager: WebSocketManager,
     private val soundManager: SoundManager,
     private val telemetryManager: TelemetryManager,
     private val outboxDao: OutboxDao,
@@ -40,7 +38,6 @@ class TaskListViewModel @Inject constructor(
 ) : ViewModel() {
 
     val tasks: StateFlow<List<Task>> = taskRepository.tasks
-    val completedTasks: StateFlow<List<Task>> = taskRepository.completedTasks
 
     val isOnline: StateFlow<Boolean> = networkMonitor.isOnline
 
@@ -70,7 +67,6 @@ class TaskListViewModel @Inject constructor(
 
     init {
         refreshTasks()
-        collectWebSocketMessages()
         observeGrouping()
     }
 
@@ -125,22 +121,6 @@ class TaskListViewModel @Inject constructor(
         }
     }
 
-    private fun collectWebSocketMessages() {
-        viewModelScope.launch {
-            webSocketManager.messages.collect { message ->
-                // The in-progress task list is kept fresh by WebSocketSyncBridge -> SyncCoordinator,
-                // which updates the Room DB that `tasks` observes. Completed tasks are fetched via a
-                // separate endpoint not covered by the coordinator, so refresh them here when
-                // relevant WebSocket task actions are received.
-                when (message.action) {
-                    "task_completed",
-                    "task_uncompleted",
-                    "task_deleted" -> refreshCompletedTasks()
-                }
-            }
-        }
-    }
-
     fun refreshTasks() {
         viewModelScope.launch {
             _isRefreshing.value = true
@@ -152,16 +132,6 @@ class TaskListViewModel @Inject constructor(
         }
     }
 
-    fun refreshCompletedTasks(limit: Int = 10, page: Int = 1) {
-        viewModelScope.launch {
-            taskRepository.refreshCompletedTasks(limit, page)
-                .onFailure {
-                    telemetryManager.logError(TAG, "Failed to refresh completed tasks: ${it.message}", it)
-                    _error.value = it.message
-                }
-        }
-    }
-
     fun completeTask(id: Int, endRecurrence: Boolean = false) {
         viewModelScope.launch {
             taskRepository.completeTask(id, endRecurrence)
@@ -170,16 +140,6 @@ class TaskListViewModel @Inject constructor(
                 }
                 .onFailure {
                     telemetryManager.logError(TAG, "Failed to complete task $id: ${it.message}", it)
-                    _error.value = it.message
-                }
-        }
-    }
-
-    fun uncompleteTask(id: Int) {
-        viewModelScope.launch {
-            taskRepository.uncompleteTask(id)
-                .onFailure {
-                    telemetryManager.logError(TAG, "Failed to uncomplete task $id: ${it.message}", it)
                     _error.value = it.message
                 }
         }

@@ -2,7 +2,6 @@ package repos
 
 import (
 	"context"
-	"fmt"
 	"testing"
 	"time"
 
@@ -359,7 +358,7 @@ func (s *TaskTestSuite) TestCompleteTask() {
 	s.WithinDuration(*updatedRecurringTask.NextDueDate, nextDueDate, time.Second)
 }
 
-func (s *TaskTestSuite) TestUncompleteTask() {
+func (s *TaskTestSuite) TestRevertActivity() {
 	ctx := context.Background()
 	dueDate := time.Now().Add(24 * time.Hour)
 	completedDate := time.Now()
@@ -380,7 +379,11 @@ func (s *TaskTestSuite) TestUncompleteTask() {
 	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, nil, &completedDate)
 	s.Require().NoError(err)
 
-	err = s.repo.UncompleteTask(ctx, task.ID)
+	var history models.TaskHistory
+	err = s.DB.Where("task_id = ?", task.ID).First(&history).Error
+	s.Require().NoError(err)
+
+	err = s.repo.RevertActivity(ctx, task.ID, history.ID)
 	s.Require().NoError(err)
 
 	var updatedTask models.Task
@@ -392,6 +395,71 @@ func (s *TaskTestSuite) TestUncompleteTask() {
 	var count int64
 	s.DB.Model(&models.TaskHistory{}).Where("task_id = ?", task.ID).Count(&count)
 	s.Equal(int64(0), count)
+}
+
+func (s *TaskTestSuite) TestRevertActivityRejectsStaleEntry() {
+	ctx := context.Background()
+	dueDate := time.Now().Add(24 * time.Hour)
+	completedDate := time.Now()
+
+	task := &models.Task{
+		Title:       "Recurring Undo Task",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		IsActive:    true,
+		Frequency: models.Frequency{
+			Type: models.RepeatDaily,
+		},
+	}
+
+	err := s.DB.Create(task).Error
+	s.Require().NoError(err)
+
+	nextDueDate := dueDate.Add(24 * time.Hour)
+	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, &nextDueDate, &completedDate)
+	s.Require().NoError(err)
+
+	var firstHistory models.TaskHistory
+	err = s.DB.Where("task_id = ?", task.ID).Order("id asc").First(&firstHistory).Error
+	s.Require().NoError(err)
+
+	// A second completion makes the first history entry stale.
+	laterDueDate := nextDueDate.Add(24 * time.Hour)
+	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, &laterDueDate, &completedDate)
+	s.Require().NoError(err)
+
+	err = s.repo.RevertActivity(ctx, task.ID, firstHistory.ID)
+	s.Require().ErrorIs(err, ErrActivityNotLatest)
+
+	// Both history rows remain.
+	var count int64
+	s.DB.Model(&models.TaskHistory{}).Where("task_id = ?", task.ID).Count(&count)
+	s.Equal(int64(2), count)
+}
+
+func (s *TaskTestSuite) TestRevertActivityRejectsWrongTask() {
+	ctx := context.Background()
+	completedDate := time.Now()
+
+	task := &models.Task{
+		Title:     "Owned Task",
+		CreatedBy: s.testUser.ID,
+		IsActive:  true,
+		Frequency: models.Frequency{Type: models.RepeatOnce},
+	}
+	err := s.DB.Create(task).Error
+	s.Require().NoError(err)
+
+	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, nil, &completedDate)
+	s.Require().NoError(err)
+
+	var history models.TaskHistory
+	err = s.DB.Where("task_id = ?", task.ID).First(&history).Error
+	s.Require().NoError(err)
+
+	// The history id does not belong to task id 99999.
+	err = s.repo.RevertActivity(ctx, 99999, history.ID)
+	s.Require().Error(err)
 }
 
 func (s *TaskTestSuite) TestGetTaskHistory() {
@@ -606,48 +674,92 @@ func (s *TaskTestSuite) TestScheduleNextDueDate() {
 	}
 }
 
-func (s *TaskTestSuite) TestGetCompletedTasks() {
+func (s *TaskTestSuite) TestGetRecentActivity() {
 	ctx := context.Background()
+	completedDate := time.Now()
+	dueDate := time.Now().Add(24 * time.Hour)
 
-	for i := 0; i < 5; i++ {
-		t := &models.Task{
-			Title:     fmt.Sprintf("Task %d", i+1),
-			CreatedBy: s.testUser.ID,
-			IsActive:  false,
-		}
-		err := s.DB.Create(t).Error
-		s.Require().NoError(err)
-		err = s.DB.Model(&models.Task{}).Where("id = ?", t.ID).Update("is_active", false).Error
-		s.Require().NoError(err)
+	// Non-recurring task completed once.
+	taskA := &models.Task{
+		Title:       "Task A",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatOnce},
 	}
+	s.Require().NoError(s.DB.Create(taskA).Error)
+	s.Require().NoError(s.repo.CompleteTask(ctx, taskA, s.testUser.ID, nil, &completedDate))
 
-	var count int64
-	err := s.DB.Model(&models.Task{}).Where("created_by = ? AND is_active = 0", s.testUser.ID).Count(&count).Error
-	s.Require().NoError(err)
-	s.Require().Equal(int64(5), count)
+	// Recurring task completed twice.
+	taskB := &models.Task{
+		Title:       "Task B",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatDaily},
+	}
+	s.Require().NoError(s.DB.Create(taskB).Error)
+	nextB1 := dueDate.Add(24 * time.Hour)
+	s.Require().NoError(s.repo.CompleteTask(ctx, taskB, s.testUser.ID, &nextB1, &completedDate))
+	taskB.NextDueDate = &nextB1
+	nextB2 := nextB1.Add(24 * time.Hour)
+	s.Require().NoError(s.repo.CompleteTask(ctx, taskB, s.testUser.ID, &nextB2, &completedDate))
 
+	// Another user's activity must not leak.
 	anotherUser := &models.User{}
-	err = s.DB.Create(anotherUser).Error
-	s.Require().NoError(err)
-	otherTask := &models.Task{Title: "Other", CreatedBy: anotherUser.ID, IsActive: false}
-	err = s.DB.Create(otherTask).Error
-	s.Require().NoError(err)
+	s.Require().NoError(s.DB.Create(anotherUser).Error)
+	otherTask := &models.Task{Title: "Other", CreatedBy: anotherUser.ID, IsActive: true, Frequency: models.Frequency{Type: models.RepeatOnce}}
+	s.Require().NoError(s.DB.Create(otherTask).Error)
+	s.Require().NoError(s.repo.CompleteTask(ctx, otherTask, anotherUser.ID, nil, &completedDate))
 
-	tasks, err := s.repo.GetCompletedTasks(ctx, s.testUser.ID, 2, 0)
+	entries, err := s.repo.GetRecentActivity(ctx, s.testUser.ID, 0, 20)
 	s.Require().NoError(err)
-	s.Len(tasks, 2)
-	s.Equal("Task 5", tasks[0].Title)
-	s.Equal("Task 4", tasks[1].Title)
+	s.Require().Len(entries, 3)
 
-	tasks, err = s.repo.GetCompletedTasks(ctx, s.testUser.ID, 2, 2)
-	s.Require().NoError(err)
-	s.Len(tasks, 2)
-	s.Equal("Task 3", tasks[0].Title)
-	s.Equal("Task 2", tasks[1].Title)
+	// Reverse-chronological (id desc): taskB second, taskB first, taskA.
+	s.Equal("Task B", entries[0].TaskTitle)
+	s.True(entries[0].IsLatest)
+	s.Equal("Task B", entries[1].TaskTitle)
+	s.False(entries[1].IsLatest)
+	s.Equal("Task A", entries[2].TaskTitle)
+	s.True(entries[2].IsLatest)
 
-	tasks, err = s.repo.GetCompletedTasks(ctx, s.testUser.ID, 2, 10)
+	// Cursor pagination excludes entries with id >= before_id.
+	cursor := entries[1].ID
+	older, err := s.repo.GetRecentActivity(ctx, s.testUser.ID, cursor, 20)
 	s.Require().NoError(err)
-	s.Len(tasks, 0)
+	s.Require().Len(older, 1)
+	s.Equal("Task A", older[0].TaskTitle)
+
+	// Limit is respected.
+	limited, err := s.repo.GetRecentActivity(ctx, s.testUser.ID, 0, 1)
+	s.Require().NoError(err)
+	s.Require().Len(limited, 1)
+	s.Equal(entries[0].ID, limited[0].ID)
+}
+
+func (s *TaskTestSuite) TestGetRecentActivityIncludesSkips() {
+	ctx := context.Background()
+	dueDate := time.Now().Add(24 * time.Hour)
+
+	task := &models.Task{
+		Title:       "Skippable",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		IsActive:    true,
+		Frequency:   models.Frequency{Type: models.RepeatDaily},
+	}
+	s.Require().NoError(s.DB.Create(task).Error)
+
+	// A skip records history with no completed date.
+	nextDueDate := dueDate.Add(24 * time.Hour)
+	s.Require().NoError(s.repo.CompleteTask(ctx, task, s.testUser.ID, &nextDueDate, nil))
+
+	entries, err := s.repo.GetRecentActivity(ctx, s.testUser.ID, 0, 20)
+	s.Require().NoError(err)
+	s.Require().Len(entries, 1)
+	s.Nil(entries[0].CompletedDate)
+	s.True(entries[0].IsLatest)
 }
 
 func (s *TaskTestSuite) TestGetTasksDueBefore() {

@@ -81,8 +81,43 @@ public class ApiProxyService(IHttpClientFactory httpClientFactory, IHttpContextA
     public Task<string> CompleteTask(int id) =>
         SendAsync(HttpMethod.Post, $"api/v1/tasks/{id}/do");
 
-    public Task<string> UncompleteTask(int id) =>
-        SendAsync(HttpMethod.Post, $"api/v1/tasks/{id}/undo");
+    public async Task<string> UncompleteTask(int id)
+    {
+        var historyResponse = await SendAsync(HttpMethod.Get, $"api/v1/tasks/{id}/history");
+
+        int latestHistoryId;
+        try
+        {
+            using var doc = JsonDocument.Parse(historyResponse);
+            if (doc.RootElement.ValueKind == JsonValueKind.Object &&
+                doc.RootElement.TryGetProperty("error", out _))
+            {
+                return historyResponse;
+            }
+
+            var history = doc.RootElement.GetProperty("history");
+            if (history.ValueKind != JsonValueKind.Array || history.GetArrayLength() == 0)
+            {
+                return JsonSerializer.Serialize(new
+                {
+                    error = true,
+                    message = "No completion history to undo for this task",
+                });
+            }
+
+            latestHistoryId = history.EnumerateArray().Max(e => e.GetProperty("id").GetInt32());
+        }
+        catch (Exception ex)
+        {
+            return JsonSerializer.Serialize(new
+            {
+                error = true,
+                message = $"Failed to resolve task history: {ex.Message}",
+            });
+        }
+
+        return await SendAsync(HttpMethod.Post, $"api/v1/tasks/{id}/undo?history_id={latestHistoryId}");
+    }
 
     public Task<string> SkipTask(int id) =>
         SendAsync(HttpMethod.Post, $"api/v1/tasks/{id}/skip");

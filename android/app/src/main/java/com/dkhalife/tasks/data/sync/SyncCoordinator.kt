@@ -246,26 +246,6 @@ class SyncCoordinator @Inject constructor(
                 }
                 outboxDao.deleteById(op.id)
             }
-            OutboxOpType.UNCOMPLETE -> {
-                val id = op.targetServerId ?: return consume(op)
-                if (id < 0) {
-                    recordFailure(op, "Awaiting preceding CREATE")
-                    return false
-                }
-                val response = api.uncompleteTask(id)
-                if (!response.isSuccessful) {
-                    recordFailure(op, "HTTP ${response.code()}")
-                    return false
-                }
-                val returnedTask = response.body()?.task
-                if (returnedTask != null) {
-                    taskDao.upsert(returnedTask.toEntity())
-                    taskDao.replaceLabels(id, returnedTask.labels.map { it.id })
-                } else {
-                    taskDao.setState(id, LocalState.SYNCED)
-                }
-                outboxDao.deleteById(op.id)
-            }
             OutboxOpType.SKIP -> {
                 val id = op.targetServerId ?: return consume(op)
                 if (id < 0) {
@@ -302,6 +282,7 @@ class SyncCoordinator @Inject constructor(
                 taskDao.setState(id, LocalState.SYNCED)
                 outboxDao.deleteById(op.id)
             }
+            else -> return consume(op)
         }
         return true
     }

@@ -5,13 +5,14 @@ The core feature of Task Wizard. Users can create, edit, complete, skip, resched
 ## Capabilities
 
 - CRUD operations on tasks with title, due date, labels, and notification settings
-- Mark tasks as complete or uncomplete them
+- Mark tasks as complete
 - Skip a task occurrence (advances to next due date without recording completion)
 - Reschedule a task by updating its due date
 - Group tasks by due date or by label in the UI
 - Search/filter tasks in a table overview
 - Quick-complete button on task cards with audio feedback
 - Context menu on tasks for fast actions (edit, delete, complete, skip, reschedule, view history)
+- Review recent completions/skips and revert an accidental action from the Activity view (see task-history)
 - Keyboard shortcut (`+`) to create a new task from the overview
 
 ## Data Model

@@ -28,6 +28,7 @@
 
     <!-- Navigation -->
     <string name="nav_tasks">Tasks</string>
+    <string name="nav_activity">Activity</string>
     <string name="nav_labels">Labels</string>
     <string name="nav_settings">Settings</string>
 
@@ -283,6 +284,13 @@
 
     <string name="history_on_time">On time</string>
     <string name="history_late_suffix">%1$s late</string>
+
+    <!-- Activity -->
+    <string name="activity_title">Activity</string>
+    <string name="activity_empty_title">No Activity Yet</string>
+    <string name="activity_empty_hint">Recent completions and skips will show up here, newest first.</string>
+    <string name="activity_revert">Revert</string>
+    <string name="activity_load_more">Load more</string>
 
     <!-- Account deletion settings -->
     <string name="settings_header_account">Account</string>

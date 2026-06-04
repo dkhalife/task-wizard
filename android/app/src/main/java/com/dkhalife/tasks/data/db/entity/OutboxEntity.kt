@@ -13,7 +13,6 @@ object OutboxOpType {
     const val UPDATE = "UPDATE"
     const val DELETE = "DELETE"
     const val COMPLETE = "COMPLETE"
-    const val UNCOMPLETE = "UNCOMPLETE"
     const val SKIP = "SKIP"
     const val DUE_DATE = "DUE_DATE"
 }

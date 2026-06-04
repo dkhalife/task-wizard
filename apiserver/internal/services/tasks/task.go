@@ -102,19 +102,20 @@ func (s *TaskService) SearchTasksByTitle(ctx context.Context, userID int, query 
 	}
 }
 
-func (s *TaskService) GetCompletedTasks(ctx context.Context, userID, limit, page int) (int, interface{}) {
+func (s *TaskService) GetRecentActivity(ctx context.Context, userID, beforeID, limit int) (int, interface{}) {
 	log := logging.FromContext(ctx)
-	offset := (page - 1) * limit
 
-	tasks, err := s.t.GetCompletedTasks(ctx, userID, limit, offset)
+	entries, err := s.t.GetRecentActivity(ctx, userID, beforeID, limit)
 	if err != nil {
-		log.Errorf("error getting completed tasks: %s", err.Error())
-		telemetry.TrackError(ctx, "task_get_completed_failed", "task-service", err, nil)
-		return http.StatusInternalServerError, gin.H{}
+		log.Errorf("error getting recent activity: %s", err.Error())
+		telemetry.TrackError(ctx, "task_get_activity_failed", "task-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error getting recent activity",
+		}
 	}
 
 	return http.StatusOK, gin.H{
-		"tasks": tasks,
+		"activity": entries,
 	}
 }
 
@@ -554,7 +555,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 	}
 }
 
-func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (int, interface{}) {
+func (s *TaskService) RevertAction(ctx context.Context, userID, taskID, historyID int) (int, interface{}) {
 	log := logging.FromContext(ctx)
 	task, err := s.t.GetTask(ctx, taskID)
 	if err != nil {
@@ -569,23 +570,23 @@ func (s *TaskService) UncompleteTask(ctx context.Context, userID, taskID int) (i
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to uncomplete task", nil)
+		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to revert task action", nil)
 		return http.StatusForbidden, gin.H{
 			"error": "You are not allowed to update this task",
 		}
 	}
 
-	if err := s.t.UncompleteTask(ctx, taskID); err != nil {
-		if errors.Is(err, gorm.ErrRecordNotFound) {
-			return http.StatusBadRequest, gin.H{
-				"error": "Task was not completed already",
+	if err := s.t.RevertActivity(ctx, taskID, historyID); err != nil {
+		if errors.Is(err, gorm.ErrRecordNotFound) || errors.Is(err, tRepo.ErrActivityNotLatest) {
+			return http.StatusConflict, gin.H{
+				"error": "This action can no longer be reverted",
 			}
 		}
 
-		log.Errorf("error uncompleting task: %s", err.Error())
-		telemetry.TrackError(ctx, "task_uncomplete_failed", "task-service", err, nil)
+		log.Errorf("error reverting task action: %s", err.Error())
+		telemetry.TrackError(ctx, "task_revert_failed", "task-service", err, nil)
 		return http.StatusInternalServerError, gin.H{
-			"error": "Error uncompleting task",
+			"error": "Error reverting task action",
 		}
 	}
 

@@ -46,3 +46,12 @@ data class TaskHistory(
     @SerializedName("completed_date") val completedDate: String? = null,
     @SerializedName("due_date") val dueDate: String? = null
 )
+
+data class ActivityEntry(
+    val id: Int = 0,
+    @SerializedName("task_id") val taskId: Int = 0,
+    @SerializedName("task_title") val taskTitle: String = "",
+    @SerializedName("completed_date") val completedDate: String? = null,
+    @SerializedName("due_date") val dueDate: String? = null,
+    @SerializedName("is_latest") val isLatest: Boolean = false
+)

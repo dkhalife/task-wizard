@@ -12,11 +12,11 @@ interface TaskWizardApi {
     @GET("api/v1/tasks/")
     suspend fun getTasks(): Response<TasksResponse>
 
-    @GET("api/v1/tasks/completed")
-    suspend fun getCompletedTasks(
-        @Query("limit") limit: Int = 10,
-        @Query("page") page: Int = 1
-    ): Response<TasksResponse>
+    @GET("api/v1/tasks/activity")
+    suspend fun getActivity(
+        @Query("before_id") beforeId: Int = 0,
+        @Query("limit") limit: Int = 20
+    ): Response<ActivityResponse>
 
     @GET("api/v1/tasks/{id}")
     suspend fun getTask(@Path("id") id: Int): Response<TaskResponse>
@@ -40,7 +40,10 @@ interface TaskWizardApi {
     ): Response<TaskResponse>
 
     @POST("api/v1/tasks/{id}/undo")
-    suspend fun uncompleteTask(@Path("id") id: Int): Response<TaskResponse>
+    suspend fun uncompleteTask(
+        @Path("id") id: Int,
+        @Query("history_id") historyId: Int
+    ): Response<TaskResponse>
 
     @POST("api/v1/tasks/{id}/skip")
     suspend fun skipTask(@Path("id") id: Int): Response<TaskResponse>

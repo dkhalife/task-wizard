@@ -1,6 +1,7 @@
 import { Task } from '@/models/task'
 import { Request } from '../utils/api'
 import { HistoryEntry } from '@/models/history'
+import { ActivityEntry } from '@/models/activity'
 import { MarshallLabels } from '@/utils/marshalling'
 import { transport } from './transport'
 
@@ -20,17 +21,20 @@ type TaskHistoryResponse = {
   history: HistoryEntry[]
 }
 
+type ActivityResponse = {
+  activity: ActivityEntry[]
+}
+
 export const GetTasks = async (): Promise<TasksResponse> =>
   await transport({
     http: () => Request<TasksResponse>(`/tasks/`),
     ws: (ws) => ws.request('get_tasks'),
   })
 
-export const GetCompletedTasks = async (): Promise<TasksResponse> =>
+export const GetActivity = async (beforeId: number, limit: number): Promise<ActivityResponse> =>
   await transport({
-    http: () => Request<TasksResponse>(`/tasks/completed`),
-    // WS handler requires data to be present (at least {}).
-    ws: (ws) => ws.request('get_completed_tasks', {}),
+    http: () => Request<ActivityResponse>(`/tasks/activity?before_id=${beforeId}&limit=${limit}`),
+    ws: (ws) => ws.request('get_activity', { before_id: beforeId, limit }),
   })
 
 export const MarkTaskComplete = async (id: number, endRecurrence: boolean): Promise<SingleTaskResponse> =>
@@ -45,10 +49,10 @@ export const SkipTask = async (id: number): Promise<SingleTaskResponse> =>
       ws: (ws) => ws.request('skip_task', id),
     })
 
-export const UncompleteTask = async (id: number): Promise<SingleTaskResponse> =>
+export const UncompleteTask = async (id: number, historyId: number): Promise<SingleTaskResponse> =>
     await transport({
-      http: () => Request<SingleTaskResponse>(`/tasks/${id}/undo`, 'POST'),
-      ws: (ws) => ws.request('uncomplete_task', id),
+      http: () => Request<SingleTaskResponse>(`/tasks/${id}/undo?history_id=${historyId}`, 'POST'),
+      ws: (ws) => ws.request('uncomplete_task', { id, history_id: historyId }),
     })
 
 export const CreateTask = async (task: Omit<Task, 'id'>) =>
