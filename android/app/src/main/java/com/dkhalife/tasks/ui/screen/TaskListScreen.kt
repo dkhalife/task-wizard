@@ -57,6 +57,7 @@ import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.SwipeSettings
 import com.dkhalife.tasks.data.TaskGroup
+import com.dkhalife.tasks.ui.components.AuthErrorBanner
 import com.dkhalife.tasks.ui.components.GroupHeader
 import com.dkhalife.tasks.ui.components.SyncStatusBanner
 import com.dkhalife.tasks.ui.components.TaskItem
@@ -85,6 +86,9 @@ fun TaskListScreen(
     isPendingDeletion: Boolean = false,
     isOnline: Boolean = true,
     pendingSyncCount: Int = 0,
+    sessionExpired: Boolean = false,
+    isReauthenticating: Boolean = false,
+    onReauthenticate: () -> Unit = {},
 ){
     val scrollBehavior = TopAppBarDefaults.exitUntilCollapsedScrollBehavior()
     val newTaskLabel = stringResource(R.string.btn_new_task)
@@ -206,6 +210,12 @@ fun TaskListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
+            if (sessionExpired) {
+                AuthErrorBanner(
+                    onReauthenticate = onReauthenticate,
+                    isReauthenticating = isReauthenticating,
+                )
+            }
             SyncStatusBanner(isOnline = isOnline, pendingSyncCount = pendingSyncCount)
             if (isPendingDeletion) {
                 androidx.compose.material3.Surface(

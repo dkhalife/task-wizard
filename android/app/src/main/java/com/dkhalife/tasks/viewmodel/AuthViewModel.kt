@@ -33,6 +33,8 @@ class AuthViewModel @Inject constructor(
     private val _serverEndpoint = MutableStateFlow(endpointProvider.getServerEndpoint())
     val serverEndpoint: StateFlow<String> = _serverEndpoint
 
+    val sessionExpired: StateFlow<Boolean> = authManager.sessionExpired
+
     private val userChangeListener = AuthManager.UserChangeListener { isSignedIn ->
         _isSignedIn.value = isSignedIn
         _isLoading.value = false
