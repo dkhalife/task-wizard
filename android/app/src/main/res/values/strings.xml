@@ -5,6 +5,10 @@
     <string name="sync_banner_offline_pending">Offline - %1$d change(s) pending sync.</string>
     <string name="sync_banner_pending">Syncing %1$d pending change(s)…</string>
 
+    <string name="auth_error_session_expired_title">Your session has expired</string>
+    <string name="auth_error_session_expired_body">Sign in again to keep your tasks in sync.</string>
+    <string name="auth_error_sign_in_action">Sign in</string>
+
     <!-- Widget metadata -->
     <string name="widget_task_list_name">Task List</string>
     <string name="widget_task_list_description">Scrollable grouped task list with quick complete</string>

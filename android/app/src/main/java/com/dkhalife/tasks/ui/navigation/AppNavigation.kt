@@ -1,5 +1,6 @@
 package com.dkhalife.tasks.ui.navigation
 
+import android.app.Activity
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.slideInHorizontally
@@ -19,6 +20,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.stringResource
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -127,6 +129,7 @@ fun AppNavigation(
             composable(Screen.Tasks.route) {
                 val viewModel: TaskListViewModel = hiltViewModel()
                 val userViewModel: UserViewModel = hiltViewModel()
+                val authViewModel: AuthViewModel = hiltViewModel()
                 val isRefreshing by viewModel.isRefreshing.collectAsState()
                 val taskGroups by viewModel.taskGroups.collectAsState()
                 val expandedGroups by viewModel.expandedGroups.collectAsState()
@@ -135,9 +138,22 @@ fun AppNavigation(
                 val pendingSyncCount by viewModel.pendingSyncCount.collectAsState()
                 val searchQuery by viewModel.searchQuery.collectAsState()
                 val isSearchActive by viewModel.isSearchActive.collectAsState()
+                val sessionExpired by authViewModel.sessionExpired.collectAsState()
+                val isReauthenticating by authViewModel.isLoading.collectAsState()
+                val activity = LocalContext.current as Activity
 
                 LaunchedEffect(taskGrouping) {
                     viewModel.setTaskGrouping(taskGrouping)
+                }
+
+                // When the session recovers (expired -> active) after re-authentication, pull fresh
+                // data so the user doesn't keep staring at the stale cache the failed syncs left behind.
+                var wasSessionExpired by remember { mutableStateOf(sessionExpired) }
+                LaunchedEffect(sessionExpired) {
+                    if (wasSessionExpired && !sessionExpired) {
+                        viewModel.refreshTasks()
+                    }
+                    wasSessionExpired = sessionExpired
                 }
 
                 TaskListScreen(
@@ -162,6 +178,9 @@ fun AppNavigation(
                     isPendingDeletion = deletionRequestedAt != null,
                     isOnline = isOnline,
                     pendingSyncCount = pendingSyncCount,
+                    sessionExpired = sessionExpired,
+                    isReauthenticating = isReauthenticating,
+                    onReauthenticate = { authViewModel.signIn(activity) },
                 )
             }
 

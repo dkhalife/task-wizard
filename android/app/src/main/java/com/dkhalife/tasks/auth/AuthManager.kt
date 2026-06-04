@@ -9,7 +9,10 @@ import com.microsoft.identity.client.IAuthenticationResult
 import com.microsoft.identity.client.ISingleAccountPublicClientApplication
 import com.microsoft.identity.client.SilentAuthenticationCallback
 import com.microsoft.identity.client.exception.MsalException
+import com.microsoft.identity.client.exception.MsalUiRequiredException
 import com.dkhalife.tasks.telemetry.TelemetryManager
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -31,6 +34,14 @@ class AuthManager @Inject constructor(
 
     @Volatile
     private var isAccountLoaded = false
+
+    private val _sessionExpired = MutableStateFlow(false)
+    /**
+     * Emits true when a silent token refresh fails non-recoverably (the MSAL refresh token is gone
+     * or revoked), meaning interactive sign-in is required. The account record still exists so
+     * [isSignedIn] stays true; this flag is how the UI learns the session has effectively expired.
+     */
+    val sessionExpired: StateFlow<Boolean> = _sessionExpired
 
     private val userChangeListeners = mutableListOf<UserChangeListener>()
 
@@ -68,6 +79,7 @@ class AuthManager @Inject constructor(
         if (account == null) {
             cachedAccessToken = null
             cachedExpiryTimeMs = 0
+            _sessionExpired.value = false
         }
         isAccountLoaded = true
         notifyUserChanged(account != null)
@@ -87,10 +99,12 @@ class AuthManager @Inject constructor(
         return null
     }
 
-    override suspend fun getAccessToken(): String? {
-        val token = cachedAccessToken
-        if (token != null && System.currentTimeMillis() < cachedExpiryTimeMs - TOKEN_SKEW_MS) {
-            return token
+    override suspend fun getAccessToken(forceRefresh: Boolean): String? {
+        if (!forceRefresh) {
+            val token = cachedAccessToken
+            if (token != null && System.currentTimeMillis() < cachedExpiryTimeMs - TOKEN_SKEW_MS) {
+                return token
+            }
         }
 
         val account = currentAccount ?: return null
@@ -102,6 +116,11 @@ class AuthManager @Inject constructor(
             result.accessToken
         } catch (e: MsalException) {
             telemetryManager.logWarning(TAG, "Silent token acquire failed: ${e.message}", e)
+            if (e is MsalUiRequiredException) {
+                cachedAccessToken = null
+                cachedExpiryTimeMs = 0
+                _sessionExpired.value = true
+            }
             null
         }
     }
@@ -168,6 +187,7 @@ class AuthManager @Inject constructor(
     private fun cacheToken(result: IAuthenticationResult) {
         cachedAccessToken = result.accessToken
         cachedExpiryTimeMs = result.expiresOn.time
+        _sessionExpired.value = false
     }
 
     companion object {

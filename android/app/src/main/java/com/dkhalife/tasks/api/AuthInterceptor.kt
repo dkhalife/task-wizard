@@ -37,7 +37,7 @@ class AuthInterceptor(
             return null
         }
 
-        val freshToken = runBlocking { tokenProvider.getAccessToken() } ?: run {
+        val freshToken = runBlocking { tokenProvider.getAccessToken(forceRefresh = true) } ?: run {
             telemetryManager.logWarning(TAG, "Token refresh failed")
             return null
         }
