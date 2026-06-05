@@ -146,10 +146,8 @@ func (s *TaskService) GetTask(ctx context.Context, userID, taskID int) (int, int
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to view task", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to view this task",
-		}
+		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to view task", nil)
+		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
 	return http.StatusOK, gin.H{
@@ -293,10 +291,8 @@ func (s *TaskService) EditTask(ctx context.Context, userID int, req models.Updat
 	}
 
 	if userID != oldTask.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to edit task", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to edit this task",
-		}
+		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to edit task", nil)
+		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
 	if err := s.l.AssignLabelsToTask(ctx, taskId, userID, req.Labels); err != nil {
@@ -346,9 +342,14 @@ func (s *TaskService) DeleteTask(ctx context.Context, userID, taskID int) (int, 
 	log := logging.FromContext(ctx)
 
 	if err := s.t.IsTaskOwner(ctx, taskID, userID); err != nil {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to delete task", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to delete this task",
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to delete task", nil)
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
+		log.Errorf("error checking task ownership: %s", err.Error())
+		telemetry.TrackError(ctx, "task_delete_failed", "task-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error deleting task",
 		}
 	}
 
@@ -385,10 +386,8 @@ func (s *TaskService) SkipTask(ctx context.Context, userID, taskID int) (int, in
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to skip task", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to skip this task",
-		}
+		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to skip task", nil)
+		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
 	if task.NextDueDate == nil {
@@ -455,10 +454,8 @@ func (s *TaskService) UpdateDueDate(ctx context.Context, userID, taskID int, req
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to update due date", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to update this task",
-		}
+		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to update due date", nil)
+		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
 	if req.DueDate != "" {
@@ -514,10 +511,8 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to complete task", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to complete this task",
-		}
+		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to complete task", nil)
+		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
 	var completedDate time.Time = time.Now().UTC()
@@ -581,10 +576,8 @@ func (s *TaskService) RevertAction(ctx context.Context, userID, taskID, historyI
 	}
 
 	if userID != task.CreatedBy {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to revert task action", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to update this task",
-		}
+		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to revert task action", nil)
+		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
 	if err := s.t.RevertActivity(ctx, taskID, historyID); err != nil {
@@ -629,9 +622,14 @@ func (s *TaskService) GetTaskHistory(ctx context.Context, userID, taskID int) (i
 	log := logging.FromContext(ctx)
 
 	if err := s.t.IsTaskOwner(ctx, taskID, userID); err != nil {
-		telemetry.TrackWarning(ctx, "task_forbidden", "task-service", "User not allowed to view task history", nil)
-		return http.StatusForbidden, gin.H{
-			"error": "You are not allowed to view this task's history",
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to view task history", nil)
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
+		log.Errorf("error checking task ownership: %s", err.Error())
+		telemetry.TrackError(ctx, "task_history_failed", "task-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error getting task history",
 		}
 	}
 
