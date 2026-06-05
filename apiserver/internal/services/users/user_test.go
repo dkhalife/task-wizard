@@ -39,7 +39,7 @@ func (s *UserServiceTestSuite) SetupTest() {
 	authMiddleware, _ := authMW.NewAuthMiddleware(&config.Config{}, s.repo, nil)
 	taskRepo := tRepo.NewTaskRepository(s.DB, cfg)
 	labelRepo := lRepo.NewLabelRepository(s.DB, cfg)
-	s.wsServer = ws.NewWSServer(authMiddleware, taskRepo, labelRepo, s.repo)
+	s.wsServer = ws.NewWSServer(cfg, authMiddleware, taskRepo, labelRepo, s.repo)
 	s.service = NewUserService(s.repo, s.wsServer)
 }
 

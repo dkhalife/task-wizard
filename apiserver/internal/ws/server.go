@@ -8,6 +8,7 @@ import (
 	"sync"
 	"time"
 
+	"dkhalife.com/tasks/core/config"
 	"dkhalife.com/tasks/core/internal/models"
 	lRepo "dkhalife.com/tasks/core/internal/repos/label"
 	tRepo "dkhalife.com/tasks/core/internal/repos/task"
@@ -44,12 +45,12 @@ type WSServer struct {
 type messageHandler func(ctx context.Context, userID int, msg WSMessage) *WSResponse
 
 // NewWSServer creates a new websocket server instance.
-func NewWSServer(authMiddleware *authMW.AuthMiddleware, tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
+func NewWSServer(cfg *config.Config, authMiddleware *authMW.AuthMiddleware, tRepo *tRepo.TaskRepository, lRepo *lRepo.LabelRepository, uRepo uRepo.IUserRepo) *WSServer {
 	return &WSServer{
 		upgrader: websocket.Upgrader{
 			ReadBufferSize:  1024,
 			WriteBufferSize: 1024,
-			CheckOrigin:     func(r *http.Request) bool { return true },
+			CheckOrigin:     checkOrigin(cfg.Server.AllowedOrigins),
 		},
 		connections:     make(map[*websocket.Conn]*connection),
 		userConnections: make(map[int]map[*websocket.Conn]*connection),
@@ -60,6 +61,31 @@ func NewWSServer(authMiddleware *authMW.AuthMiddleware, tRepo *tRepo.TaskReposit
 		tRepo:           tRepo,
 		lRepo:           lRepo,
 		uRepo:           uRepo,
+	}
+}
+
+// checkOrigin builds a CheckOrigin function restricting WebSocket upgrades to the
+// configured allowed origins, mirroring the HTTP CORS allow-list. When the list is
+// empty the check stays permissive to preserve same-origin and local/dev deployments.
+// Requests without an Origin header (non-browser clients) are always allowed.
+func checkOrigin(allowedOrigins []string) func(r *http.Request) bool {
+	return func(r *http.Request) bool {
+		if len(allowedOrigins) == 0 {
+			return true
+		}
+
+		origin := r.Header.Get("Origin")
+		if origin == "" {
+			return true
+		}
+
+		for _, allowed := range allowedOrigins {
+			if origin == allowed {
+				return true
+			}
+		}
+
+		return false
 	}
 }
 

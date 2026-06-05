@@ -53,7 +53,7 @@ func (s *WSServerTestSuite) SetupTest() {
 	authMiddleware, err := authMW.NewAuthMiddleware(cfg, mockRepo, nil)
 	s.Require().NoError(err)
 
-	s.server = NewWSServer(authMiddleware, nil, nil, mockRepo)
+	s.server = NewWSServer(cfg, authMiddleware, nil, nil, mockRepo)
 	s.router = gin.New()
 	s.router.GET("/ws", s.server.HandleConnection)
 }
@@ -161,6 +161,27 @@ func (s *WSServerTestSuite) TestRegisterHandler_DuplicatePanics() {
 
 	s.server.RegisterHandler("dup", handler)
 	s.Panics(func() { s.server.RegisterHandler("dup", handler) })
+}
+
+func (s *WSServerTestSuite) TestCheckOrigin() {
+	newRequest := func(origin string) *http.Request {
+		r := httptest.NewRequest(http.MethodGet, "/ws", nil)
+		if origin != "" {
+			r.Header.Set("Origin", origin)
+		}
+		return r
+	}
+
+	allowed := []string{"https://app.example.com", "https://admin.example.com"}
+
+	check := checkOrigin(allowed)
+	s.True(check(newRequest("https://app.example.com")), "allowed origin should be accepted")
+	s.False(check(newRequest("https://evil.example.com")), "disallowed origin should be rejected")
+	s.True(check(newRequest("")), "missing origin should be accepted")
+
+	permissive := checkOrigin(nil)
+	s.True(permissive(newRequest("https://anything.example.com")), "empty allow-list should be permissive")
+	s.True(permissive(newRequest("")), "empty allow-list with no origin should be permissive")
 }
 
 func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
