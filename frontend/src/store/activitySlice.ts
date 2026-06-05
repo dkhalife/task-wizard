@@ -36,9 +36,9 @@ export const loadMoreActivity = createAsyncThunk(
   async (_, thunkAPI) => {
     const state = thunkAPI.getState() as { activity: ActivityState }
     const items = state.activity.items
-    const beforeId = items.length > 0 ? items[items.length - 1].id : 0
-    const data = await GetActivity(beforeId, ACTIVITY_PAGE_SIZE)
-    return data.activity
+    const cursor = items.length > 0 ? items[items.length - 1].id : 0
+    const data = await GetActivity(cursor, ACTIVITY_PAGE_SIZE)
+    return { cursor, entries: data.activity }
   },
 )
 
@@ -86,11 +86,21 @@ const activitySlice = createSlice({
       })
       .addCase(loadMoreActivity.fulfilled, (state, action) => {
         state.status = 'succeeded'
-        const existingIds = new Set(state.items.map(e => e.id))
-        const newEntries = action.payload.filter(e => !existingIds.has(e.id))
-        state.items.push(...newEntries)
-        state.hasMore = action.payload.length === ACTIVITY_PAGE_SIZE
         state.error = null
+
+        // Guard against a race with fetchActivity (e.g. triggered by a WS event)
+        // that replaced the list while this page was in flight. If the list no
+        // longer ends with the cursor this page was based on, the response is
+        // stale and appending it would create gaps or misordering, so drop it.
+        const currentTail = state.items.length > 0 ? state.items[state.items.length - 1].id : 0
+        if (currentTail !== action.payload.cursor) {
+          return
+        }
+
+        const existingIds = new Set(state.items.map(e => e.id))
+        const newEntries = action.payload.entries.filter(e => !existingIds.has(e.id))
+        state.items.push(...newEntries)
+        state.hasMore = action.payload.entries.length === ACTIVITY_PAGE_SIZE
       })
       .addCase(loadMoreActivity.rejected, (state, action) => {
         state.status = 'failed'

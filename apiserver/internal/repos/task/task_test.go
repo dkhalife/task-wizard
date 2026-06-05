@@ -8,6 +8,7 @@ import (
 	"dkhalife.com/tasks/core/internal/models"
 	"dkhalife.com/tasks/core/internal/utils/test"
 	"github.com/stretchr/testify/suite"
+	"gorm.io/gorm"
 )
 
 type TaskTestSuite struct {
@@ -435,6 +436,57 @@ func (s *TaskTestSuite) TestRevertActivityRejectsStaleEntry() {
 	var count int64
 	s.DB.Model(&models.TaskHistory{}).Where("task_id = ?", task.ID).Count(&count)
 	s.Equal(int64(2), count)
+}
+
+func (s *TaskTestSuite) TestRevertActivityDefaultsToLatest() {
+	ctx := context.Background()
+	dueDate := time.Now().Add(24 * time.Hour)
+	completedDate := time.Now()
+
+	task := &models.Task{
+		Title:       "Default Latest Undo Task",
+		CreatedBy:   s.testUser.ID,
+		NextDueDate: &dueDate,
+		IsActive:    true,
+		Frequency: models.Frequency{
+			Type: models.RepeatDaily,
+		},
+	}
+
+	err := s.DB.Create(task).Error
+	s.Require().NoError(err)
+
+	nextDueDate := dueDate.Add(24 * time.Hour)
+	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, &nextDueDate, &completedDate)
+	s.Require().NoError(err)
+
+	laterDueDate := nextDueDate.Add(24 * time.Hour)
+	err = s.repo.CompleteTask(ctx, task, s.testUser.ID, &laterDueDate, &completedDate)
+	s.Require().NoError(err)
+
+	// A non-positive history id reverts the most recent action.
+	err = s.repo.RevertActivity(ctx, task.ID, 0)
+	s.Require().NoError(err)
+
+	var count int64
+	s.DB.Model(&models.TaskHistory{}).Where("task_id = ?", task.ID).Count(&count)
+	s.Equal(int64(1), count)
+}
+
+func (s *TaskTestSuite) TestRevertActivityNoHistory() {
+	ctx := context.Background()
+
+	task := &models.Task{
+		Title:     "No History Task",
+		CreatedBy: s.testUser.ID,
+		IsActive:  true,
+		Frequency: models.Frequency{Type: models.RepeatOnce},
+	}
+	err := s.DB.Create(task).Error
+	s.Require().NoError(err)
+
+	err = s.repo.RevertActivity(ctx, task.ID, 0)
+	s.Require().ErrorIs(err, gorm.ErrRecordNotFound)
 }
 
 func (s *TaskTestSuite) TestRevertActivityRejectsWrongTask() {

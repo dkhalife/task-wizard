@@ -170,12 +170,7 @@ var ErrActivityNotLatest = errors.New("history entry is not the latest action fo
 
 func (r *TaskRepository) RevertActivity(c context.Context, taskID int, historyID int) error {
 	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
-		var entry models.TaskHistory
-		if err := tx.Where("id = ? AND task_id = ?", historyID, taskID).First(&entry).Error; err != nil {
-			return err
-		}
-
-		var latestID int
+		var latestID *int
 		if err := tx.Model(&models.TaskHistory{}).
 			Where("task_id = ?", taskID).
 			Select("MAX(id)").
@@ -183,8 +178,23 @@ func (r *TaskRepository) RevertActivity(c context.Context, taskID int, historyID
 			return err
 		}
 
-		if entry.ID != latestID {
+		if latestID == nil {
+			return gorm.ErrRecordNotFound
+		}
+
+		// A non-positive historyID means "revert the latest action", letting
+		// callers undo without first resolving the history entry themselves.
+		if historyID <= 0 {
+			historyID = *latestID
+		}
+
+		if historyID != *latestID {
 			return ErrActivityNotLatest
+		}
+
+		var entry models.TaskHistory
+		if err := tx.Where("id = ? AND task_id = ?", historyID, taskID).First(&entry).Error; err != nil {
+			return err
 		}
 
 		if err := tx.Delete(&entry).Error; err != nil {

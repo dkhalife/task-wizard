@@ -38,6 +38,10 @@ func NewTaskService(t *tRepo.TaskRepository, ws *ws.WSServer, notifier *notifica
 	}
 }
 
+// maxActivityPageSize bounds how many activity entries a single request may return,
+// regardless of the limit supplied over HTTP or WebSocket.
+const maxActivityPageSize = 20
+
 func (s *TaskService) GetUserTasks(ctx context.Context, userID int) (int, interface{}) {
 	log := logging.FromContext(ctx)
 	tasks, err := s.t.GetTasks(ctx, userID)
@@ -104,6 +108,13 @@ func (s *TaskService) SearchTasksByTitle(ctx context.Context, userID int, query 
 
 func (s *TaskService) GetRecentActivity(ctx context.Context, userID, beforeID, limit int) (int, interface{}) {
 	log := logging.FromContext(ctx)
+
+	if limit <= 0 || limit > maxActivityPageSize {
+		limit = maxActivityPageSize
+	}
+	if beforeID < 0 {
+		beforeID = 0
+	}
 
 	entries, err := s.t.GetRecentActivity(ctx, userID, beforeID, limit)
 	if err != nil {

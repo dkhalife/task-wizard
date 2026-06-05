@@ -264,14 +264,16 @@ func (h *TasksAPIHandler) revertAction(c *gin.Context) {
 		return
 	}
 
-	historyIDStr := c.Query("history_id")
-	historyID, err := strconv.Atoi(historyIDStr)
-	if err != nil || historyID <= 0 {
-		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid history_id: "+historyIDStr, nil)
-		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid history_id value",
-		})
-		return
+	historyID := 0
+	if historyIDStr := c.Query("history_id"); historyIDStr != "" {
+		historyID, err = strconv.Atoi(historyIDStr)
+		if err != nil || historyID <= 0 {
+			telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid history_id: "+historyIDStr, nil)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid history_id value",
+			})
+			return
+		}
 	}
 
 	status, response := h.tService.RevertAction(c, currentIdentity.UserID, id, historyID)
