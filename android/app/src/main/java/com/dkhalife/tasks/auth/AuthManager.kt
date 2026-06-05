@@ -144,7 +144,7 @@ class AuthManager @Inject constructor(
             return
         }
 
-        val params = AcquireTokenParameters.Builder()
+        val builder = AcquireTokenParameters.Builder()
             .startAuthorizationFromActivity(activity)
             .withScopes(REQUIRED_SCOPES)
             .withCallback(object : AuthenticationCallback {
@@ -162,9 +162,13 @@ class AuthManager @Inject constructor(
                     callback.onCancel()
                 }
             })
-            .build()
 
-        app.acquireToken(params)
+        // In single-account mode an interactive acquireToken while an account is already persisted
+        // (re-authenticating after a session expired) must target that same account, otherwise MSAL
+        // rejects it with CURRENT_ACCOUNT_MISMATCH before any sign-in UI is shown.
+        currentAccount?.let { builder.forAccount(it) }
+
+        app.acquireToken(builder.build())
     }
 
     fun signOut(callback: ISingleAccountPublicClientApplication.SignOutCallback) {
