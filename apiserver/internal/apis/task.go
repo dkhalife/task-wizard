@@ -13,6 +13,7 @@ import (
 	auth "dkhalife.com/tasks/core/internal/utils/auth"
 	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
+	limiter "github.com/ulule/limiter/v3"
 )
 
 type TasksAPIHandler struct {
@@ -297,9 +298,9 @@ func (h *TasksAPIHandler) GetTaskHistory(c *gin.Context) {
 	c.JSON(status, response)
 }
 
-func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddleware) {
+func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddleware, limiter *limiter.Limiter) {
 	tasksRoutes := router.Group("api/v1/tasks")
-	tasksRoutes.Use(auth.MiddlewareFunc(), middleware.DeletionGuardMiddleware())
+	tasksRoutes.Use(auth.MiddlewareFunc(), middleware.RateLimitMiddleware(limiter), middleware.DeletionGuardMiddleware())
 	{
 		tasksRoutes.GET("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasks)
 		tasksRoutes.GET("/due", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksDueBefore)
