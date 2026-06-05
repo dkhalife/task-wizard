@@ -229,3 +229,61 @@ server:
 	assert.Equal(t, "testpass", cfg.Database.Password)
 	assert.Equal(t, true, cfg.Database.Migration)
 }
+
+func TestValidateCorsConfig(t *testing.T) {
+	cases := []struct {
+		name        string
+		origins     []string
+		credentials bool
+		wantErr     bool
+	}{
+		{
+			name:        "wildcard with credentials is rejected",
+			origins:     []string{"*"},
+			credentials: true,
+			wantErr:     true,
+		},
+		{
+			name:        "wildcard among explicit origins with credentials is rejected",
+			origins:     []string{"https://app.example.com", "*"},
+			credentials: true,
+			wantErr:     true,
+		},
+		{
+			name:        "wildcard without credentials is allowed",
+			origins:     []string{"*"},
+			credentials: false,
+			wantErr:     false,
+		},
+		{
+			name:        "explicit origins with credentials is allowed",
+			origins:     []string{"https://app.example.com"},
+			credentials: true,
+			wantErr:     false,
+		},
+		{
+			name:        "empty list is allowed",
+			origins:     nil,
+			credentials: true,
+			wantErr:     false,
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			cfg := &Config{
+				Server: ServerConfig{
+					AllowedOrigins:       tc.origins,
+					AllowCorsCredentials: tc.credentials,
+				},
+			}
+
+			err := ValidateCorsConfig(cfg)
+			if tc.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
