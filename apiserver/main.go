@@ -43,6 +43,9 @@ func main() {
 	flag.Parse()
 
 	cfg := config.LoadConfig(*cfgFile)
+	if err := config.ValidateCorsConfig(cfg); err != nil {
+		log.Fatal(err)
+	}
 	level, err := zapcore.ParseLevel(cfg.Server.LogLevel)
 	if err != nil {
 		level = zapcore.WarnLevel

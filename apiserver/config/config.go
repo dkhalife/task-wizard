@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 	"time"
 
@@ -97,4 +98,22 @@ func LoadConfig(configFile string) *Config {
 	}
 
 	return &config
+}
+
+// ValidateCorsConfig rejects insecure CORS configurations. Allowing credentials
+// together with a wildcard origin would let any website make credentialed
+// cross-origin requests and read the responses, so the server must refuse to
+// start in that case.
+func ValidateCorsConfig(cfg *Config) error {
+	if !cfg.Server.AllowCorsCredentials {
+		return nil
+	}
+
+	for _, origin := range cfg.Server.AllowedOrigins {
+		if origin == "*" {
+			return fmt.Errorf("insecure CORS configuration: allow_cors_credentials cannot be enabled together with a wildcard ('*') entry in allowed_origins; specify explicit origins instead")
+		}
+	}
+
+	return nil
 }
