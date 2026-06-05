@@ -342,8 +342,15 @@ func (s *TaskService) DeleteTask(ctx context.Context, userID, taskID int) (int, 
 	log := logging.FromContext(ctx)
 
 	if err := s.t.IsTaskOwner(ctx, taskID, userID); err != nil {
-		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to delete task", nil)
-		return http.StatusNotFound, gin.H{"error": "Task not found"}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to delete task", nil)
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
+		log.Errorf("error checking task ownership: %s", err.Error())
+		telemetry.TrackError(ctx, "task_delete_failed", "task-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error deleting task",
+		}
 	}
 
 	if err := s.t.DeleteTask(ctx, taskID); err != nil {
@@ -615,8 +622,15 @@ func (s *TaskService) GetTaskHistory(ctx context.Context, userID, taskID int) (i
 	log := logging.FromContext(ctx)
 
 	if err := s.t.IsTaskOwner(ctx, taskID, userID); err != nil {
-		telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to view task history", nil)
-		return http.StatusNotFound, gin.H{"error": "Task not found"}
+		if errors.Is(err, gorm.ErrRecordNotFound) {
+			telemetry.TrackWarning(ctx, "task_not_found", "task-service", "User not allowed to view task history", nil)
+			return http.StatusNotFound, gin.H{"error": "Task not found"}
+		}
+		log.Errorf("error checking task ownership: %s", err.Error())
+		telemetry.TrackError(ctx, "task_history_failed", "task-service", err, nil)
+		return http.StatusInternalServerError, gin.H{
+			"error": "Error getting task history",
+		}
 	}
 
 	TaskHistory, err := s.t.GetTaskHistory(ctx, taskID)
