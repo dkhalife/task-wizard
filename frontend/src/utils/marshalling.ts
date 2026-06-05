@@ -1,4 +1,5 @@
 import { HistoryEntry } from "@/models/history"
+import { ActivityEntry } from "@/models/activity"
 import { Task } from "@/models/task"
 import { TaskGroup, TaskGroups } from "./grouping";
 import { Label } from "@/models/label";
@@ -9,6 +10,11 @@ export type TaskUI = Omit<Task, 'next_due_date' | 'end_date'> & {
 };
 
 export type HistoryEntryUI = Omit<HistoryEntry, 'due_date' | 'completed_date'> & {
+  due_date: Date | null
+  completed_date: Date | null
+};
+
+export type ActivityEntryUI = Omit<ActivityEntry, 'due_date' | 'completed_date'> & {
   due_date: Date | null
   completed_date: Date | null
 };
@@ -49,6 +55,14 @@ export function MakeDateUI(d: string | null): Date | null {
 }
 
 export function MakeHistoryUI(entry: HistoryEntry): HistoryEntryUI {
+  return {
+    ...entry,
+    due_date: MakeDateUI(entry.due_date),
+    completed_date: MakeDateUI(entry.completed_date),
+  }
+}
+
+export function MakeActivityUI(entry: ActivityEntry): ActivityEntryUI {
   return {
     ...entry,
     due_date: MakeDateUI(entry.due_date),

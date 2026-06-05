@@ -5,7 +5,8 @@ Native Android client for Task Wizard with task and label management.
 ## Capabilities
 
 - MSAL (Microsoft Entra ID) authentication matching the web frontend's auth flow
-- Task management: create, edit, complete, uncomplete, skip, delete tasks
+- Task management: create, edit, complete, skip, delete tasks
+- Activity view: recent completions and skips in reverse-chronological order, with revert of the latest action per task
 - Recurrence support: once, daily, weekly, monthly, yearly, custom
 - Label management: create, edit, delete labels with color coding
 - Label assignment to tasks via multi-select chips
@@ -17,7 +18,7 @@ Native Android client for Task Wizard with task and label management.
 ## Architecture
 
 - **UI**: Jetpack Compose with Material 3
-- **Navigation**: Navigation Compose with bottom bar (Tasks, Labels, Settings)
+- **Navigation**: Navigation Compose with bottom bar (Tasks, Activity, Labels, Settings)
 - **State**: ViewModels with StateFlow, Hilt injection
 - **Network**: Retrofit for REST, OkHttp WebSocket for real-time sync
 - **Auth**: MSAL single-account flow with in-memory token cache
@@ -29,8 +30,8 @@ Native Android client for Task Wizard with task and label management.
 - `api/` — TaskWizardApi (Retrofit), AuthInterceptor, ApiEndpointProvider
 - `ws/` — WebSocketManager, WSMessage, WebSocketActions
 - `repo/` — TaskRepository, LabelRepository, UserRepository
-- `viewmodel/` — AuthViewModel, TaskListViewModel, TaskFormViewModel, LabelViewModel
-- `ui/screen/` — SignInScreen, TaskListScreen, TaskFormScreen, LabelsScreen, SettingsScreen
+- `viewmodel/` — AuthViewModel, TaskListViewModel, TaskFormViewModel, LabelViewModel, ActivityViewModel
+- `ui/screen/` — SignInScreen, TaskListScreen, TaskFormScreen, LabelsScreen, SettingsScreen, ActivityScreen
 - `ui/navigation/` — AppNavigation (NavHost with bottom bar)
 - `ui/components/` — Reusable Compose components (DateTimePickerRow, GroupHeader, LabelDialog, LabelItem, NotificationsSection, RecurrenceSection, SchedulingSection, TaskChips, TaskItem)
 - `ui/theme/` — Material 3 theme definitions (Color, Theme, Type)

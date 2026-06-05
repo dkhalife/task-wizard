@@ -12,6 +12,7 @@ export const NavigationPaths = {
   MyTasks: '/my/tasks',
   TasksOverview: '/tasks',
   HomeView: () => (getHomeView() === 'my_tasks' ? '/my/tasks' : '/tasks'),
+  Activity: '/activity',
   Labels: '/labels',
   Settings: '/settings',
   TaskCreate: '/tasks/create',

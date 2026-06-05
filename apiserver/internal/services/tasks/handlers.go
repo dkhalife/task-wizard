@@ -28,10 +28,10 @@ func (h *TasksMessageHandler) getUserTasks(ctx context.Context, userID int, _ ws
 	}
 }
 
-func (h *TasksMessageHandler) getCompletedTasks(ctx context.Context, userID int, msg ws.WSMessage) *ws.WSResponse {
+func (h *TasksMessageHandler) getActivity(ctx context.Context, userID int, msg ws.WSMessage) *ws.WSResponse {
 	var req struct {
-		Limit int `json:"limit"`
-		Page  int `json:"page"`
+		BeforeID int `json:"before_id"`
+		Limit    int `json:"limit"`
 	}
 	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
@@ -42,12 +42,12 @@ func (h *TasksMessageHandler) getCompletedTasks(ctx context.Context, userID int,
 		}
 	}
 	if req.Limit <= 0 {
-		req.Limit = 10
+		req.Limit = 20
 	}
-	if req.Page <= 0 {
-		req.Page = 1
+	if req.BeforeID < 0 {
+		req.BeforeID = 0
 	}
-	status, response := h.ts.GetCompletedTasks(ctx, userID, req.Limit, req.Page)
+	status, response := h.ts.GetRecentActivity(ctx, userID, req.BeforeID, req.Limit)
 	return &ws.WSResponse{Status: status, Data: response}
 }
 
@@ -176,17 +176,28 @@ func (h *TasksMessageHandler) completeTask(ctx context.Context, userID int, msg 
 	}
 }
 
-func (h *TasksMessageHandler) uncompleteTask(ctx context.Context, userID int, msg ws.WSMessage) *ws.WSResponse {
-	var id int
-	if err := json.Unmarshal(msg.Data, &id); err != nil {
+func (h *TasksMessageHandler) revertAction(ctx context.Context, userID int, msg ws.WSMessage) *ws.WSResponse {
+	var req struct {
+		ID        int `json:"id"`
+		HistoryID int `json:"history_id"`
+	}
+	if err := json.Unmarshal(msg.Data, &req); err != nil {
 		return &ws.WSResponse{
 			Status: http.StatusBadRequest,
 			Data: gin.H{
-				"error": "Invalid task ID",
+				"error": "Invalid request data",
 			},
 		}
 	}
-	status, response := h.ts.UncompleteTask(ctx, userID, id)
+	if req.HistoryID <= 0 {
+		return &ws.WSResponse{
+			Status: http.StatusBadRequest,
+			Data: gin.H{
+				"error": "Invalid history_id value",
+			},
+		}
+	}
+	status, response := h.ts.RevertAction(ctx, userID, req.ID, req.HistoryID)
 	return &ws.WSResponse{
 		Status: status,
 		Data:   response,
@@ -213,7 +224,7 @@ func (h *TasksMessageHandler) getTaskHistory(ctx context.Context, userID int, ms
 // TaskMessages registers websocket handlers for task actions.
 func TaskMessages(wsServer *ws.WSServer, h *TasksMessageHandler) {
 	wsServer.RegisterHandler("get_tasks", h.getUserTasks)
-	wsServer.RegisterHandler("get_completed_tasks", h.getCompletedTasks)
+	wsServer.RegisterHandler("get_activity", h.getActivity)
 	wsServer.RegisterHandler("get_task", h.getTask)
 	wsServer.RegisterHandler("create_task", h.createTask)
 	wsServer.RegisterHandler("update_task", h.updateTask)
@@ -221,6 +232,6 @@ func TaskMessages(wsServer *ws.WSServer, h *TasksMessageHandler) {
 	wsServer.RegisterHandler("skip_task", h.skipTask)
 	wsServer.RegisterHandler("update_due_date", h.updateDueDate)
 	wsServer.RegisterHandler("complete_task", h.completeTask)
-	wsServer.RegisterHandler("uncomplete_task", h.uncompleteTask)
+	wsServer.RegisterHandler("uncomplete_task", h.revertAction)
 	wsServer.RegisterHandler("get_task_history", h.getTaskHistory)
 }

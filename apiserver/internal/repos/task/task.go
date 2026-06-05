@@ -106,20 +106,26 @@ func (r *TaskRepository) SearchTasksByTitle(c context.Context, userID int, query
 	return tasks, nil
 }
 
-func (r *TaskRepository) GetCompletedTasks(c context.Context, userID int, limit int, offset int) ([]*models.Task, error) {
-	var tasks []*models.Task
+func (r *TaskRepository) GetRecentActivity(c context.Context, userID, beforeID, limit int) ([]*models.ActivityEntry, error) {
+	var entries []*models.ActivityEntry
 
-	if err := r.db.WithContext(c).
-		Where("created_by = ? AND is_active = 0", userID).
-		Order("id DESC").
-		Offset(offset).
-		Limit(limit).
-		Preload("Labels").
-		Find(&tasks).Error; err != nil {
+	q := r.db.WithContext(c).
+		Table("task_histories AS th").
+		Select(`th.id AS id, th.task_id AS task_id, t.title AS task_title,
+			th.completed_date AS completed_date, th.due_date AS due_date,
+			CASE WHEN th.id = (SELECT MAX(th2.id) FROM task_histories th2 WHERE th2.task_id = th.task_id) THEN 1 ELSE 0 END AS is_latest`).
+		Joins("JOIN tasks t ON t.id = th.task_id").
+		Where("t.created_by = ?", userID)
+
+	if beforeID > 0 {
+		q = q.Where("th.id < ?", beforeID)
+	}
+
+	if err := q.Order("th.id DESC").Limit(limit).Scan(&entries).Error; err != nil {
 		return nil, err
 	}
 
-	return tasks, nil
+	return entries, nil
 }
 
 func (r *TaskRepository) DeleteTask(c context.Context, id int) error {
@@ -158,27 +164,49 @@ func (r *TaskRepository) CompleteTask(c context.Context, task *models.Task, user
 	return err
 }
 
-func (r *TaskRepository) UncompleteTask(c context.Context, taskID int) error {
+// ErrActivityNotLatest indicates a revert was attempted on a history entry that is
+// no longer the most recent action for the task.
+var ErrActivityNotLatest = errors.New("history entry is not the latest action for the task")
+
+func (r *TaskRepository) RevertActivity(c context.Context, taskID int, historyID int) error {
 	return r.db.WithContext(c).Transaction(func(tx *gorm.DB) error {
-		var last models.TaskHistory
-		if err := tx.Where("task_id = ?", taskID).Order("id desc").First(&last).Error; err != nil {
+		var latestID *int
+		if err := tx.Model(&models.TaskHistory{}).
+			Where("task_id = ?", taskID).
+			Select("MAX(id)").
+			Scan(&latestID).Error; err != nil {
 			return err
 		}
 
-		if err := tx.Delete(&last).Error; err != nil {
+		if latestID == nil {
+			return gorm.ErrRecordNotFound
+		}
+
+		// A non-positive historyID means "revert the latest action", letting
+		// callers undo without first resolving the history entry themselves.
+		if historyID <= 0 {
+			historyID = *latestID
+		}
+
+		if historyID != *latestID {
+			return ErrActivityNotLatest
+		}
+
+		var entry models.TaskHistory
+		if err := tx.Where("id = ? AND task_id = ?", historyID, taskID).First(&entry).Error; err != nil {
+			return err
+		}
+
+		if err := tx.Delete(&entry).Error; err != nil {
 			return err
 		}
 
 		updates := map[string]interface{}{
-			"next_due_date": last.DueDate,
+			"next_due_date": entry.DueDate,
 			"is_active":     true,
 		}
 
-		if err := tx.Model(&models.Task{}).Where("id = ?", taskID).Updates(updates).Error; err != nil {
-			return err
-		}
-
-		return nil
+		return tx.Model(&models.Task{}).Where("id = ?", taskID).Updates(updates).Error
 	})
 }
 

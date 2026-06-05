@@ -9,7 +9,7 @@ export type WSAction =
   | 'delete_label'
   | 'update_notification_settings'
   | 'get_tasks'
-  | 'get_completed_tasks'
+  | 'get_activity'
   | 'get_task'
   | 'create_task'
   | 'update_task'
@@ -32,9 +32,9 @@ export interface WSActionPayloads {
   }
 
   get_tasks: void
-  get_completed_tasks: {
-    limit?: number
-    page?: number
+  get_activity: {
+    before_id: number
+    limit: number
   }
   get_task: number
   create_task: Omit<Omit<Task, 'id'>, 'labels'> & { labels: number[] }
@@ -49,7 +49,10 @@ export interface WSActionPayloads {
     id: number
     endRecurrence: boolean
   }
-  uncomplete_task: number
+  uncomplete_task: {
+    id: number
+    history_id: number
+  }
   get_task_history: number
 }
 

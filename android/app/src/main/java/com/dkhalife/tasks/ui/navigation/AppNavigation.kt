@@ -37,6 +37,7 @@ import com.dkhalife.tasks.data.calendar.CalendarRepository
 import com.dkhalife.tasks.model.CreateTaskReq
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.model.UpdateTaskReq
+import com.dkhalife.tasks.ui.screen.ActivityScreen
 import com.dkhalife.tasks.ui.screen.LabelsScreen
 import com.dkhalife.tasks.ui.screen.SettingsScreen
 import com.dkhalife.tasks.ui.screen.SwipeActionsSettingsScreen
@@ -44,6 +45,7 @@ import com.dkhalife.tasks.ui.screen.TaskFormScreen
 import com.dkhalife.tasks.ui.screen.TaskHistoryScreen
 import com.dkhalife.tasks.ui.screen.TaskListScreen
 import com.dkhalife.tasks.viewmodel.AuthViewModel
+import com.dkhalife.tasks.viewmodel.ActivityViewModel
 import com.dkhalife.tasks.viewmodel.LabelViewModel
 import com.dkhalife.tasks.viewmodel.TaskFormViewModel
 import com.dkhalife.tasks.viewmodel.TaskHistoryViewModel
@@ -74,7 +76,7 @@ fun AppNavigation(
     createTask: Boolean = false
 ){
     val navController = rememberNavController()
-    val bottomScreens = listOf(Screen.Tasks, Screen.Labels, Screen.Settings)
+    val bottomScreens = listOf(Screen.Tasks, Screen.Activity, Screen.Labels, Screen.Settings)
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
 
@@ -181,6 +183,28 @@ fun AppNavigation(
                     sessionExpired = sessionExpired,
                     isReauthenticating = isReauthenticating,
                     onReauthenticate = { authViewModel.signIn(activity) },
+                )
+            }
+
+            composable(Screen.Activity.route) {
+                val viewModel: ActivityViewModel = hiltViewModel()
+                val items by viewModel.items.collectAsState()
+                val isLoading by viewModel.isLoading.collectAsState()
+                val isLoadingMore by viewModel.isLoadingMore.collectAsState()
+                val hasMore by viewModel.hasMore.collectAsState()
+                val isReverting by viewModel.isReverting.collectAsState()
+                val message by viewModel.message.collectAsState()
+
+                ActivityScreen(
+                    items = items,
+                    isLoading = isLoading,
+                    isLoadingMore = isLoadingMore,
+                    hasMore = hasMore,
+                    isReverting = isReverting,
+                    message = message,
+                    onRevert = { taskId, historyId -> viewModel.revert(taskId, historyId) },
+                    onLoadMore = { viewModel.loadMore() },
+                    onMessageShown = { viewModel.clearMessage() },
                 )
             }
 

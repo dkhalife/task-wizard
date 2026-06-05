@@ -1,6 +1,7 @@
 import { configureStore } from '@reduxjs/toolkit'
 import { TypedUseSelectorHook, useDispatch, useSelector } from 'react-redux'
 import { tasksReducer } from './tasksSlice'
+import { activityReducer } from './activitySlice'
 import { labelsReducer } from './labelsSlice'
 import { userReducer } from './userSlice'
 import { statusReducer } from './statusSlice'
@@ -11,6 +12,7 @@ export const store = configureStore({
   reducer: {
     featureFlags: featureFlagsReducer,
     tasks: tasksReducer,
+    activity: activityReducer,
     labels: labelsReducer,
     user: userReducer,
     status: statusReducer,

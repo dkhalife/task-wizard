@@ -1,4 +1,4 @@
-import { deleteTask, completeTask, updateDueDate, filterTasks, toggleShowCompleted, fetchCompletedTasks } from '@/store/tasksSlice'
+import { deleteTask, completeTask, updateDueDate, filterTasks } from '@/store/tasksSlice'
 import { getDueDateChipColor, getDueDateChipText } from '@/models/task'
 import {
   CancelRounded,
@@ -8,8 +8,6 @@ import {
   History,
   CalendarMonth,
   Delete,
-  Visibility,
-  VisibilityOff,
 } from '@mui/icons-material'
 import {
   Container,
@@ -37,13 +35,9 @@ import { Status } from '@/models/status'
 
 type TasksOverviewProps = {
   tasks: TaskUI[]
-  completedTasks: TaskUI[]
-  showCompleted: boolean
 
   search: string
   filterTasks: (searchQuery: string) => void
-  toggleShowCompleted: () => void
-  fetchCompletedTasks: () => Promise<any>
   completeTask: (taskId: number, endRecurrence: boolean) => Promise<any>
   deleteTask: (taskId: number) => Promise<any>
   updateDueDate: (taskId: number, dueDate: string) => Promise<any>
@@ -57,11 +51,6 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
 
   componentDidMount(): void {
     setTitle('Tasks Overview')
-
-		const { showCompleted, completedTasks } = this.props
-		if (showCompleted && completedTasks.length === 0) {
-			void this.props.fetchCompletedTasks()
-		}
 
     this.registerKeyboardShortcuts()
   }
@@ -114,15 +103,6 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
     this.props.filterTasks('')
   }
 
-  private onToggleCompletedClicked = async () => {
-    const { showCompleted, completedTasks } = this.props
-    
-    if (!showCompleted && completedTasks.length === 0) {
-      await this.props.fetchCompletedTasks()
-    }
-    this.props.toggleShowCompleted()
-  }
-
   private onRescheduleClicked = async (task: TaskUI) => {
     this.dateModalRef.current?.open(task.next_due_date, async (newDate: Date | null) => {
       if (newDate === null) {
@@ -162,7 +142,7 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
   }
 
   render(): React.ReactNode {
-    const { search, tasks, completedTasks, showCompleted, navigate } = this.props
+    const { search, tasks, navigate } = this.props
 
     return (
       <Container>
@@ -198,12 +178,6 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
             display={'flex'}
             gap={2}
           >
-            <Button
-              onClick={this.onToggleCompletedClicked}
-              startDecorator={showCompleted ? <VisibilityOff /> : <Visibility />}
-            >
-              {showCompleted ? 'Hide' : 'Show'} Completed
-            </Button>
             <Button onClick={this.onAddTaskClicked}>New Task</Button>
           </Grid>
         </Grid>
@@ -340,82 +314,6 @@ class TasksOverviewImpl extends React.Component<TasksOverviewProps> {
           </tbody>
         </Table>
 
-        {showCompleted && (
-          <Table
-              sx={{
-                '& tbody tr:hover': {
-                  backgroundColor: 'var(--joy-palette-background-level2)',
-                },
-              }}
-            >
-              <thead>
-                <tr>
-                  <th>Due</th>
-                  <th>Title</th>
-                  <th>Labels</th>
-                  <th>Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {completedTasks.map((task: TaskUI) => (
-                  <tr key={task.id}>
-                    <td>
-                      <Chip color={getDueDateChipColor(task.next_due_date)}>
-                        {getDueDateChipText(task.next_due_date)}
-                      </Chip>
-                    </td>
-                    <td
-                      style={{
-                        cursor: 'pointer',
-                      }}
-                      onClick={() => navigate(NavigationPaths.TaskEdit(task.id))}
-                    >
-                      {task.title || '--'}
-                    </td>
-                    <td>
-                      {task.labels.map((l, index) => {
-                        return (
-                          <Chip
-                            variant='solid'
-                            key={`taskcard-${task.id}-label-${l.id}`}
-                            color='primary'
-                            sx={{
-                              position: 'relative',
-                              ml: index === 0 ? 0 : 0.5,
-                              top: 2,
-                              zIndex: 1,
-                              backgroundColor: `${l.color} !important`,
-                              color: getTextColorFromBackgroundColor(l.color),
-                            }}
-                          >
-                            {l?.name}
-                          </Chip>
-                        )
-                      })}
-                    </td>
-                    <td>
-                      <ButtonGroup>
-                        <IconButton
-                          variant='outlined'
-                          size='sm'
-                          onClick={() => this.onViewHistoryClicked(task)}
-                          aria-setsize={2}
-                          sx={{
-                            '&:hover': {
-                              color: 'var(--joy-palette-secondary-500)',
-                              '& svg': { color: 'var(--joy-palette-secondary-500)' },
-                            },
-                          }}
-                        >
-                          <History />
-                        </IconButton>
-                      </ButtonGroup>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </Table>
-        )}
         <DateModal
           ref={this.dateModalRef}
           title={`Change due date`}
@@ -436,20 +334,15 @@ const mapStateToProps = (state: RootState) => {
   const search = state.tasks.searchQuery
   const labels = state.labels.items
   const tasks = state.tasks.filteredItems.map(task => MakeTaskUI(task, labels))
-  const completedTasks = state.tasks.completedItems.map(task => MakeTaskUI(task, labels))
 
   return {
     search,
     tasks,
-    completedTasks,
-    showCompleted: state.tasks.showCompleted,
   }
 }
 
 const mapDispatchToProps = (dispatch: AppDispatch) => ({
   filterTasks: (searchQuery: string) => dispatch(filterTasks(searchQuery)),
-  toggleShowCompleted: () => dispatch(toggleShowCompleted()),
-  fetchCompletedTasks: () => dispatch(fetchCompletedTasks()),
   completeTask: (taskId: number, endRecurrence: boolean) => dispatch(completeTask({ taskId, endRecurrence })),
   deleteTask: (taskId: number) => dispatch(deleteTask(taskId)),
   updateDueDate: (taskId: number, dueDate: string) => dispatch(updateDueDate({ taskId, dueDate })),

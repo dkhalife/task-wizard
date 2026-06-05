@@ -5,6 +5,7 @@ import { setDraft } from '@/store/tasksSlice'
 import { getHomeView, getPathName, NavigationPaths } from '@/utils/navigation'
 import { LoginView } from '@/views/Authorization/LoginView'
 import { TaskHistory } from '@/views/History/TaskHistory'
+import { Activity } from '@/views/Activity/Activity'
 import { LabelView } from '@/views/Labels/LabelView'
 import { NotFound } from '@/views/NotFound'
 import { PrivacyPolicy } from '@/views/PrivacyPolicy'
@@ -140,6 +141,10 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
             <Route
               path='/tasks'
               element={<TasksOverview navigate={this.navigate} />}
+            />
+            <Route
+              path='/activity'
+              element={<Activity navigate={this.navigate} />}
             />
             <Route
               path='/tasks/:taskId/edit'

@@ -6,6 +6,7 @@ import {
   Label,
   Settings,
   Policy,
+  History,
 } from '@mui/icons-material'
 import {
   IconButton,
@@ -134,6 +135,11 @@ export class NavBar extends React.Component<NavBarProps, NavBarState> {
                   label='Tasks Overview'
                 />
               )}
+              <NavBarLink
+                to={NavigationPaths.Activity}
+                icon={<History />}
+                label='Activity'
+              />
               <NavBarLink
                 to={NavigationPaths.Labels}
                 icon={<Label />}

@@ -90,11 +90,11 @@ func (h *TasksAPIHandler) searchTasks(c *gin.Context) {
 	c.JSON(status, response)
 }
 
-func (h *TasksAPIHandler) getCompletedTasks(c *gin.Context) {
+func (h *TasksAPIHandler) getActivity(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
-	limitStr := c.DefaultQuery("limit", "10")
-	pageStr := c.DefaultQuery("page", "1")
+	limitStr := c.DefaultQuery("limit", "20")
+	beforeIDStr := c.DefaultQuery("before_id", "0")
 
 	limit, err := strconv.Atoi(limitStr)
 	if err != nil || limit <= 0 {
@@ -103,14 +103,14 @@ func (h *TasksAPIHandler) getCompletedTasks(c *gin.Context) {
 		return
 	}
 
-	page, err := strconv.Atoi(pageStr)
-	if err != nil || page <= 0 {
-		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid page: "+pageStr, nil)
+	beforeID, err := strconv.Atoi(beforeIDStr)
+	if err != nil || beforeID < 0 {
+		telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid before_id: "+beforeIDStr, nil)
 		c.Status(http.StatusBadRequest)
 		return
 	}
 
-	status, response := h.tService.GetCompletedTasks(c, currentIdentity.UserID, limit, page)
+	status, response := h.tService.GetRecentActivity(c, currentIdentity.UserID, beforeID, limit)
 	c.JSON(status, response)
 }
 
@@ -251,7 +251,7 @@ func (h *TasksAPIHandler) completeTask(c *gin.Context) {
 	c.JSON(status, response)
 }
 
-func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
+func (h *TasksAPIHandler) revertAction(c *gin.Context) {
 	currentIdentity := auth.CurrentIdentity(c)
 
 	rawID := c.Param("id")
@@ -264,7 +264,19 @@ func (h *TasksAPIHandler) uncompleteTask(c *gin.Context) {
 		return
 	}
 
-	status, response := h.tService.UncompleteTask(c, currentIdentity.UserID, id)
+	historyID := 0
+	if historyIDStr := c.Query("history_id"); historyIDStr != "" {
+		historyID, err = strconv.Atoi(historyIDStr)
+		if err != nil || historyID <= 0 {
+			telemetry.TrackWarning(c, "task_invalid_param", "task-handler", "Invalid history_id: "+historyIDStr, nil)
+			c.JSON(http.StatusBadRequest, gin.H{
+				"error": "Invalid history_id value",
+			})
+			return
+		}
+	}
+
+	status, response := h.tService.RevertAction(c, currentIdentity.UserID, id, historyID)
 	c.JSON(status, response)
 }
 
@@ -293,13 +305,13 @@ func TaskRoutes(router *gin.Engine, h *TasksAPIHandler, auth *authMW.AuthMiddlew
 		tasksRoutes.GET("/due", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksDueBefore)
 		tasksRoutes.GET("/label/:labelId", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTasksByLabel)
 		tasksRoutes.GET("/search", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.searchTasks)
-		tasksRoutes.GET("/completed", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getCompletedTasks)
+		tasksRoutes.GET("/activity", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getActivity)
 		tasksRoutes.PUT("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.editTask)
 		tasksRoutes.POST("/", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.createTask)
 		tasksRoutes.GET("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.getTask)
 		tasksRoutes.GET("/:id/history", authMW.ScopeMiddleware(models.ApiTokenScopeTaskRead), h.GetTaskHistory)
 		tasksRoutes.POST("/:id/do", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.completeTask)
-		tasksRoutes.POST("/:id/undo", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.uncompleteTask)
+		tasksRoutes.POST("/:id/undo", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.revertAction)
 		tasksRoutes.POST("/:id/skip", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.skipTask)
 		tasksRoutes.PUT("/:id/dueDate", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.updateDueDate)
 		tasksRoutes.DELETE("/:id", authMW.ScopeMiddleware(models.ApiTokenScopeTaskWrite), h.deleteTask)

@@ -1,4 +1,4 @@
-import { CalendarViewDay, Check, Timelapse } from '@mui/icons-material'
+import { CalendarViewDay, Check, SkipNext, Timelapse } from '@mui/icons-material'
 import { Chip, ColorPaletteProp } from '@mui/joy'
 import React, { ReactElement } from 'react'
 
@@ -11,16 +11,17 @@ export class CompletedChip extends React.Component<CompletedChipProps> {
   render(): React.ReactNode {
     const { dueDate, completedDate } = this.props
 
-    const dueAt = dueDate?.getTime()
-    const completedAtOrNow = (completedDate ?? new Date()).getTime()
-
     let text = 'No Due Date'
     let color: ColorPaletteProp = 'neutral'
     let icon: ReactElement = <CalendarViewDay />
 
-    if (dueAt) {
+    if (completedDate === null) {
+      text = 'Skipped'
+      color = 'neutral'
+      icon = <SkipNext />
+    } else if (dueDate) {
       const oneHour = 1 * 60 * 60 * 1000
-      const onTime = completedAtOrNow - dueAt <= oneHour
+      const onTime = completedDate.getTime() - dueDate.getTime() <= oneHour
 
       if (onTime) {
         text = 'On Time'

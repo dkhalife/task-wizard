@@ -229,11 +229,11 @@ func Routes(router *gin.Engine, s *WSServer) {
 // wsReadOnlyActions contains WS actions that only read data and are always permitted,
 // including for accounts with pending deletion.
 var wsReadOnlyActions = map[string]struct{}{
-	"get_tasks":           {},
-	"get_completed_tasks": {},
-	"get_task":            {},
-	"get_task_history":    {},
-	"get_user_labels":     {},
+	"get_tasks":        {},
+	"get_activity":     {},
+	"get_task":         {},
+	"get_task_history": {},
+	"get_user_labels":  {},
 }
 
 func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMessage) {

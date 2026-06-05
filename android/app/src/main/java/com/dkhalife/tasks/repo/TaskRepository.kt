@@ -11,8 +11,10 @@ import com.dkhalife.tasks.data.db.entity.OutboxEntityType
 import com.dkhalife.tasks.data.db.entity.OutboxOpType
 import com.dkhalife.tasks.data.db.entity.TaskEntity
 import com.dkhalife.tasks.data.db.toDomain
+import com.dkhalife.tasks.data.db.toEntity
 import com.dkhalife.tasks.data.network.NetworkMonitor
 import com.dkhalife.tasks.data.sync.SyncCoordinator
+import com.dkhalife.tasks.model.ActivityEntry
 import com.dkhalife.tasks.model.CreateTaskReq
 import com.dkhalife.tasks.model.Task
 import com.dkhalife.tasks.model.TaskHistory
@@ -22,7 +24,6 @@ import androidx.room.withTransaction
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.map
@@ -48,9 +49,6 @@ class TaskRepository @Inject constructor(
         .map { rows -> rows.map { it.toDomain() } }
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
-    private val _completedTasks = MutableStateFlow<List<Task>>(emptyList())
-    val completedTasks: StateFlow<List<Task>> = _completedTasks
-
     suspend fun refreshTasks(): Result<List<Task>> {
         if (!networkMonitor.isOnline.value) {
             return Result.success(tasks.value)
@@ -68,19 +66,43 @@ class TaskRepository @Inject constructor(
         }
     }
 
-    suspend fun refreshCompletedTasks(limit: Int = 10, page: Int = 1): Result<List<Task>> {
+    suspend fun getActivity(beforeId: Int = 0, limit: Int = 20): Result<List<ActivityEntry>> {
         return try {
-            val response = api.getCompletedTasks(limit, page)
+            val response = api.getActivity(beforeId, limit)
             if (response.isSuccessful) {
-                val tasks = response.body()?.tasks ?: emptyList()
-                _completedTasks.value = tasks
-                Result.success(tasks)
+                Result.success(response.body()?.activity ?: emptyList())
             } else {
-                telemetryManager.logError(TAG, "Failed to fetch completed tasks: ${response.code()}")
-                Result.failure(Exception("Failed to fetch completed tasks: ${response.code()}"))
+                telemetryManager.logError(TAG, "Failed to fetch activity: ${response.code()}")
+                Result.failure(Exception("Failed to fetch activity: ${response.code()}"))
             }
         } catch (e: Exception) {
-            telemetryManager.logError(TAG, "Failed to fetch completed tasks: ${e.message}", e)
+            telemetryManager.logError(TAG, "Failed to fetch activity: ${e.message}", e)
+            Result.failure(e)
+        }
+    }
+
+    suspend fun revertActivity(taskId: Int, historyId: Int): Result<Unit> {
+        return try {
+            val response = api.uncompleteTask(taskId, historyId)
+            when {
+                response.isSuccessful -> {
+                    val returnedTask = response.body()?.task
+                    if (returnedTask != null) {
+                        db.withTransaction {
+                            taskDao.upsert(returnedTask.toEntity())
+                            taskDao.replaceLabels(taskId, returnedTask.labels.map { it.id })
+                        }
+                    }
+                    Result.success(Unit)
+                }
+                response.code() == 409 -> Result.failure(RevertConflictException())
+                else -> {
+                    telemetryManager.logError(TAG, "Failed to revert activity: ${response.code()}")
+                    Result.failure(Exception("Failed to revert activity: ${response.code()}"))
+                }
+            }
+        } catch (e: Exception) {
+            telemetryManager.logError(TAG, "Failed to revert activity: ${e.message}", e)
             Result.failure(e)
         }
     }
@@ -231,9 +253,6 @@ class TaskRepository @Inject constructor(
     suspend fun completeTask(id: Int, endRecurrence: Boolean = false): Result<Unit> =
         enqueueTaskOp(id, OutboxOpType.COMPLETE, endRecurrence.toString(), LocalState.PENDING_COMPLETE)
 
-    suspend fun uncompleteTask(id: Int): Result<Unit> =
-        enqueueTaskOp(id, OutboxOpType.UNCOMPLETE, null)
-
     suspend fun skipTask(id: Int): Result<Unit> =
         enqueueTaskOp(id, OutboxOpType.SKIP, null, LocalState.PENDING_SKIP)
 
@@ -289,4 +308,6 @@ class TaskRepository @Inject constructor(
         private const val TAG = "TaskRepository"
     }
 }
+
+class RevertConflictException : Exception("This action can no longer be reverted")
 
