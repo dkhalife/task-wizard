@@ -28,9 +28,6 @@ jobs:
     - name: Install dependencies
       run: yarn install --frozen-lockfile
       working-directory: frontend
-    - name: Install Playwright Browsers
-      run: npx playwright install --with-deps chromium
-      working-directory: frontend
     - name: Lint
       run: yarn lint
       working-directory: frontend
@@ -40,12 +37,20 @@ jobs:
     - name: Build (Vite)
       run: yarn build
       working-directory: frontend
+    - name: Run unit tests
+      run: yarn test
+      working-directory: frontend
+    - name: Install Playwright Browsers
+      if: github.event_name == 'push'
+      run: npx playwright install --with-deps chromium
+      working-directory: frontend
     - name: Run Playwright tests
+      if: github.event_name == 'push'
       run: yarn test:e2e
       working-directory: frontend
     - uses: actions/upload-artifact@v4
-      if: always()
+      if: github.event_name == 'push' && always()
       with:
         name: playwright-report
-        path: playwright-report/
+        path: frontend/playwright-report/
         retention-days: 30
