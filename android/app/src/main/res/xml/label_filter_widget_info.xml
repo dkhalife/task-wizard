@@ -7,5 +7,5 @@
     android:description="@string/widget_label_filter_description"
     android:previewImage="@drawable/widget_preview"
     android:previewLayout="@layout/preview_widget_label_filter"
-    android:configure="com.dkhalife.tasks.ui.widget.labelfilter.LabelFilterConfigActivity"
+    android:configure="app.taskwiz.ui.widget.labelfilter.LabelFilterConfigActivity"
     android:updatePeriodMillis="0" />
