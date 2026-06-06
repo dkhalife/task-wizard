@@ -1,4 +1,3 @@
-import java.io.ByteArrayOutputStream
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Properties
@@ -32,13 +31,10 @@ fun calculateVersion(): Pair<Int, String> {
 
 fun resolveGitSha(): String {
     return try {
-        val output = ByteArrayOutputStream()
-        exec {
+        providers.exec {
             commandLine("git", "rev-parse", "HEAD")
-            standardOutput = output
             isIgnoreExitValue = true
-        }
-        output.toString().trim().ifBlank { "local" }
+        }.standardOutput.asText.get().trim().ifBlank { "local" }
     } catch (e: Exception) {
         "local"
     }
