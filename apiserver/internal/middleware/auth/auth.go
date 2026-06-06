@@ -13,6 +13,7 @@ import (
 	"dkhalife.com/tasks/core/internal/models"
 	sRepo "dkhalife.com/tasks/core/internal/repos/session"
 	uRepo "dkhalife.com/tasks/core/internal/repos/user"
+	"dkhalife.com/tasks/core/internal/services/logging"
 	"dkhalife.com/tasks/core/internal/telemetry"
 	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
 	oidc "github.com/coreos/go-oidc/v3/oidc"
@@ -48,6 +49,14 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo, sessionRepo
 	}
 
 	if !cfg.Entra.Enabled {
+		if cfg.Server.HostName != "" && !cfg.Server.AllowInsecureNoAuth {
+			return nil, fmt.Errorf("authentication is disabled (entra.enabled=false) while server.host_name is set (%q); refusing to start in a production-like configuration. Set server.allow_insecure_no_auth=true (env TW_ALLOW_INSECURE_NO_AUTH=true) to explicitly opt in to the insecure dev bypass", cfg.Server.HostName)
+		}
+
+		if cfg.Server.AllowInsecureNoAuth {
+			logging.DefaultLogger().Error("SECURITY WARNING: authentication is disabled and the insecure no-auth bypass is explicitly enabled (server.allow_insecure_no_auth=true). Every request resolves to a single shared dev user. Never use this in production.")
+		}
+
 		return m, nil
 	}
 
