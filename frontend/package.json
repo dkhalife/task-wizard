@@ -6,7 +6,7 @@
   "scripts": {
     "start": "vite --host",
     "build": "vite build --mode prod",
-    "lint": "eslint .",
+    "lint": "eslint . --cache --cache-location ./node_modules/.cache/eslint/",
     "preview": "vite preview",
     "test": "jest",
     "test:watch": "jest --watch",
