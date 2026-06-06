@@ -1,8 +1,8 @@
 package auth
 
 import (
-	"dkhalife.com/tasks/core/internal/models"
 	"github.com/gin-gonic/gin"
+	"taskwiz.app/core/internal/models"
 )
 
 var IdentityKey = "user_id"

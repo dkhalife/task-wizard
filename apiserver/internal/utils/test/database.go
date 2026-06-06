@@ -7,11 +7,11 @@ import (
 	"os"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/migrations"
-	dbutil "dkhalife.com/tasks/core/internal/utils/database"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/migrations"
+	dbutil "taskwiz.app/core/internal/utils/database"
 )
 
 type DatabaseTestSuite struct {

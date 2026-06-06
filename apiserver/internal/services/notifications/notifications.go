@@ -5,14 +5,14 @@ import (
 	"fmt"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	"dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-gonic/gin"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/models"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
+	"taskwiz.app/core/internal/ws"
 
-	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
+	nRepo "taskwiz.app/core/internal/repos/notifier"
 )
 
 func (n *Notifier) sendNotification(c context.Context, notification *models.Notification) error {

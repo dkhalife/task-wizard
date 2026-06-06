@@ -5,10 +5,10 @@ import (
 	"testing"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/utils/test"
 	"github.com/stretchr/testify/suite"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/models"
+	"taskwiz.app/core/internal/utils/test"
 )
 
 type UserTestSuite struct {
@@ -350,9 +350,9 @@ func (s *UserTestSuite) TestDeleteUser_CascadesAllUserData() {
 	// Create a task linked to that label
 	dueDate := time.Now().Add(24 * time.Hour)
 	task := &models.Task{
-		Title:     "test-task",
-		CreatedBy: user.ID,
-		IsActive:  true,
+		Title:       "test-task",
+		CreatedBy:   user.ID,
+		IsActive:    true,
 		NextDueDate: &dueDate,
 	}
 	s.Require().NoError(s.DB.Create(task).Error)
@@ -441,4 +441,3 @@ func (s *UserTestSuite) assertNotificationSettingsRowCount(userID, expected int)
 	s.DB.Model(&models.NotificationSettings{}).Where("user_id = ?", userID).Count(&count)
 	s.Equal(int64(expected), count, "expected %d notification_settings row(s) for user %d", expected, userID)
 }
-

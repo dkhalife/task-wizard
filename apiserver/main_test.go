@@ -8,9 +8,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"gorm.io/gorm"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/services/scheduler"
 	"go.uber.org/fx"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/services/scheduler"
 )
 
 type mockLifecycle struct{}

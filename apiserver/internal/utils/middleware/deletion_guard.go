@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/gin-gonic/gin"
+	authUtils "taskwiz.app/core/internal/utils/auth"
 )
 
 var deletionExemptPaths = map[string]struct{}{

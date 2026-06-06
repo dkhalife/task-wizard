@@ -6,9 +6,9 @@ import (
 	"fmt"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
 	"gorm.io/gorm"
+	"taskwiz.app/core/internal/models"
+	"taskwiz.app/core/internal/services/logging"
 )
 
 type NotificationRepository struct {

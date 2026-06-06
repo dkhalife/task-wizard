@@ -3,9 +3,9 @@ package database
 import (
 	"testing"
 
-	"dkhalife.com/tasks/core/config"
 	"github.com/stretchr/testify/suite"
 	"gorm.io/gorm"
+	"taskwiz.app/core/config"
 )
 
 type DatabaseTestSuite struct {

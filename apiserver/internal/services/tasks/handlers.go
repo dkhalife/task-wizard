@@ -5,9 +5,9 @@ import (
 	"encoding/json"
 	"net/http"
 
-	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-gonic/gin"
+	"taskwiz.app/core/internal/models"
+	"taskwiz.app/core/internal/ws"
 )
 
 // TasksMessageHandler provides websocket handlers for task related messages.

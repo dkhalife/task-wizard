@@ -4,13 +4,13 @@ import (
 	"fmt"
 	"net/http"
 
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
 	limiter "github.com/ulule/limiter/v3"
+	authMW "taskwiz.app/core/internal/middleware/auth"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
+	auth "taskwiz.app/core/internal/utils/auth"
+	middleware "taskwiz.app/core/internal/utils/middleware"
 )
 
 type LogsAPIHandler struct {

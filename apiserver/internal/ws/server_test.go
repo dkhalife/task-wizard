@@ -9,13 +9,13 @@ import (
 	"testing"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
-	"dkhalife.com/tasks/core/internal/models"
-	uRepo "dkhalife.com/tasks/core/internal/repos/user"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
 	"github.com/stretchr/testify/suite"
+	"taskwiz.app/core/config"
+	authMW "taskwiz.app/core/internal/middleware/auth"
+	"taskwiz.app/core/internal/models"
+	uRepo "taskwiz.app/core/internal/repos/user"
 )
 
 type mockWSUserRepo struct {

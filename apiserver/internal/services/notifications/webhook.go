@@ -8,7 +8,7 @@ import (
 	"net/http"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
+	"taskwiz.app/core/internal/models"
 )
 
 func SendNotificationViaWebhook(c context.Context, provider models.NotificationProvider, message string) error {

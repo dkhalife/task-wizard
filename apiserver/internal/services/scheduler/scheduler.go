@@ -4,12 +4,12 @@ import (
 	"context"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	sRepo "dkhalife.com/tasks/core/internal/repos/session"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/services/notifications"
-	"dkhalife.com/tasks/core/internal/services/users"
-	"dkhalife.com/tasks/core/internal/telemetry"
+	"taskwiz.app/core/config"
+	sRepo "taskwiz.app/core/internal/repos/session"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/services/notifications"
+	"taskwiz.app/core/internal/services/users"
+	"taskwiz.app/core/internal/telemetry"
 )
 
 type Scheduler struct {

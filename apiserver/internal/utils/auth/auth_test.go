@@ -4,9 +4,9 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"dkhalife.com/tasks/core/internal/models"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/assert"
+	"taskwiz.app/core/internal/models"
 )
 
 func TestCurrentIdentity_Present(t *testing.T) {

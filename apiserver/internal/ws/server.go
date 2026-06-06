@@ -8,16 +8,16 @@ import (
 	"sync"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
-	lRepo "dkhalife.com/tasks/core/internal/repos/label"
-	tRepo "dkhalife.com/tasks/core/internal/repos/task"
-	uRepo "dkhalife.com/tasks/core/internal/repos/user"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
-	"dkhalife.com/tasks/core/internal/telemetry"
 	"github.com/gin-gonic/gin"
 	"github.com/gorilla/websocket"
+	"taskwiz.app/core/config"
+	authMW "taskwiz.app/core/internal/middleware/auth"
+	"taskwiz.app/core/internal/models"
+	lRepo "taskwiz.app/core/internal/repos/label"
+	tRepo "taskwiz.app/core/internal/repos/task"
+	uRepo "taskwiz.app/core/internal/repos/user"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
 )
 
 // connection represents a single websocket connection with associated identity.

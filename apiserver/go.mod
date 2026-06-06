@@ -1,4 +1,4 @@
-module dkhalife.com/tasks/core
+module taskwiz.app/core
 
 go 1.25.0
 

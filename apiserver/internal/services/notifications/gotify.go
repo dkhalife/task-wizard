@@ -7,8 +7,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/services/logging"
+	"taskwiz.app/core/internal/models"
+	"taskwiz.app/core/internal/services/logging"
 )
 
 type GotifyMessage struct {

@@ -7,12 +7,12 @@ import (
 	"strings"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
 	"github.com/ulule/limiter/v3/drivers/store/memory"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
 )
 
 func NewRateLimiter(cfg *config.Config) *limiter.Limiter {

@@ -7,17 +7,17 @@ import (
 	"net/http"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
-	lRepo "dkhalife.com/tasks/core/internal/repos/label"
-	nRepo "dkhalife.com/tasks/core/internal/repos/notifier"
-	tRepo "dkhalife.com/tasks/core/internal/repos/task"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/services/notifications"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	"dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
+	"taskwiz.app/core/internal/models"
+	lRepo "taskwiz.app/core/internal/repos/label"
+	nRepo "taskwiz.app/core/internal/repos/notifier"
+	tRepo "taskwiz.app/core/internal/repos/task"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/services/notifications"
+	"taskwiz.app/core/internal/telemetry"
+	"taskwiz.app/core/internal/ws"
 )
 
 type TaskService struct {

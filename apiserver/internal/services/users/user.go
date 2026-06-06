@@ -6,12 +6,12 @@ import (
 	"net/http"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
-	repos "dkhalife.com/tasks/core/internal/repos/user"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	"dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-gonic/gin"
+	"taskwiz.app/core/internal/models"
+	repos "taskwiz.app/core/internal/repos/user"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
+	"taskwiz.app/core/internal/ws"
 )
 
 const deletionGracePeriod = 24 * time.Hour
@@ -116,4 +116,3 @@ func (s *UserService) ProcessDeletions(ctx context.Context) error {
 
 	return nil
 }
-
