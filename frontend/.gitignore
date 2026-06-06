@@ -4,9 +4,6 @@
 dist
 node_modules
 
-.yarn/
-.yarnrc.yml
-
 # Test coverage
 coverage
 
@@ -14,3 +11,12 @@ coverage
 test-results/
 playwright-report/
 playwright/.cache/
+
+# Yarn
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.pnp.*

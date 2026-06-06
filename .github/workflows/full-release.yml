@@ -24,10 +24,12 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24.x
+      - name: Enable Corepack
+        run: corepack enable
       - name: Install Dependencies
         run: |
           cd frontend
-          yarn install
+          yarn install --immutable
       - name: Build Frontend
         run: |
           export VITE_BACKEND_VERSION=$(git tag --sort=-creatordate | sed -n '1p' | sed 's/^v//')
