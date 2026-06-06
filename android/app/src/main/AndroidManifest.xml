@@ -124,7 +124,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:host="com.dkhalife.tasks"
+                    android:host="app.taskwiz"
                     android:path="/Td6Sn1vVl6dRUyqdcjJskmNwtss="
                     android:scheme="msauth" />
             </intent-filter>
@@ -133,7 +133,7 @@
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
                 <data
-                    android:host="com.dkhalife.tasks"
+                    android:host="app.taskwiz"
                     android:path="/OQxz/rlBJ5+G501Zg0md55cCrIY="
                     android:scheme="msauth" />
             </intent-filter>

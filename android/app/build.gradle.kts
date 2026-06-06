@@ -45,14 +45,14 @@ fun resolveGitSha(): String {
 }
 
 android {
-    namespace = "com.dkhalife.tasks"
+    namespace = "app.taskwiz"
     compileSdk = 36
 
     val (calculatedVersionCode, calculatedVersionName) = calculateVersion()
     val gitSha = resolveGitSha()
 
     defaultConfig {
-        applicationId = "com.dkhalife.tasks"
+        applicationId = "app.taskwiz"
         minSdk = 34
         targetSdk = 36
         versionCode = calculatedVersionCode
