@@ -54,7 +54,7 @@ func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo, sessionRepo
 		}
 
 		if cfg.Server.AllowInsecureNoAuth {
-			logging.DefaultLogger().Warn("SECURITY WARNING: authentication is disabled and the insecure no-auth bypass is explicitly enabled (server.allow_insecure_no_auth=true). Every request resolves to a single shared dev user. Never use this in production.")
+			logging.DefaultLogger().Error("SECURITY WARNING: authentication is disabled and the insecure no-auth bypass is explicitly enabled (server.allow_insecure_no_auth=true). Every request resolves to a single shared dev user. Never use this in production.")
 		}
 
 		return m, nil
