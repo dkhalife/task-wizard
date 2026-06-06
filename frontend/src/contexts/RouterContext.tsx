@@ -44,7 +44,7 @@ class RouterContextImpl extends React.Component<RouterContextProps, RouterContex
     }
   }
   private getTaskId = (): number => {
-    const match = matchPath<'taskId', string>(
+    const match = matchPath<'/tasks/:taskId'>(
       {
         path: '/tasks/:taskId',
         caseSensitive: true,
