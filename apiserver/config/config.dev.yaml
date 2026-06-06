@@ -12,6 +12,7 @@ server:
   serve_frontend: false
   registration: true
   log_level: "debug"
+  allow_insecure_no_auth: true
   allowed_origins:
     - http://localhost:5173
   allow_cors_credentials: true

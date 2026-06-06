@@ -46,6 +46,7 @@ type ServerConfig struct {
 	AllowedOrigins       []string      `mapstructure:"allowed_origins" yaml:"allowed_origins"`
 	AllowCorsCredentials bool          `mapstructure:"allow_cors_credentials" yaml:"allow_cors_credentials"`
 	SessionDuration      time.Duration `mapstructure:"session_duration" yaml:"session_duration" default:"720h"`
+	AllowInsecureNoAuth  bool          `mapstructure:"allow_insecure_no_auth" yaml:"allow_insecure_no_auth"`
 }
 
 type SchedulerConfig struct {
@@ -78,6 +79,7 @@ func LoadConfig(configFile string) *Config {
 	_ = viper.BindEnv("entra.audience", "TW_ENTRA_AUDIENCE")
 	_ = viper.BindEnv("entra.issuer", "TW_ENTRA_ISSUER")
 	_ = viper.BindEnv("server.session_duration", "TW_SESSION_DURATION")
+	_ = viper.BindEnv("server.allow_insecure_no_auth", "TW_ALLOW_INSECURE_NO_AUTH")
 	_ = viper.BindEnv("database.type", "TW_DATABASE_TYPE")
 	_ = viper.BindEnv("database.host", "TW_DATABASE_HOST")
 	_ = viper.BindEnv("database.port", "TW_DATABASE_PORT")
