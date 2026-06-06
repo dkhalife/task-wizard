@@ -5,9 +5,9 @@ import (
 	"errors"
 	"fmt"
 
-	config "dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
 	"gorm.io/gorm"
+	config "taskwiz.app/core/config"
+	"taskwiz.app/core/internal/models"
 )
 
 type LabelRepository struct {

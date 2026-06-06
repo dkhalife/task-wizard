@@ -6,14 +6,14 @@ import (
 	"strings"
 	"time"
 
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
-	"dkhalife.com/tasks/core/internal/models"
-	tService "dkhalife.com/tasks/core/internal/services/tasks"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
 	limiter "github.com/ulule/limiter/v3"
+	authMW "taskwiz.app/core/internal/middleware/auth"
+	"taskwiz.app/core/internal/models"
+	tService "taskwiz.app/core/internal/services/tasks"
+	"taskwiz.app/core/internal/telemetry"
+	auth "taskwiz.app/core/internal/utils/auth"
+	middleware "taskwiz.app/core/internal/utils/middleware"
 )
 
 type TasksAPIHandler struct {

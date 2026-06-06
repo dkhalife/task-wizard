@@ -4,13 +4,13 @@ import (
 	"net/http"
 	"strconv"
 
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
-	models "dkhalife.com/tasks/core/internal/models"
-	lService "dkhalife.com/tasks/core/internal/services/labels"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	auth "dkhalife.com/tasks/core/internal/utils/auth"
-	middleware "dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
+	authMW "taskwiz.app/core/internal/middleware/auth"
+	models "taskwiz.app/core/internal/models"
+	lService "taskwiz.app/core/internal/services/labels"
+	"taskwiz.app/core/internal/telemetry"
+	auth "taskwiz.app/core/internal/utils/auth"
+	middleware "taskwiz.app/core/internal/utils/middleware"
 )
 
 type LabelsAPIHandler struct {

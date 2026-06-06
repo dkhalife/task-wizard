@@ -9,10 +9,10 @@ import (
 	"testing"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
 	"github.com/ulule/limiter/v3"
+	"taskwiz.app/core/config"
 )
 
 type MiddlewareTestSuite struct {

@@ -3,8 +3,8 @@ package auth
 import (
 	"testing"
 
-	"dkhalife.com/tasks/core/config"
 	"github.com/stretchr/testify/assert"
+	"taskwiz.app/core/config"
 )
 
 func newDisabledAuthConfig(hostName string, allowInsecure bool) *config.Config {

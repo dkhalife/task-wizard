@@ -8,8 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
 	"gorm.io/gorm"
+	"taskwiz.app/core/internal/models"
 )
 
 type ISessionRepo interface {

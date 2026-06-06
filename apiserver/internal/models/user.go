@@ -5,13 +5,13 @@ import (
 )
 
 type User struct {
-	ID                   int        `json:"id" gorm:"primary_key;not null"`
-	DirectoryID          string     `json:"-" gorm:"column:directory_id;not null;default:''"`
-	ObjectID             string     `json:"-" gorm:"column:object_id;not null;default:''"`
-	CreatedAt            time.Time  `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
-	UpdatedAt            time.Time  `json:"-" gorm:"column:updated_at;default:NULL;autoUpdateTime"`
-	Disabled             bool       `json:"-" gorm:"column:disabled;default:false"`
-	DeletionRequestedAt  *time.Time `json:"deletion_requested_at" gorm:"column:deletion_requested_at;default:NULL"`
+	ID                  int        `json:"id" gorm:"primary_key;not null"`
+	DirectoryID         string     `json:"-" gorm:"column:directory_id;not null;default:''"`
+	ObjectID            string     `json:"-" gorm:"column:object_id;not null;default:''"`
+	CreatedAt           time.Time  `json:"-" gorm:"column:created_at;default:CURRENT_TIMESTAMP"`
+	UpdatedAt           time.Time  `json:"-" gorm:"column:updated_at;default:NULL;autoUpdateTime"`
+	Disabled            bool       `json:"-" gorm:"column:disabled;default:false"`
+	DeletionRequestedAt *time.Time `json:"deletion_requested_at" gorm:"column:deletion_requested_at;default:NULL"`
 
 	NotificationSettings NotificationSettings `json:"-" gorm:"foreignKey:UserID;constraint:OnDelete:CASCADE;"`
 	Labels               []Label              `json:"-" gorm:"foreignKey:CreatedBy;constraint:OnDelete:CASCADE;"`

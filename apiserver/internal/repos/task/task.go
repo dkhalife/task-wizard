@@ -6,9 +6,9 @@ import (
 	"strings"
 	"time"
 
-	config "dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
 	"gorm.io/gorm"
+	config "taskwiz.app/core/config"
+	"taskwiz.app/core/internal/models"
 )
 
 type TaskRepository struct {

@@ -5,9 +5,9 @@ import (
 	"testing"
 	"time"
 
-	"dkhalife.com/tasks/core/internal/models"
-	"dkhalife.com/tasks/core/internal/utils/test"
 	"github.com/stretchr/testify/suite"
+	"taskwiz.app/core/internal/models"
+	"taskwiz.app/core/internal/utils/test"
 )
 
 type NotifierTestSuite struct {

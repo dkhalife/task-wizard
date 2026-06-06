@@ -5,12 +5,12 @@ import (
 	"net/http"
 	"strings"
 
-	"dkhalife.com/tasks/core/internal/models"
-	repos "dkhalife.com/tasks/core/internal/repos/label"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	"dkhalife.com/tasks/core/internal/ws"
 	"github.com/gin-gonic/gin"
+	"taskwiz.app/core/internal/models"
+	repos "taskwiz.app/core/internal/repos/label"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
+	"taskwiz.app/core/internal/ws"
 )
 
 type LabelService struct {

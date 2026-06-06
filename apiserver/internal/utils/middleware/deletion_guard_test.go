@@ -5,10 +5,10 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"dkhalife.com/tasks/core/internal/models"
-	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/suite"
+	"taskwiz.app/core/internal/models"
+	authUtils "taskwiz.app/core/internal/utils/auth"
 )
 
 type DeletionGuardTestSuite struct {

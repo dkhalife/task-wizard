@@ -9,15 +9,15 @@ import (
 	"strings"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
-	sRepo "dkhalife.com/tasks/core/internal/repos/session"
-	uRepo "dkhalife.com/tasks/core/internal/repos/user"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
-	authUtils "dkhalife.com/tasks/core/internal/utils/auth"
 	oidc "github.com/coreos/go-oidc/v3/oidc"
 	"github.com/gin-gonic/gin"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/models"
+	sRepo "taskwiz.app/core/internal/repos/session"
+	uRepo "taskwiz.app/core/internal/repos/user"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
+	authUtils "taskwiz.app/core/internal/utils/auth"
 )
 
 const SessionCookieName = "tw_session"

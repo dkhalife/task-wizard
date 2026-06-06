@@ -3,9 +3,9 @@ package backend
 import (
 	"net/http"
 
-	"dkhalife.com/tasks/core/internal/utils/middleware"
 	"github.com/gin-gonic/gin"
 	"github.com/ulule/limiter/v3"
+	"taskwiz.app/core/internal/utils/middleware"
 )
 
 type Handler struct{}

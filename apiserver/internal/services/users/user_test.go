@@ -6,21 +6,21 @@ import (
 	"testing"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/models"
-	uRepo "dkhalife.com/tasks/core/internal/repos/user"
-	"dkhalife.com/tasks/core/internal/utils/test"
-	"dkhalife.com/tasks/core/internal/ws"
-	authMW "dkhalife.com/tasks/core/internal/middleware/auth"
-	lRepo "dkhalife.com/tasks/core/internal/repos/label"
-	tRepo "dkhalife.com/tasks/core/internal/repos/task"
 	"github.com/stretchr/testify/suite"
+	"taskwiz.app/core/config"
+	authMW "taskwiz.app/core/internal/middleware/auth"
+	"taskwiz.app/core/internal/models"
+	lRepo "taskwiz.app/core/internal/repos/label"
+	tRepo "taskwiz.app/core/internal/repos/task"
+	uRepo "taskwiz.app/core/internal/repos/user"
+	"taskwiz.app/core/internal/utils/test"
+	"taskwiz.app/core/internal/ws"
 )
 
 type UserServiceTestSuite struct {
 	test.DatabaseTestSuite
-	repo    uRepo.IUserRepo
-	service *UserService
+	repo     uRepo.IUserRepo
+	service  *UserService
 	wsServer *ws.WSServer
 }
 

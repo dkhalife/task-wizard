@@ -8,13 +8,13 @@ import (
 	"strings"
 	"time"
 
-	"dkhalife.com/tasks/core/config"
-	"dkhalife.com/tasks/core/internal/services/logging"
-	"dkhalife.com/tasks/core/internal/telemetry"
 	"github.com/glebarez/sqlite"
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
 	gormLogger "gorm.io/gorm/logger"
+	"taskwiz.app/core/config"
+	"taskwiz.app/core/internal/services/logging"
+	"taskwiz.app/core/internal/telemetry"
 )
 
 func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
@@ -44,7 +44,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 
 	var dialector gorm.Dialector
 	dbType := strings.ToLower(cfg.Database.Type)
-	
+
 	switch dbType {
 	case "mysql":
 		// Validate required fields for MySQL
@@ -57,7 +57,7 @@ func NewDatabase(cfg *config.Config) (*gorm.DB, error) {
 		if cfg.Database.Username == "" {
 			return nil, fmt.Errorf("database.username is required for %s", dbType)
 		}
-		
+
 		dsn := fmt.Sprintf("%s:%s@tcp(%s:%d)/%s?charset=utf8mb4&parseTime=True&loc=Local",
 			cfg.Database.Username,
 			cfg.Database.Password,

@@ -5,7 +5,7 @@ import (
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 
-	"dkhalife.com/tasks/core/internal/version"
+	"taskwiz.app/core/internal/version"
 )
 
 const (

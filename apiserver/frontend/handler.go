@@ -6,8 +6,8 @@ import (
 	"net/http"
 	"strings"
 
-	config "dkhalife.com/tasks/core/config"
 	"github.com/gin-gonic/gin"
+	config "taskwiz.app/core/config"
 )
 
 //go:embed dist
@@ -54,6 +54,7 @@ func staticMiddleware(root string) gin.HandlerFunc {
 
 	}
 }
+
 const authCookieName = "tw_auth"
 
 func staticMiddlewareNoRoute(root string) gin.HandlerFunc {
