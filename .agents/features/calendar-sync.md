@@ -38,7 +38,7 @@ Five modular layers, each reusable independently:
 ### 5. Account authenticator (system integration)
 - `CalendarAccountAuthenticator` — stub authenticator required by Android for custom account types
 - `CalendarAuthenticatorService` — bound service exposing the authenticator
-- `res/xml/calendar_authenticator.xml` — declares the `com.dkhalife.tasks` account type
+- `res/xml/calendar_authenticator.xml` — declares the `app.taskwiz` account type
 - Without these, Android will not persist the calendar or make it visible to other apps
 
 ## Key Surfaces
