@@ -2,6 +2,8 @@ package com.dkhalife.tasks.ui.components
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.gestures.awaitEachGesture
+import androidx.compose.foundation.gestures.awaitFirstDown
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -42,12 +44,15 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
 import androidx.compose.ui.semantics.customActions
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.DpOffset
 import androidx.compose.ui.unit.dp
 import com.dkhalife.tasks.R
 import com.dkhalife.tasks.data.SwipeAction
@@ -85,6 +90,8 @@ fun TaskItem(
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) }
+    val density = LocalDensity.current
+    var contextMenuOffset by remember { mutableStateOf(DpOffset.Zero) }
 
     if (showDeleteConfirmation) {
         AlertDialog(
@@ -139,6 +146,17 @@ fun TaskItem(
                 elevation = CardDefaults.cardElevation(defaultElevation = 1.dp),
                 modifier = Modifier
                     .fillMaxWidth()
+                    .pointerInput(Unit) {
+                        awaitEachGesture {
+                            val down = awaitFirstDown(requireUnconsumed = false)
+                            contextMenuOffset = with(density) {
+                                DpOffset(
+                                    down.position.x.toDp(),
+                                    (down.position.y - size.height).toDp()
+                                )
+                            }
+                        }
+                    }
                     .combinedClickable(
                         onClick = onClick,
                         onLongClick = {
@@ -200,7 +218,8 @@ fun TaskItem(
 
             DropdownMenu(
                 expanded = showContextMenu,
-                onDismissRequest = { showContextMenu = false }
+                onDismissRequest = { showContextMenu = false },
+                offset = contextMenuOffset
             ) {
                 DropdownMenuItem(
                     text = { Text(completeLabel) },
