@@ -3,6 +3,7 @@
   "private": true,
   "version": "1.0.30",
   "type": "module",
+  "packageManager": "yarn@4.16.0",
   "scripts": {
     "start": "vite --host",
     "build": "vite build --mode prod",

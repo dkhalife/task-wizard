@@ -19,7 +19,7 @@ cd apiserver && golangci-lint run                    # Lint
 cd apiserver && go test ./...                        # Test
 
 # Frontend
-cd frontend && yarn install --frozen-lockfile        # Install deps
+cd frontend && yarn install --immutable             # Install deps
 cd frontend && yarn lint                             # Lint
 cd frontend && yarn tsc                              # Type check
 cd frontend && yarn build                            # Build (Vite)

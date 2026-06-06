@@ -14,10 +14,12 @@ jobs:
     - uses: actions/checkout@v4
       with:
         token: ${{ secrets.WORKFLOW_TOKEN }}
+    - name: Enable Corepack
+      run: corepack enable
     - name: Bump frontend version
       run: |
         cd frontend
-        yarn version --patch --no-git-tag-version
+        yarn version patch
     - name: Get the latest tag
       id: get_latest_tag
       env:
