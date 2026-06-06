@@ -8,6 +8,8 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "skipLibCheck": true,
+    "incremental": true,
+    "tsBuildInfoFile": "./node_modules/.cache/tsc/tsconfig.tsbuildinfo",
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "baseUrl": "./",
