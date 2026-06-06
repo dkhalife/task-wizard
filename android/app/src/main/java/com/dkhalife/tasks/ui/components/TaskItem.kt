@@ -45,7 +45,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.CustomAccessibilityAction
@@ -90,7 +89,6 @@ fun TaskItem(
 
     var showDeleteConfirmation by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) }
-    val density = LocalDensity.current
     var contextMenuOffset by remember { mutableStateOf(DpOffset.Zero) }
 
     if (showDeleteConfirmation) {
@@ -149,12 +147,10 @@ fun TaskItem(
                     .pointerInput(Unit) {
                         awaitEachGesture {
                             val down = awaitFirstDown(requireUnconsumed = false)
-                            contextMenuOffset = with(density) {
-                                DpOffset(
-                                    down.position.x.toDp(),
-                                    (down.position.y - size.height).toDp()
-                                )
-                            }
+                            contextMenuOffset = DpOffset(
+                                down.position.x.toDp(),
+                                (down.position.y - size.height).toDp()
+                            )
                         }
                     }
                     .combinedClickable(
