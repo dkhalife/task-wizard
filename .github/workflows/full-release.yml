@@ -226,7 +226,7 @@ jobs:
         uses: r0adkll/upload-google-play@v1
         with:
           serviceAccountJson: ${{ steps.gcp-auth.outputs.credentials_file_path }}
-          packageName: com.dkhalife.tasks
+          packageName: app.taskwiz
           releaseFiles: android/app/build/outputs/bundle/release/*.aab
           track: internal
 
