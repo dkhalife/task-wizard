@@ -2,7 +2,8 @@ package app.taskwiz.auth
 
 import android.app.Activity
 import android.content.Context
-import app.taskwiz.BuildConfig
+import android.content.pm.PackageManager
+import android.util.Base64
 import app.taskwiz.data.OfflineModeRepository
 import app.taskwiz.model.AuthConfig
 import com.microsoft.identity.client.AcquireTokenParameters
@@ -22,6 +23,7 @@ import kotlinx.coroutines.flow.StateFlow
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.File
+import java.security.MessageDigest
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -99,10 +101,6 @@ class AuthManager @Inject constructor(
 
     fun isLoaded(): Boolean = isAccountLoaded
 
-    fun markLoaded() {
-        isAccountLoaded = true
-    }
-
     override fun getCachedAccessToken(): String? {
         val token = cachedAccessToken
         if (token != null && System.currentTimeMillis() < cachedExpiryTimeMs - TOKEN_SKEW_MS) {
@@ -175,7 +173,7 @@ class AuthManager @Inject constructor(
     fun tryRestoreMsal(context: Context) {
         val cached = offlineModeRepository.getCachedAuthConfig()
         if (cached == null || !cached.enabled) {
-            isAccountLoaded = true
+            updateAccount(null)
             return
         }
         activeAuthConfig = cached
@@ -191,7 +189,7 @@ class AuthManager @Inject constructor(
 
                 override fun onError(exception: MsalException) {
                     telemetryManager.logError(TAG, "Failed to restore MSAL: ${exception.message}", exception)
-                    isAccountLoaded = true
+                    updateAccount(null)
                 }
             }
         )
@@ -219,7 +217,7 @@ class AuthManager @Inject constructor(
             put("client_id", authConfig.clientId)
             put("authorization_user_agent", "DEFAULT")
             put("account_mode", "SINGLE")
-            put("redirect_uri", BuildConfig.MSAL_REDIRECT_URI)
+            put("redirect_uri", computeRedirectUri(context))
             put("authorities", JSONArray().apply {
                 put(JSONObject().apply {
                     put("type", "AAD")
@@ -307,9 +305,32 @@ class AuthManager @Inject constructor(
         fun onError(exception: Exception)
     }
 
+    fun invalidateMsalApp() {
+        singleAccountApp = null
+        currentAccount = null
+        cachedAccessToken = null
+        cachedExpiryTimeMs = 0
+        activeAuthConfig = null
+        offlineModeRepository.clearCachedAuthConfig()
+        isAccountLoaded = true
+        notifyUserChanged(false)
+    }
+
     companion object {
         private const val TAG = "AuthManager"
         private const val TOKEN_SKEW_MS = 120_000L
         private const val DEFAULT_AUDIENCE = "api://task-wizard"
+
+        @Suppress("DEPRECATION")
+        fun computeRedirectUri(context: Context): String {
+            val packageName = context.packageName
+            val packageInfo = context.packageManager.getPackageInfo(
+                packageName, PackageManager.GET_SIGNATURES
+            )
+            val signature = packageInfo.signatures!!.first()
+            val digest = MessageDigest.getInstance("SHA").digest(signature.toByteArray())
+            val hash = Base64.encodeToString(digest, Base64.NO_WRAP)
+            return "msauth://$packageName/${java.net.URLEncoder.encode(hash, "UTF-8")}"
+        }
     }
 }

@@ -86,6 +86,7 @@ fun TaskListScreen(
     isPendingDeletion: Boolean = false,
     isOnline: Boolean = true,
     pendingSyncCount: Int = 0,
+    isSignedIn: Boolean = true,
     sessionExpired: Boolean = false,
     isReauthenticating: Boolean = false,
     onReauthenticate: () -> Unit = {},
@@ -210,13 +211,15 @@ fun TaskListScreen(
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            if (sessionExpired) {
-                AuthErrorBanner(
-                    onReauthenticate = onReauthenticate,
-                    isReauthenticating = isReauthenticating,
-                )
+            if (isSignedIn) {
+                if (sessionExpired) {
+                    AuthErrorBanner(
+                        onReauthenticate = onReauthenticate,
+                        isReauthenticating = isReauthenticating,
+                    )
+                }
+                SyncStatusBanner(isOnline = isOnline, pendingSyncCount = pendingSyncCount)
             }
-            SyncStatusBanner(isOnline = isOnline, pendingSyncCount = pendingSyncCount)
             if (isPendingDeletion) {
                 androidx.compose.material3.Surface(
                     color = MaterialTheme.colorScheme.errorContainer,

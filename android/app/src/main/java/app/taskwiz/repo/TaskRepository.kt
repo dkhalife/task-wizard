@@ -88,7 +88,7 @@ class TaskRepository @Inject constructor(
 
     suspend fun revertActivity(taskId: Int, historyId: Int): Result<Unit> {
         if (!authManager.isSignedIn()) {
-            return Result.failure(Exception("Sign in to revert activity"))
+            return Result.success(Unit)
         }
         return try {
             val response = api.uncompleteTask(taskId, historyId)

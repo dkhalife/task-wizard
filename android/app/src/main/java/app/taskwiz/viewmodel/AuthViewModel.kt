@@ -6,7 +6,6 @@ import androidx.lifecycle.viewModelScope
 import app.taskwiz.api.ApiEndpointProvider
 import app.taskwiz.api.TaskWizardApi
 import app.taskwiz.auth.AuthManager
-import app.taskwiz.data.OfflineModeRepository
 import app.taskwiz.data.sync.SyncCoordinator
 import app.taskwiz.telemetry.TelemetryManager
 import com.microsoft.identity.client.AuthenticationCallback
@@ -25,7 +24,6 @@ class AuthViewModel @Inject constructor(
     private val authManager: AuthManager,
     private val endpointProvider: ApiEndpointProvider,
     private val api: TaskWizardApi,
-    private val offlineModeRepository: OfflineModeRepository,
     private val syncCoordinator: SyncCoordinator,
     private val telemetryManager: TelemetryManager
 ) : ViewModel() {
@@ -131,6 +129,7 @@ class AuthViewModel @Inject constructor(
     fun updateServerEndpoint(endpoint: String) {
         endpointProvider.setServerEndpoint(endpoint)
         _serverEndpoint.value = endpoint
+        authManager.invalidateMsalApp()
     }
 
     fun clearError() {

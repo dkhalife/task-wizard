@@ -165,7 +165,7 @@ fun AppNavigation(
                     wasSessionExpired = sessionExpired
                 }
 
-                if (showSyncPrompt) {
+                if (showSyncPrompt && !isSignedIn) {
                     AlertDialog(
                         onDismissRequest = { viewModel.dismissSyncPrompt() },
                         icon = {
@@ -213,8 +213,9 @@ fun AppNavigation(
                     swipeSettings = swipeSettings,
                     inlineCompleteEnabled = inlineCompleteEnabled,
                     isPendingDeletion = deletionRequestedAt != null,
-                    isOnline = isOnline || !isSignedIn,
-                    pendingSyncCount = if (isSignedIn) pendingSyncCount else 0,
+                    isOnline = isOnline,
+                    pendingSyncCount = pendingSyncCount,
+                    isSignedIn = isSignedIn,
                     sessionExpired = sessionExpired,
                     isReauthenticating = isReauthenticating,
                     onReauthenticate = { authViewModel.signIn(activity) },
