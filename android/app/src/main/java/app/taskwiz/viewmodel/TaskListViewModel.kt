@@ -3,9 +3,11 @@ package app.taskwiz.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import app.taskwiz.data.GroupingRepository
+import app.taskwiz.data.OfflineModeRepository
 import app.taskwiz.data.TaskGroup
 import app.taskwiz.data.TaskGrouper
 import app.taskwiz.data.TaskGrouping
+import app.taskwiz.auth.AuthManager
 import app.taskwiz.data.db.dao.OutboxDao
 import app.taskwiz.data.network.NetworkMonitor
 import app.taskwiz.model.Label
@@ -31,6 +33,8 @@ class TaskListViewModel @Inject constructor(
     private val taskRepository: TaskRepository,
     private val labelRepository: LabelRepository,
     private val groupingRepository: GroupingRepository,
+    private val offlineModeRepository: OfflineModeRepository,
+    private val authManager: AuthManager,
     private val soundManager: SoundManager,
     private val telemetryManager: TelemetryManager,
     private val outboxDao: OutboxDao,
@@ -65,9 +69,13 @@ class TaskListViewModel @Inject constructor(
     private val _isSearchActive = MutableStateFlow(false)
     val isSearchActive: StateFlow<Boolean> = _isSearchActive
 
+    private val _showSyncPrompt = MutableStateFlow(false)
+    val showSyncPrompt: StateFlow<Boolean> = _showSyncPrompt
+
     init {
         refreshTasks()
         observeGrouping()
+        observeSyncPrompt()
     }
 
     fun setTaskGrouping(grouping: TaskGrouping) {
@@ -169,6 +177,24 @@ class TaskListViewModel @Inject constructor(
         _error.value = null
     }
 
+    fun dismissSyncPrompt() {
+        offlineModeRepository.markSyncPromptShown()
+        _showSyncPrompt.value = false
+    }
+
+    private fun observeSyncPrompt() {
+        viewModelScope.launch {
+            tasks.collect { taskList ->
+                if (taskList.size >= SYNC_PROMPT_TASK_THRESHOLD
+                    && !authManager.isSignedIn()
+                    && !offlineModeRepository.isSyncPromptShown()
+                ) {
+                    _showSyncPrompt.value = true
+                }
+            }
+        }
+    }
+
     override fun onCleared() {
         super.onCleared()
         soundManager.release()
@@ -176,5 +202,6 @@ class TaskListViewModel @Inject constructor(
 
     companion object {
         private const val TAG = "TaskListViewModel"
+        private const val SYNC_PROMPT_TASK_THRESHOLD = 5
     }
 }

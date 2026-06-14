@@ -7,11 +7,16 @@ import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Sync
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -30,6 +35,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import app.taskwiz.R
 import app.taskwiz.data.SwipeSettings
 import app.taskwiz.data.TaskGrouping
 import app.taskwiz.data.ThemeMode
@@ -40,6 +46,7 @@ import app.taskwiz.model.UpdateTaskReq
 import app.taskwiz.ui.screen.ActivityScreen
 import app.taskwiz.ui.screen.LabelsScreen
 import app.taskwiz.ui.screen.SettingsScreen
+import app.taskwiz.ui.screen.SignInScreen
 import app.taskwiz.ui.screen.SwipeActionsSettingsScreen
 import app.taskwiz.ui.screen.TaskFormScreen
 import app.taskwiz.ui.screen.TaskHistoryScreen
@@ -142,20 +149,48 @@ fun AppNavigation(
                 val isSearchActive by viewModel.isSearchActive.collectAsState()
                 val sessionExpired by authViewModel.sessionExpired.collectAsState()
                 val isReauthenticating by authViewModel.isLoading.collectAsState()
+                val isSignedIn by authViewModel.isSignedIn.collectAsState()
+                val showSyncPrompt by viewModel.showSyncPrompt.collectAsState()
                 val activity = LocalContext.current as Activity
 
                 LaunchedEffect(taskGrouping) {
                     viewModel.setTaskGrouping(taskGrouping)
                 }
 
-                // When the session recovers (expired -> active) after re-authentication, pull fresh
-                // data so the user doesn't keep staring at the stale cache the failed syncs left behind.
                 var wasSessionExpired by remember { mutableStateOf(sessionExpired) }
                 LaunchedEffect(sessionExpired) {
                     if (wasSessionExpired && !sessionExpired) {
                         viewModel.refreshTasks()
                     }
                     wasSessionExpired = sessionExpired
+                }
+
+                if (showSyncPrompt && !isSignedIn) {
+                    AlertDialog(
+                        onDismissRequest = { viewModel.dismissSyncPrompt() },
+                        icon = {
+                            Icon(
+                                Icons.Default.Sync,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        },
+                        title = { Text(stringResource(R.string.sync_prompt_title)) },
+                        text = { Text(stringResource(R.string.sync_prompt_message)) },
+                        confirmButton = {
+                            TextButton(onClick = {
+                                viewModel.dismissSyncPrompt()
+                                navController.navigate(Routes.SIGN_IN)
+                            }) {
+                                Text(stringResource(R.string.btn_sign_in_to_sync))
+                            }
+                        },
+                        dismissButton = {
+                            TextButton(onClick = { viewModel.dismissSyncPrompt() }) {
+                                Text(stringResource(R.string.sync_prompt_later))
+                            }
+                        }
+                    )
                 }
 
                 TaskListScreen(
@@ -180,6 +215,7 @@ fun AppNavigation(
                     isPendingDeletion = deletionRequestedAt != null,
                     isOnline = isOnline,
                     pendingSyncCount = pendingSyncCount,
+                    isSignedIn = isSignedIn,
                     sessionExpired = sessionExpired,
                     isReauthenticating = isReauthenticating,
                     onReauthenticate = { authViewModel.signIn(activity) },
@@ -240,6 +276,7 @@ fun AppNavigation(
                     onSwipeEnabledChanged = onSwipeEnabledChanged,
                     onSwipeDeleteConfirmationChanged = onSwipeDeleteConfirmationChanged,
                     onNavigateToSwipeSettings = { navController.navigate(Routes.SWIPE_SETTINGS) },
+                    onNavigateToSignIn = { navController.navigate(Routes.SIGN_IN) },
                     inlineCompleteEnabled = inlineCompleteEnabled,
                     onInlineCompleteEnabledChanged = onInlineCompleteEnabledChanged,
                     telemetryEnabled = telemetryEnabled,
@@ -355,6 +392,36 @@ fun AppNavigation(
                 TaskHistoryScreen(
                     history = history,
                     isLoading = isLoading,
+                    onBack = { navController.popBackStack() }
+                )
+            }
+
+            composable(
+                route = Routes.SIGN_IN,
+                enterTransition = { slideInHorizontally(initialOffsetX = { it }) + fadeIn() },
+                exitTransition = { fadeOut() },
+                popEnterTransition = { fadeIn() },
+                popExitTransition = { slideOutHorizontally(targetOffsetX = { it }) + fadeOut() }
+            ) {
+                val authViewModel: AuthViewModel = hiltViewModel()
+                val isSignedIn by authViewModel.isSignedIn.collectAsState()
+                val isLoading by authViewModel.isLoading.collectAsState()
+                val errorMessage by authViewModel.errorMessage.collectAsState()
+                val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
+                val activity = LocalContext.current as Activity
+
+                LaunchedEffect(isSignedIn) {
+                    if (isSignedIn) {
+                        navController.popBackStack()
+                    }
+                }
+
+                SignInScreen(
+                    serverEndpoint = serverEndpoint,
+                    isLoading = isLoading,
+                    errorMessage = errorMessage,
+                    onSignIn = { authViewModel.signIn(activity) },
+                    onEndpointChanged = { authViewModel.updateServerEndpoint(it) },
                     onBack = { navController.popBackStack() }
                 )
             }

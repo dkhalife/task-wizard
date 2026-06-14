@@ -1,6 +1,7 @@
 package app.taskwiz.repo
 
 import app.taskwiz.api.TaskWizardApi
+import app.taskwiz.auth.AuthManager
 import app.taskwiz.data.LocalIdGenerator
 import app.taskwiz.data.db.LocalState
 import app.taskwiz.data.db.TaskWizardDatabase
@@ -39,6 +40,7 @@ class LabelRepository @Inject constructor(
     private val networkMonitor: NetworkMonitor,
     private val syncCoordinator: SyncCoordinator,
     private val telemetryManager: TelemetryManager,
+    private val authManager: AuthManager,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -47,7 +49,7 @@ class LabelRepository @Inject constructor(
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     suspend fun refreshLabels(): Result<List<Label>> {
-        if (!networkMonitor.isOnline.value) return Result.success(labels.value)
+        if (!networkMonitor.isOnline.value || !authManager.isSignedIn()) return Result.success(labels.value)
         return try {
             syncCoordinator.syncOnceBlocking()
             Result.success(labels.value)

@@ -2,6 +2,7 @@ package app.taskwiz.data.sync
 
 import androidx.room.withTransaction
 import app.taskwiz.api.TaskWizardApi
+import app.taskwiz.auth.AuthManager
 import app.taskwiz.data.db.LocalState
 import app.taskwiz.data.db.TaskWizardDatabase
 import app.taskwiz.data.db.dao.LabelDao
@@ -48,6 +49,7 @@ class SyncCoordinator @Inject constructor(
     private val outboxDao: OutboxDao,
     private val networkMonitor: NetworkMonitor,
     private val telemetryManager: TelemetryManager,
+    private val authManager: AuthManager,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
     private val mutex = Mutex()
@@ -55,8 +57,10 @@ class SyncCoordinator @Inject constructor(
     @Volatile
     private var activeFullJob: Job? = null
 
+    private fun canSync(): Boolean = networkMonitor.isOnline.value && authManager.isSignedIn()
+
     fun syncOnce() {
-        if (!networkMonitor.isOnline.value) return
+        if (!canSync()) return
         if (activeFullJob?.isActive == true) return
         activeFullJob = scope.launch {
             mutex.withLock {
@@ -71,7 +75,7 @@ class SyncCoordinator @Inject constructor(
     }
 
     suspend fun syncOnceBlocking(): Boolean {
-        if (!networkMonitor.isOnline.value) return false
+        if (!canSync()) return false
         activeFullJob?.takeIf { it.isActive }?.let {
             it.join()
             return true
@@ -101,7 +105,7 @@ class SyncCoordinator @Inject constructor(
      * collapse into cheap no-ops rather than missed work.
      */
     fun flushPending() {
-        if (!networkMonitor.isOnline.value) return
+        if (!canSync()) return
         scope.launch {
             mutex.withLock {
                 try {

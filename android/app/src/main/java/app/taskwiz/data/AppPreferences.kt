@@ -15,6 +15,9 @@ object AppPreferences {
     const val KEY_DEBUG_LOGGING_ENABLED = "debug_logging_enabled"
     const val KEY_DEVICE_IDENTIFIER = "device_identifier"
     const val KEY_LOCAL_ID_COUNTER = "local_id_counter"
+    const val KEY_HAS_SIGNED_IN = "has_signed_in"
+    const val KEY_SYNC_PROMPT_SHOWN = "sync_prompt_shown"
+    const val KEY_CACHED_AUTH_CONFIG = "cached_auth_config"
 }
 
 enum class ThemeMode {
