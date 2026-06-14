@@ -21,6 +21,7 @@ object Routes {
     const val TASK_FORM_CREATE = "task_form"
     const val TASK_HISTORY = "task_history?taskId={taskId}"
     const val SWIPE_SETTINGS = "swipe_settings"
+    const val SIGN_IN = "sign_in"
 
     fun taskFormEdit(taskId: Int) = "task_form?taskId=$taskId"
     fun taskHistory(taskId: Int) = "task_history?taskId=$taskId"

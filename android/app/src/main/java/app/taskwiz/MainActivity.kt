@@ -5,7 +5,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.runtime.*
-import androidx.hilt.navigation.compose.hiltViewModel
 import app.taskwiz.data.GroupingRepository
 import app.taskwiz.data.SwipeAction
 import app.taskwiz.data.SwipeActionsRepository
@@ -16,11 +15,9 @@ import app.taskwiz.data.ThemeMode
 import app.taskwiz.data.ThemeRepository
 import app.taskwiz.data.calendar.CalendarRepository
 import app.taskwiz.ui.navigation.AppNavigation
-import app.taskwiz.ui.screen.SignInScreen
 import app.taskwiz.ui.theme.TaskWizardTheme
 import app.taskwiz.ui.widget.TaskListWidget
 import app.taskwiz.ui.widget.quickadd.QuickAddWidget
-import app.taskwiz.viewmodel.AuthViewModel
 import app.taskwiz.telemetry.TelemetryManager
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
@@ -66,76 +63,60 @@ class MainActivity : ComponentActivity() {
             var debugLoggingEnabled by remember { mutableStateOf(telemetryRepository.isDebugLoggingEnabled()) }
 
             TaskWizardTheme(themeMode = themeMode) {
-                val authViewModel: AuthViewModel = hiltViewModel()
-                val isSignedIn by authViewModel.isSignedIn.collectAsState()
-                val isLoading by authViewModel.isLoading.collectAsState()
-                val errorMessage by authViewModel.errorMessage.collectAsState()
-                val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
-
-                if (isSignedIn) {
-                    AppNavigation(
-                        themeMode = themeMode,
-                        onThemeModeChanged = { mode ->
-                            themeRepository.setThemeMode(mode)
-                            themeMode = mode
-                        },
-                        taskGrouping = taskGrouping,
-                        onTaskGroupingChanged = { grouping ->
-                            groupingRepository.setTaskGrouping(grouping)
-                            taskGrouping = grouping
-                        },
-                        calendarSyncEnabled = calendarSyncEnabled,
-                        onCalendarSyncChanged = { enabled ->
-                            calendarSyncEnabled = enabled
-                        },
-                        calendarRepository = calendarRepository,
-                        swipeSettings = swipeSettings,
-                        onSwipeEnabledChanged = { enabled ->
-                            swipeActionsRepository.setEnabled(enabled)
-                            swipeSettings = swipeSettings.copy(enabled = enabled)
-                        },
-                        onSwipeStartToEndActionChanged = { action ->
-                            swipeActionsRepository.setStartToEndAction(action)
-                            swipeSettings = swipeSettings.copy(startToEndAction = action)
-                        },
-                        onSwipeEndToStartActionChanged = { action ->
-                            swipeActionsRepository.setEndToStartAction(action)
-                            swipeSettings = swipeSettings.copy(endToStartAction = action)
-                        },
-                        onSwipeDeleteConfirmationChanged = { enabled ->
-                            swipeActionsRepository.setDeleteConfirmationEnabled(enabled)
-                            swipeSettings = swipeSettings.copy(deleteConfirmationEnabled = enabled)
-                        },
-                        inlineCompleteEnabled = inlineCompleteEnabled,
-                        onInlineCompleteEnabledChanged = { enabled ->
-                            taskListSettingsRepository.setInlineCompleteEnabled(enabled)
-                            inlineCompleteEnabled = enabled
-                        },
-                        telemetryEnabled = telemetryEnabled,
-                        onTelemetryEnabledChanged = { enabled ->
-                            telemetryRepository.setTelemetryEnabled(enabled)
-                            telemetryEnabled = enabled
-                            if (enabled) {
-                                telemetryManager.initialize(this@MainActivity)
-                            }
-                        },
-                        debugLoggingEnabled = debugLoggingEnabled,
-                        onDebugLoggingEnabledChanged = { enabled ->
-                            telemetryRepository.setDebugLoggingEnabled(enabled)
-                            debugLoggingEnabled = enabled
-                        },
-                        initialTaskId = initialTaskId,
-                        createTask = createTask
-                    )
-                } else {
-                    SignInScreen(
-                        serverEndpoint = serverEndpoint,
-                        isLoading = isLoading,
-                        errorMessage = errorMessage,
-                        onSignIn = { activity -> authViewModel.signIn(activity) },
-                        onEndpointChanged = { authViewModel.updateServerEndpoint(it) }
-                    )
-                }
+                AppNavigation(
+                    themeMode = themeMode,
+                    onThemeModeChanged = { mode ->
+                        themeRepository.setThemeMode(mode)
+                        themeMode = mode
+                    },
+                    taskGrouping = taskGrouping,
+                    onTaskGroupingChanged = { grouping ->
+                        groupingRepository.setTaskGrouping(grouping)
+                        taskGrouping = grouping
+                    },
+                    calendarSyncEnabled = calendarSyncEnabled,
+                    onCalendarSyncChanged = { enabled ->
+                        calendarSyncEnabled = enabled
+                    },
+                    calendarRepository = calendarRepository,
+                    swipeSettings = swipeSettings,
+                    onSwipeEnabledChanged = { enabled ->
+                        swipeActionsRepository.setEnabled(enabled)
+                        swipeSettings = swipeSettings.copy(enabled = enabled)
+                    },
+                    onSwipeStartToEndActionChanged = { action ->
+                        swipeActionsRepository.setStartToEndAction(action)
+                        swipeSettings = swipeSettings.copy(startToEndAction = action)
+                    },
+                    onSwipeEndToStartActionChanged = { action ->
+                        swipeActionsRepository.setEndToStartAction(action)
+                        swipeSettings = swipeSettings.copy(endToStartAction = action)
+                    },
+                    onSwipeDeleteConfirmationChanged = { enabled ->
+                        swipeActionsRepository.setDeleteConfirmationEnabled(enabled)
+                        swipeSettings = swipeSettings.copy(deleteConfirmationEnabled = enabled)
+                    },
+                    inlineCompleteEnabled = inlineCompleteEnabled,
+                    onInlineCompleteEnabledChanged = { enabled ->
+                        taskListSettingsRepository.setInlineCompleteEnabled(enabled)
+                        inlineCompleteEnabled = enabled
+                    },
+                    telemetryEnabled = telemetryEnabled,
+                    onTelemetryEnabledChanged = { enabled ->
+                        telemetryRepository.setTelemetryEnabled(enabled)
+                        telemetryEnabled = enabled
+                        if (enabled) {
+                            telemetryManager.initialize(this@MainActivity)
+                        }
+                    },
+                    debugLoggingEnabled = debugLoggingEnabled,
+                    onDebugLoggingEnabledChanged = { enabled ->
+                        telemetryRepository.setDebugLoggingEnabled(enabled)
+                        debugLoggingEnabled = enabled
+                    },
+                    initialTaskId = initialTaskId,
+                    createTask = createTask
+                )
             }
         }
     }

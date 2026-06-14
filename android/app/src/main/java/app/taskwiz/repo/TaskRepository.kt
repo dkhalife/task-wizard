@@ -1,6 +1,7 @@
 package app.taskwiz.repo
 
 import app.taskwiz.api.TaskWizardApi
+import app.taskwiz.auth.AuthManager
 import app.taskwiz.data.LocalIdGenerator
 import app.taskwiz.data.db.LocalState
 import app.taskwiz.data.db.TaskWizardDatabase
@@ -42,6 +43,7 @@ class TaskRepository @Inject constructor(
     private val networkMonitor: NetworkMonitor,
     private val syncCoordinator: SyncCoordinator,
     private val telemetryManager: TelemetryManager,
+    private val authManager: AuthManager,
 ) {
     private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
@@ -50,7 +52,7 @@ class TaskRepository @Inject constructor(
         .stateIn(scope, SharingStarted.Eagerly, emptyList())
 
     suspend fun refreshTasks(): Result<List<Task>> {
-        if (!networkMonitor.isOnline.value) {
+        if (!networkMonitor.isOnline.value || !authManager.isSignedIn()) {
             return Result.success(tasks.value)
         }
         return try {
@@ -67,6 +69,9 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun getActivity(beforeId: Int = 0, limit: Int = 20): Result<List<ActivityEntry>> {
+        if (!authManager.isSignedIn()) {
+            return Result.success(emptyList())
+        }
         return try {
             val response = api.getActivity(beforeId, limit)
             if (response.isSuccessful) {
@@ -82,6 +87,9 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun revertActivity(taskId: Int, historyId: Int): Result<Unit> {
+        if (!authManager.isSignedIn()) {
+            return Result.failure(Exception("Sign in to revert activity"))
+        }
         return try {
             val response = api.uncompleteTask(taskId, historyId)
             when {
@@ -129,6 +137,9 @@ class TaskRepository @Inject constructor(
     }
 
     suspend fun getTaskHistory(id: Int): Result<List<TaskHistory>> {
+        if (!authManager.isSignedIn()) {
+            return Result.success(emptyList())
+        }
         return try {
             val response = api.getTaskHistory(id)
             if (response.isSuccessful) {

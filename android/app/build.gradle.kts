@@ -100,12 +100,14 @@ android {
             val appInsightsKey = localProperties.getProperty("APPINSIGHTS_CONNECTION_STRING")
                 ?: System.getenv("APPINSIGHTS_CONNECTION_STRING") ?: ""
             buildConfigField("String", "APPINSIGHTS_CONNECTION_STRING", "\"$appInsightsKey\"")
+            buildConfigField("String", "MSAL_REDIRECT_URI", "\"msauth://app.taskwiz/OQxz%2FrlBJ5%2BG501Zg0md55cCrIY%3D\"")
         }
 
         debug {
             val appInsightsKey = localProperties.getProperty("APPINSIGHTS_CONNECTION_STRING")
                 ?: System.getenv("APPINSIGHTS_CONNECTION_STRING") ?: ""
             buildConfigField("String", "APPINSIGHTS_CONNECTION_STRING", "\"$appInsightsKey\"")
+            buildConfigField("String", "MSAL_REDIRECT_URI", "\"msauth://app.taskwiz/Td6Sn1vVl6dRUyqdcjJskmNwtss%3D\"")
         }
     }
 

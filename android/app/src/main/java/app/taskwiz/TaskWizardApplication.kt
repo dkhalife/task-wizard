@@ -8,11 +8,6 @@ import app.taskwiz.data.sync.SyncCoordinator
 import app.taskwiz.data.sync.TaskSyncWorkerFactory
 import app.taskwiz.data.sync.WebSocketLifecycleManager
 import app.taskwiz.telemetry.TelemetryManager
-import com.microsoft.identity.client.IAccount
-import com.microsoft.identity.client.IPublicClientApplication
-import com.microsoft.identity.client.ISingleAccountPublicClientApplication
-import com.microsoft.identity.client.PublicClientApplication
-import com.microsoft.identity.client.exception.MsalException
 import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
@@ -46,7 +41,7 @@ class TaskWizardApplication : Application(), Configuration.Provider {
         super.onCreate()
         telemetryManager.initialize(this)
         setupCrashHandler()
-        initializeMsal()
+        authManager.tryRestoreMsal(this)
         webSocketLifecycleManager.start()
         networkMonitor.addOnAvailableListener { syncCoordinator.syncOnce() }
         if (networkMonitor.isOnline.value) {
@@ -69,42 +64,6 @@ class TaskWizardApplication : Application(), Configuration.Provider {
                 defaultHandler?.uncaughtException(thread, throwable)
             }
         }
-    }
-
-    private fun initializeMsal() {
-        PublicClientApplication.createSingleAccountPublicClientApplication(
-            this,
-            R.raw.auth_config_single_account,
-            object : IPublicClientApplication.ISingleAccountApplicationCreatedListener {
-                override fun onCreated(application: ISingleAccountPublicClientApplication) {
-                    authManager.registerSingleAccountApp(application)
-                    loadCurrentAccount(application)
-                }
-
-                override fun onError(exception: MsalException) {
-                    telemetryManager.logError(TAG, "Failed to initialize MSAL", exception)
-                }
-            }
-        )
-    }
-
-    private fun loadCurrentAccount(app: ISingleAccountPublicClientApplication) {
-        app.getCurrentAccountAsync(object : ISingleAccountPublicClientApplication.CurrentAccountCallback {
-            override fun onAccountLoaded(activeAccount: IAccount?) {
-                authManager.updateAccount(activeAccount)
-            }
-
-            override fun onAccountChanged(
-                priorAccount: IAccount?,
-                currentAccount: IAccount?
-            ) {
-                authManager.updateAccount(currentAccount)
-            }
-
-            override fun onError(exception: MsalException) {
-                telemetryManager.logError(TAG, "Failed to load current account", exception)
-            }
-        })
     }
 
     companion object {

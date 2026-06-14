@@ -14,11 +14,13 @@ import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Cloud
+import androidx.compose.material.icons.filled.CloudOff
 import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Insights
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.SwipeLeft
+import androidx.compose.material.icons.filled.Sync
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -64,6 +66,7 @@ fun SettingsScreen(
     onSwipeEnabledChanged: (Boolean) -> Unit,
     onSwipeDeleteConfirmationChanged: (Boolean) -> Unit,
     onNavigateToSwipeSettings: () -> Unit,
+    onNavigateToSignIn: () -> Unit,
     inlineCompleteEnabled: Boolean,
     onInlineCompleteEnabledChanged: (Boolean) -> Unit,
     telemetryEnabled: Boolean,
@@ -71,6 +74,7 @@ fun SettingsScreen(
     debugLoggingEnabled: Boolean,
     onDebugLoggingEnabledChanged: (Boolean) -> Unit
 ){
+    val isSignedIn by authViewModel.isSignedIn.collectAsState()
     val serverEndpoint by authViewModel.serverEndpoint.collectAsState()
     val context = LocalContext.current
     val contentResolver = context.contentResolver
@@ -177,12 +181,36 @@ fun SettingsScreen(
 
             SectionHeader(stringResource(R.string.settings_header_general))
 
-            SettingsCard(icon = Icons.Default.Cloud, title = stringResource(R.string.settings_section_server)) {
-                Text(
-                    text = serverEndpoint,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+            if (isSignedIn) {
+                SettingsCard(icon = Icons.Default.Cloud, title = stringResource(R.string.settings_section_server)) {
+                    Text(
+                        text = serverEndpoint,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                SettingsCard(icon = Icons.Default.CloudOff, title = stringResource(R.string.settings_offline_mode_title)) {
+                    Text(
+                        text = stringResource(R.string.settings_offline_mode_description),
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Button(
+                        onClick = onNavigateToSignIn,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Sync,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(stringResource(R.string.btn_sign_in_to_sync))
+                    }
+                }
             }
 
             SettingsCard(icon = Icons.Default.Palette, title = stringResource(R.string.settings_section_theme)) {
@@ -264,54 +292,56 @@ fun SettingsScreen(
                 }
             }
 
-            Card(modifier = Modifier.fillMaxWidth()) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(stringResource(R.string.settings_calendar_sync_title), style = MaterialTheme.typography.titleMedium)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Text(
-                            text = stringResource(R.string.settings_calendar_sync_description),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Switch(
-                        checked = calendarSyncEnabled,
-                        onCheckedChange = { enabled ->
-                            if (enabled) {
-                                val hasPermissions = CALENDAR_PERMISSIONS.all {
-                                    ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
-                                }
-                                if (hasPermissions) {
-                                    scope.launch {
-                                        val result = calendarRepository.enableCalendarSync(context, contentResolver, workManager)
-                                        if (result.isSuccess) {
-                                            onCalendarSyncChanged(true)
-                                        } else {
-                                            errorMessage = context.getString(R.string.error_enable_calendar_sync, result.exceptionOrNull()?.message ?: "")
+            if (isSignedIn) {
+                Card(modifier = Modifier.fillMaxWidth()) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(stringResource(R.string.settings_calendar_sync_title), style = MaterialTheme.typography.titleMedium)
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = stringResource(R.string.settings_calendar_sync_description),
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Switch(
+                            checked = calendarSyncEnabled,
+                            onCheckedChange = { enabled ->
+                                if (enabled) {
+                                    val hasPermissions = CALENDAR_PERMISSIONS.all {
+                                        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+                                    }
+                                    if (hasPermissions) {
+                                        scope.launch {
+                                            val result = calendarRepository.enableCalendarSync(context, contentResolver, workManager)
+                                            if (result.isSuccess) {
+                                                onCalendarSyncChanged(true)
+                                            } else {
+                                                errorMessage = context.getString(R.string.error_enable_calendar_sync, result.exceptionOrNull()?.message ?: "")
+                                            }
                                         }
+                                    } else {
+                                        calendarPermissionLauncher.launch(CALENDAR_PERMISSIONS)
                                     }
                                 } else {
-                                    calendarPermissionLauncher.launch(CALENDAR_PERMISSIONS)
-                                }
-                            } else {
-                                scope.launch {
-                                    val result = calendarRepository.disableCalendarSync(context, contentResolver, workManager)
-                                    if (result.isSuccess) {
-                                        onCalendarSyncChanged(false)
-                                    } else {
-                                        errorMessage = context.getString(R.string.error_disable_calendar_sync, result.exceptionOrNull()?.message ?: "")
+                                    scope.launch {
+                                        val result = calendarRepository.disableCalendarSync(context, contentResolver, workManager)
+                                        if (result.isSuccess) {
+                                            onCalendarSyncChanged(false)
+                                        } else {
+                                            errorMessage = context.getString(R.string.error_disable_calendar_sync, result.exceptionOrNull()?.message ?: "")
+                                        }
                                     }
                                 }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
             }
 
@@ -448,74 +478,76 @@ fun SettingsScreen(
                 }
             }
 
-            Spacer(modifier = Modifier.height(20.dp))
+            if (isSignedIn) {
+                Spacer(modifier = Modifier.height(20.dp))
 
-            SectionHeader(stringResource(R.string.settings_header_account))
+                SectionHeader(stringResource(R.string.settings_header_account))
 
-            SettingsCard(icon = Icons.Default.DeleteForever, title = stringResource(R.string.settings_section_account_deletion)) {
-                if (deletionRequestedAt != null) {
-                    val formattedTime = remember(deletionRequestedAt) {
-                        try {
-                            val instant = Instant.parse(deletionRequestedAt)
-                            val deleteAt = instant.plusSeconds(24 * 60 * 60)
-                            DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
-                                .withZone(ZoneId.systemDefault())
-                                .format(deleteAt)
-                        } catch (e: Exception) {
-                            deletionRequestedAt ?: ""
+                SettingsCard(icon = Icons.Default.DeleteForever, title = stringResource(R.string.settings_section_account_deletion)) {
+                    if (deletionRequestedAt != null) {
+                        val formattedTime = remember(deletionRequestedAt) {
+                            try {
+                                val instant = Instant.parse(deletionRequestedAt)
+                                val deleteAt = instant.plusSeconds(24 * 60 * 60)
+                                DateTimeFormatter.ofLocalizedDateTime(FormatStyle.MEDIUM)
+                                    .withZone(ZoneId.systemDefault())
+                                    .format(deleteAt)
+                            } catch (e: Exception) {
+                                deletionRequestedAt ?: ""
+                            }
                         }
-                    }
-                    Text(
-                        text = stringResource(R.string.settings_account_deletion_pending_description, formattedTime),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.error
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = { userViewModel.cancelDeletion() },
-                        enabled = !isDeletionLoading,
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-                        if (isDeletionLoading) {
-                            CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
-                            Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = stringResource(R.string.settings_account_deletion_pending_description, formattedTime),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.error
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { userViewModel.cancelDeletion() },
+                            enabled = !isDeletionLoading,
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            if (isDeletionLoading) {
+                                CircularProgressIndicator(modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
+                                Spacer(modifier = Modifier.width(8.dp))
+                            }
+                            Text(stringResource(R.string.btn_cancel_deletion))
                         }
-                        Text(stringResource(R.string.btn_cancel_deletion))
-                    }
-                } else {
-                    Text(
-                        text = stringResource(R.string.settings_account_deletion_description),
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    OutlinedButton(
-                        onClick = { showDeletionConfirmDialog = true },
-                        enabled = !isDeletionLoading,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
-                    ) {
-                        Text(stringResource(R.string.btn_delete_account))
+                    } else {
+                        Text(
+                            text = stringResource(R.string.settings_account_deletion_description),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        OutlinedButton(
+                            onClick = { showDeletionConfirmDialog = true },
+                            enabled = !isDeletionLoading,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                        ) {
+                            Text(stringResource(R.string.btn_delete_account))
+                        }
                     }
                 }
-            }
 
-            Spacer(modifier = Modifier.height(20.dp))
+                Spacer(modifier = Modifier.height(20.dp))
 
-            TextButton(
-                onClick = { authViewModel.signOut() },
-                modifier = Modifier.fillMaxWidth(),
-                colors = ButtonDefaults.textButtonColors(
-                    contentColor = MaterialTheme.colorScheme.error
-                )
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Filled.Logout,
-                    contentDescription = null,
-                    modifier = Modifier.size(18.dp)
-                )
-                Spacer(modifier = Modifier.width(8.dp))
-                Text(stringResource(R.string.btn_sign_out))
+                TextButton(
+                    onClick = { authViewModel.signOut() },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.textButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.Logout,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(stringResource(R.string.btn_sign_out))
+                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
