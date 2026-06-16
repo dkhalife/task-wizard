@@ -30,7 +30,7 @@ const doInitializeMsal = async () => {
       redirectUri: `${window.location.origin}/login`,
     },
     cache: {
-      cacheLocation: 'localStorage',
+      cacheLocation: 'sessionStorage',
     },
   })
 
