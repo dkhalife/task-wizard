@@ -87,6 +87,19 @@ func effectiveScheme(c *gin.Context, trusted []*net.IPNet) string {
 	return "http"
 }
 
+// EffectiveScheme reports the request scheme ("http" or "https"). The
+// X-Forwarded-Proto header is only honored when the immediate peer is one of
+// the configured trusted proxies, otherwise the scheme is derived from the
+// direct connection.
+func EffectiveScheme(c *gin.Context, cfg *config.Config) string {
+	trusted, err := config.ParseTrustedProxies(cfg.Server.TrustedProxies)
+	if err != nil {
+		trusted = nil
+	}
+
+	return effectiveScheme(c, trusted)
+}
+
 func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 	hostName := cfg.Server.HostName
 	port := cfg.Server.Port

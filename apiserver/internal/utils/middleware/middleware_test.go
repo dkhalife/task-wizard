@@ -266,3 +266,84 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersIgnoresForwardedProtoFromOutsid
 	s.Equal(http.StatusMovedPermanently, w.Code)
 	s.Empty(w.Header().Get("Strict-Transport-Security"))
 }
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPS() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{TrustedProxies: []string{"192.0.2.0/24"}},
+	}
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c, cfg)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal("https", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPSWithList() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{TrustedProxies: []string{"192.0.2.0/24"}},
+	}
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c, cfg)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https, http")
+	s.router.ServeHTTP(w, req)
+	s.Equal("https", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPSFromUntrustedPeer() {
+	cfg := &config.Config{Server: config.ServerConfig{}}
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c, cfg)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal("http", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeDirectTLS() {
+	cfg := &config.Config{Server: config.ServerConfig{}}
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c, cfg)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.TLS = &tls.ConnectionState{}
+	s.router.ServeHTTP(w, req)
+	s.Equal("https", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemePlainHTTP() {
+	cfg := &config.Config{Server: config.ServerConfig{}}
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c, cfg)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	s.router.ServeHTTP(w, req)
+	s.Equal("http", scheme)
+}

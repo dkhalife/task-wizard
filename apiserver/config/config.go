@@ -146,10 +146,11 @@ func ParseTrustedProxies(entries []string) ([]*net.IPNet, error) {
 			return nil, fmt.Errorf("invalid trusted proxy entry: %q", entry)
 		}
 
-		bits := 32
-		if ip.To4() == nil {
-			bits = 128
+		if v4 := ip.To4(); v4 != nil {
+			ip = v4
 		}
+
+		bits := len(ip) * 8
 		nets = append(nets, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
 	}
 
