@@ -49,7 +49,7 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 	}
 }
 
-func effectiveScheme(c *gin.Context) string {
+func EffectiveScheme(c *gin.Context) string {
 	if forwarded := c.GetHeader("X-Forwarded-Proto"); forwarded != "" {
 		scheme := forwarded
 		if i := strings.IndexByte(scheme, ','); i >= 0 {
@@ -82,7 +82,7 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 	port := cfg.Server.Port
 
 	return func(c *gin.Context) {
-		scheme := effectiveScheme(c)
+		scheme := EffectiveScheme(c)
 		if scheme == "http" && hostName != "" {
 			target := fmt.Sprintf("https://%s", hostName)
 			if port != 443 {

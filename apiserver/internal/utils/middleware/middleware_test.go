@@ -264,3 +264,58 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersBaselineHeadersOverPlainHTTP() 
 	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
 	s.Empty(w.Header().Get("Strict-Transport-Security"))
 }
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPS() {
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal("https", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPSWithList() {
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-Proto", "https, http")
+	s.router.ServeHTTP(w, req)
+	s.Equal("https", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeDirectTLS() {
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.TLS = &tls.ConnectionState{}
+	s.router.ServeHTTP(w, req)
+	s.Equal("https", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemePlainHTTP() {
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	s.router.ServeHTTP(w, req)
+	s.Equal("http", scheme)
+}
