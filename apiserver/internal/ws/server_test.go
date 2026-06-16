@@ -210,3 +210,89 @@ func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
 	s.Equal("echo", resp.Action)
 	s.Equal("hello", resp.Data)
 }
+
+func (s *WSServerTestSuite) TestOversizedMessageClosesConnection() {
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	conn, _, err := s.dial(ts)
+	s.Require().NoError(err)
+	defer conn.Close()
+
+	s.waitForConnections(1)
+
+	// Build a valid JSON WSMessage whose total encoded size exceeds maxMessageBytes.
+	// Sending raw non-JSON would also close the connection (JSON decode failure),
+	// so we need a syntactically valid frame to isolate the size-cap behavior.
+	largeData := json.RawMessage(`"` + strings.Repeat("a", maxMessageBytes) + `"`)
+	payload := WSMessage{RequestID: "r", Action: "echo", Data: largeData}
+	raw, marshalErr := json.Marshal(payload)
+	s.Require().NoError(marshalErr)
+	s.Require().Greater(len(raw), maxMessageBytes, "sanity: test frame must exceed the server read limit")
+
+	s.Require().NoError(conn.SetReadDeadline(time.Now().Add(3 * time.Second)))
+	s.NoError(conn.WriteMessage(websocket.TextMessage, raw))
+
+	_, _, readErr := conn.ReadMessage()
+	s.Error(readErr)
+	s.waitForConnections(0)
+}
+
+func (s *WSServerTestSuite) TestRateLimitRejectsFlood() {
+	s.server.RegisterHandler("noop", func(ctx context.Context, userID int, msg WSMessage) *WSResponse {
+		return &WSResponse{Action: "noop", Status: http.StatusOK}
+	})
+
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	conn, _, err := s.dial(ts)
+	s.Require().NoError(err)
+	defer conn.Close()
+
+	s.waitForConnections(1)
+
+	// Replace the connection's limiter with a zero-refill bucket of exactly 2
+	// tokens so rate-limit behaviour is deterministic regardless of test duration.
+	const burst = 2
+	s.server.mu.RLock()
+	for _, c := range s.server.connections {
+		c.limiter = &tokenBucket{
+			tokens:     burst,
+			maxTokens:  burst,
+			refillRate: 0,
+			last:       time.Now(),
+		}
+	}
+	s.server.mu.RUnlock()
+
+	gotOK := 0
+	rateLimited := false
+	for i := 0; i < burst+3; i++ {
+		s.Require().NoError(conn.WriteJSON(WSMessage{RequestID: "r", Action: "noop"}))
+
+		var resp WSResponse
+		s.Require().NoError(conn.ReadJSON(&resp))
+		if resp.Status == http.StatusTooManyRequests {
+			rateLimited = true
+			break
+		}
+		gotOK++
+	}
+
+	s.True(rateLimited, "expected a 429 after burst tokens are exhausted")
+	s.Equal(burst, gotOK, "expected exactly burst messages to succeed before rate limiting")
+}
+
+func (s *WSServerTestSuite) TestTokenBucketRefills() {
+	b := newTokenBucket(1000, 2)
+	s.True(b.allow())
+	s.True(b.allow())
+	s.False(b.allow())
+
+	// Simulate elapsed time by backdating last — no wall-clock sleep needed.
+	b.mu.Lock()
+	b.last = time.Now().Add(-10 * time.Millisecond)
+	b.mu.Unlock()
+	s.True(b.allow(), "tokens should refill over time")
+}
