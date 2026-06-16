@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"taskwiz.app/core/internal/models"
 	"taskwiz.app/core/internal/services/logging"
@@ -25,12 +27,18 @@ func SendNotificationViaGotify(c context.Context, provider models.NotificationPr
 	log := logging.FromContext(c)
 	log.Debug("Sending notification via Gotify")
 
+	endpoint := strings.TrimRight(provider.URL, "/") + "/message"
+	parsedURL, err := validateOutboundURL(endpoint)
+	if err != nil {
+		return err
+	}
+
 	jsonData, err := json.Marshal(msg)
 	if err != nil {
 		return fmt.Errorf("failed to marshal message: %s", err.Error())
 	}
 
-	req, err := http.NewRequest("POST", provider.URL+"/message", bytes.NewBuffer(jsonData))
+	req, err := http.NewRequestWithContext(c, http.MethodPost, parsedURL.String(), bytes.NewBuffer(jsonData))
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP request: %s", err.Error())
 	}
@@ -38,7 +46,7 @@ func SendNotificationViaGotify(c context.Context, provider models.NotificationPr
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Gotify-Key", provider.Token)
 
-	client := &http.Client{}
+	client := newSafeHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %s", err.Error())
