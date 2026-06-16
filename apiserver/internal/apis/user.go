@@ -132,7 +132,7 @@ func (h *UsersAPIHandler) CreateSession(c *gin.Context) {
 		return
 	}
 
-	secure := h.cfg.Server.HostName != ""
+	secure := middleware.EffectiveScheme(c) == "https"
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(authMW.SessionCookieName, rawToken, int(duration.Seconds()), "/", "", secure, true)
 	c.Status(http.StatusCreated)
@@ -144,7 +144,7 @@ func (h *UsersAPIHandler) DeleteCurrentSession(c *gin.Context) {
 		_ = h.sessionRepo.DeleteSession(c, sessionToken)
 	}
 
-	secure := h.cfg.Server.HostName != ""
+	secure := middleware.EffectiveScheme(c) == "https"
 	c.SetSameSite(http.SameSiteLaxMode)
 	c.SetCookie(authMW.SessionCookieName, "", -1, "/", "", secure, true)
 	c.Status(http.StatusNoContent)
