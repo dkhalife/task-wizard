@@ -1,6 +1,7 @@
 package config
 
 import (
+	"net"
 	"os"
 	"testing"
 	"time"
@@ -59,6 +60,29 @@ scheduler_jobs:
 
 	assert.Equal(t, 5*time.Minute, cfg.SchedulerJobs.DueFrequency)
 	assert.Equal(t, 24*time.Hour, cfg.SchedulerJobs.OverdueFrequency)
+}
+
+func TestParseTrustedProxies(t *testing.T) {
+	nets, err := ParseTrustedProxies([]string{"10.0.0.0/8", "192.168.1.1", " ", "::1"})
+	assert.NoError(t, err)
+	assert.Len(t, nets, 3)
+
+	assert.True(t, nets[0].Contains(net.ParseIP("10.1.2.3")))
+	assert.False(t, nets[0].Contains(net.ParseIP("11.0.0.1")))
+	assert.True(t, nets[1].Contains(net.ParseIP("192.168.1.1")))
+	assert.False(t, nets[1].Contains(net.ParseIP("192.168.1.2")))
+	assert.True(t, nets[2].Contains(net.ParseIP("::1")))
+}
+
+func TestParseTrustedProxies_Empty(t *testing.T) {
+	nets, err := ParseTrustedProxies(nil)
+	assert.NoError(t, err)
+	assert.Empty(t, nets)
+}
+
+func TestParseTrustedProxies_Invalid(t *testing.T) {
+	_, err := ParseTrustedProxies([]string{"not-an-ip"})
+	assert.Error(t, err)
 }
 
 func TestLoadConfig_PanicOnMissingFile(t *testing.T) {

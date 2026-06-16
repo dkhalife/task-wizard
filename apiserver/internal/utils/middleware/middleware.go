@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,13 +50,34 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 	}
 }
 
-func EffectiveScheme(c *gin.Context) string {
-	if forwarded := c.GetHeader("X-Forwarded-Proto"); forwarded != "" {
-		scheme := forwarded
-		if i := strings.IndexByte(scheme, ','); i >= 0 {
-			scheme = scheme[:i]
+func isTrustedPeer(c *gin.Context, trusted []*net.IPNet) bool {
+	if len(trusted) == 0 {
+		return false
+	}
+
+	ip := net.ParseIP(c.RemoteIP())
+	if ip == nil {
+		return false
+	}
+
+	for _, n := range trusted {
+		if n.Contains(ip) {
+			return true
 		}
-		return strings.ToLower(strings.TrimSpace(scheme))
+	}
+
+	return false
+}
+
+func effectiveScheme(c *gin.Context, trusted []*net.IPNet) string {
+	if isTrustedPeer(c, trusted) {
+		if forwarded := c.GetHeader("X-Forwarded-Proto"); forwarded != "" {
+			scheme := forwarded
+			if i := strings.IndexByte(scheme, ','); i >= 0 {
+				scheme = scheme[:i]
+			}
+			return strings.ToLower(strings.TrimSpace(scheme))
+		}
 	}
 
 	if c.Request.TLS != nil {
@@ -63,6 +85,19 @@ func EffectiveScheme(c *gin.Context) string {
 	}
 
 	return "http"
+}
+
+// EffectiveScheme reports the request scheme ("http" or "https"). The
+// X-Forwarded-Proto header is only honored when the immediate peer is one of
+// the configured trusted proxies, otherwise the scheme is derived from the
+// direct connection.
+func EffectiveScheme(c *gin.Context, cfg *config.Config) string {
+	trusted, err := config.ParseTrustedProxies(cfg.Server.TrustedProxies)
+	if err != nil {
+		trusted = nil
+	}
+
+	return effectiveScheme(c, trusted)
 }
 
 const contentSecurityPolicy = "default-src 'self'; " +
@@ -81,8 +116,13 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 	hostName := cfg.Server.HostName
 	port := cfg.Server.Port
 
+	trusted, err := config.ParseTrustedProxies(cfg.Server.TrustedProxies)
+	if err != nil {
+		panic(fmt.Sprintf("invalid trusted_proxies configuration: %s", err.Error()))
+	}
+
 	return func(c *gin.Context) {
-		scheme := EffectiveScheme(c)
+		scheme := effectiveScheme(c, trusted)
 
 		c.Header("Content-Security-Policy", contentSecurityPolicy)
 		c.Header("X-Content-Type-Options", "nosniff")

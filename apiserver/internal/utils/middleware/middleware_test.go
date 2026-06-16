@@ -96,8 +96,9 @@ func (s *MiddlewareTestSuite) TestRateLimitMiddlewareStoreFailure() {
 func (s *MiddlewareTestSuite) TestSecurityHeadersAddsHSTS() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			HostName: "example.com",
-			Port:     443,
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"192.0.2.0/24"},
 		},
 	}
 
@@ -108,6 +109,7 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersAddsHSTS() {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusOK, w.Code)
@@ -204,8 +206,9 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTPNonStandardPort() 
 func (s *MiddlewareTestSuite) TestSecurityHeadersNoRedirectForHTTPS() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			HostName: "example.com",
-			Port:     443,
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"192.0.2.0/24"},
 		},
 	}
 
@@ -216,13 +219,14 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersNoRedirectForHTTPS() {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusOK, w.Code)
 	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
 }
 
-func (s *MiddlewareTestSuite) TestSecurityHeadersAddsBaselineHeaders() {
+func (s *MiddlewareTestSuite) TestSecurityHeadersIgnoresForwardedProtoFromUntrustedPeer() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
 			HostName: "example.com",
@@ -237,6 +241,53 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersAddsBaselineHeaders() {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersIgnoresForwardedProtoFromOutsideTrustedRange() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"10.0.0.0/8"},
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "203.0.113.5:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersAddsBaselineHeaders() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"192.0.2.0/24"},
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
 
@@ -270,37 +321,62 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersBaselineHeadersOverPlainHTTP() 
 }
 
 func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPS() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{TrustedProxies: []string{"192.0.2.0/24"}},
+	}
 	var scheme string
 	s.router.GET("/", func(c *gin.Context) {
-		scheme = EffectiveScheme(c)
+		scheme = EffectiveScheme(c, cfg)
 		c.Status(http.StatusOK)
 	})
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
 	s.Equal("https", scheme)
 }
 
 func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPSWithList() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{TrustedProxies: []string{"192.0.2.0/24"}},
+	}
 	var scheme string
 	s.router.GET("/", func(c *gin.Context) {
-		scheme = EffectiveScheme(c)
+		scheme = EffectiveScheme(c, cfg)
 		c.Status(http.StatusOK)
 	})
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https, http")
 	s.router.ServeHTTP(w, req)
 	s.Equal("https", scheme)
 }
 
-func (s *MiddlewareTestSuite) TestEffectiveSchemeDirectTLS() {
+func (s *MiddlewareTestSuite) TestEffectiveSchemeForwardedHTTPSFromUntrustedPeer() {
+	cfg := &config.Config{Server: config.ServerConfig{}}
 	var scheme string
 	s.router.GET("/", func(c *gin.Context) {
-		scheme = EffectiveScheme(c)
+		scheme = EffectiveScheme(c, cfg)
+		c.Status(http.StatusOK)
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal("http", scheme)
+}
+
+func (s *MiddlewareTestSuite) TestEffectiveSchemeDirectTLS() {
+	cfg := &config.Config{Server: config.ServerConfig{}}
+	var scheme string
+	s.router.GET("/", func(c *gin.Context) {
+		scheme = EffectiveScheme(c, cfg)
 		c.Status(http.StatusOK)
 	})
 
@@ -312,9 +388,10 @@ func (s *MiddlewareTestSuite) TestEffectiveSchemeDirectTLS() {
 }
 
 func (s *MiddlewareTestSuite) TestEffectiveSchemePlainHTTP() {
+	cfg := &config.Config{Server: config.ServerConfig{}}
 	var scheme string
 	s.router.GET("/", func(c *gin.Context) {
-		scheme = EffectiveScheme(c)
+		scheme = EffectiveScheme(c, cfg)
 		c.Status(http.StatusOK)
 	})
 

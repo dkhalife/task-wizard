@@ -143,6 +143,13 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 	}
 
 	r := gin.New()
+	trustedProxies := cfg.Server.TrustedProxies
+	if trustedProxies == nil {
+		trustedProxies = []string{}
+	}
+	if err := r.SetTrustedProxies(trustedProxies); err != nil {
+		log.Fatalf("invalid trusted_proxies configuration: %s", err.Error())
+	}
 	srv := &http.Server{
 		Addr:              fmt.Sprintf(":%d", cfg.Server.Port),
 		Handler:           r,
