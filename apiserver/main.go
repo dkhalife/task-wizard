@@ -121,11 +121,11 @@ func main() {
 }
 
 const (
-	defaultReadTimeout       = 15 * time.Second
-	defaultWriteTimeout      = 15 * time.Second
+	defaultReadTimeout       = 2 * time.Second
+	defaultWriteTimeout      = 1 * time.Second
 	defaultReadHeaderTimeout = 10 * time.Second
 	defaultIdleTimeout       = 60 * time.Second
-	defaultMaxHeaderBytes    = 1 << 20 // 1 MiB
+	defaultMaxHeaderBytes    = http.DefaultMaxHeaderBytes
 )
 
 func timeoutOrDefault(configured, fallback time.Duration) time.Duration {
