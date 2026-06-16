@@ -16,6 +16,8 @@ var allowedOutboundMethods = map[string]struct{}{
 	http.MethodPut:  {},
 }
 
+const errDestinationNotAllowed = "destination not allowed"
+
 // isDisallowedIP reports whether an IP must not be reached by an outbound
 // server-side request. It blocks loopback, link-local (including cloud metadata
 // at 169.254.169.254), private, unspecified and multicast ranges.
@@ -76,12 +78,12 @@ func newSafeHTTPClient(timeout time.Duration) *http.Client {
 		Control: func(_, address string, _ syscall.RawConn) error {
 			host, _, err := net.SplitHostPort(address)
 			if err != nil {
-				return fmt.Errorf("destination not allowed")
+				return fmt.Errorf("%s", errDestinationNotAllowed)
 			}
 
 			ip := net.ParseIP(host)
 			if isDisallowedIP(ip) {
-				return fmt.Errorf("destination not allowed")
+				return fmt.Errorf("%s", errDestinationNotAllowed)
 			}
 
 			return nil
@@ -98,5 +100,8 @@ func newSafeHTTPClient(timeout time.Duration) *http.Client {
 	return &http.Client{
 		Timeout:   timeout,
 		Transport: transport,
+		CheckRedirect: func(_ *http.Request, _ []*http.Request) error {
+			return http.ErrUseLastResponse
+		},
 	}
 }

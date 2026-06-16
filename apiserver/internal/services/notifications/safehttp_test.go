@@ -4,6 +4,7 @@ import (
 	"context"
 	"net"
 	"net/http"
+	"strings"
 	"testing"
 	"time"
 )
@@ -116,5 +117,9 @@ func TestSafeClientBlocksLoopback(t *testing.T) {
 	if err == nil {
 		resp.Body.Close()
 		t.Fatal("expected loopback connection to be blocked")
+	}
+
+	if !strings.Contains(err.Error(), errDestinationNotAllowed) {
+		t.Fatalf("expected dialer rejection error, got: %v", err)
 	}
 }
