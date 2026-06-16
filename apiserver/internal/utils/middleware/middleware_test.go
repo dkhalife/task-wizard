@@ -217,3 +217,50 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersNoRedirectForHTTPS() {
 	s.Equal(http.StatusOK, w.Code)
 	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
 }
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersAddsBaselineHeaders() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName: "example.com",
+			Port:     443,
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("nosniff", w.Header().Get("X-Content-Type-Options"))
+	s.Equal("DENY", w.Header().Get("X-Frame-Options"))
+	s.Equal("strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
+	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersBaselineHeadersOverPlainHTTP() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	s.router.ServeHTTP(w, req)
+
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("nosniff", w.Header().Get("X-Content-Type-Options"))
+	s.Equal("DENY", w.Header().Get("X-Frame-Options"))
+	s.Equal("strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
+	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
+}

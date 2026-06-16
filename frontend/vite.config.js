@@ -6,6 +6,12 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [react(), version()],
 
+  build: {
+    modulePreload: {
+      polyfill: false,
+    },
+  },
+
   resolve: {
     alias: [
       {
