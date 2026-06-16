@@ -176,6 +176,10 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTP() {
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusMovedPermanently, w.Code)
 	s.Equal("https://example.com/path?q=1", w.Header().Get("Location"))
+	s.Equal("nosniff", w.Header().Get("X-Content-Type-Options"))
+	s.Equal("DENY", w.Header().Get("X-Frame-Options"))
+	s.Equal("strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
+	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
 }
 
 func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTPNonStandardPort() {
@@ -264,6 +268,55 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersIgnoresForwardedProtoFromOutsid
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersAddsBaselineHeaders() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"192.0.2.0/24"},
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("nosniff", w.Header().Get("X-Content-Type-Options"))
+	s.Equal("DENY", w.Header().Get("X-Frame-Options"))
+	s.Equal("strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
+	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersBaselineHeadersOverPlainHTTP() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	s.router.ServeHTTP(w, req)
+
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("nosniff", w.Header().Get("X-Content-Type-Options"))
+	s.Equal("DENY", w.Header().Get("X-Frame-Options"))
+	s.Equal("strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
+	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
 	s.Empty(w.Header().Get("Strict-Transport-Security"))
 }
 

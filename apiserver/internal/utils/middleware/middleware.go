@@ -100,6 +100,18 @@ func EffectiveScheme(c *gin.Context, cfg *config.Config) string {
 	return effectiveScheme(c, trusted)
 }
 
+const contentSecurityPolicy = "default-src 'self'; " +
+	"base-uri 'self'; " +
+	"object-src 'none'; " +
+	"frame-ancestors 'none'; " +
+	"img-src 'self' data:; " +
+	"font-src 'self' data:; " +
+	"style-src 'self' 'unsafe-inline'; " +
+	"script-src 'self'; " +
+	"connect-src 'self' https://login.microsoftonline.com; " +
+	"frame-src 'self' https://login.microsoftonline.com; " +
+	"form-action 'self' https://login.microsoftonline.com"
+
 func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 	hostName := cfg.Server.HostName
 	port := cfg.Server.Port
@@ -111,6 +123,12 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		scheme := effectiveScheme(c, trusted)
+
+		c.Header("Content-Security-Policy", contentSecurityPolicy)
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+
 		if scheme == "http" && hostName != "" {
 			target := fmt.Sprintf("https://%s", hostName)
 			if port != 443 {
