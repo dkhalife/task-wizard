@@ -210,3 +210,60 @@ func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
 	s.Equal("echo", resp.Action)
 	s.Equal("hello", resp.Data)
 }
+
+func (s *WSServerTestSuite) TestOversizedMessageClosesConnection() {
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	conn, _, err := s.dial(ts)
+	s.Require().NoError(err)
+	defer conn.Close()
+
+	s.waitForConnections(1)
+
+	oversized := strings.Repeat("a", maxMessageBytes+1)
+	s.NoError(conn.WriteMessage(websocket.TextMessage, []byte(oversized)))
+
+	_, _, readErr := conn.ReadMessage()
+	s.Error(readErr)
+	s.waitForConnections(0)
+}
+
+func (s *WSServerTestSuite) TestRateLimitRejectsFlood() {
+	s.server.RegisterHandler("noop", func(ctx context.Context, userID int, msg WSMessage) *WSResponse {
+		return &WSResponse{Action: "noop", Status: http.StatusOK}
+	})
+
+	ts := httptest.NewServer(s.router)
+	defer ts.Close()
+
+	conn, _, err := s.dial(ts)
+	s.Require().NoError(err)
+	defer conn.Close()
+
+	s.waitForConnections(1)
+
+	rateLimited := false
+	for i := 0; i < messageBurst+5; i++ {
+		s.Require().NoError(conn.WriteJSON(WSMessage{RequestID: "r", Action: "noop"}))
+
+		var resp WSResponse
+		s.Require().NoError(conn.ReadJSON(&resp))
+		if resp.Status == http.StatusTooManyRequests {
+			rateLimited = true
+			break
+		}
+	}
+
+	s.True(rateLimited, "expected at least one message to be rate limited")
+}
+
+func (s *WSServerTestSuite) TestTokenBucketRefills() {
+	b := newTokenBucket(1000, 2)
+	s.True(b.allow())
+	s.True(b.allow())
+	s.False(b.allow())
+
+	time.Sleep(10 * time.Millisecond)
+	s.True(b.allow(), "tokens should refill over time")
+}

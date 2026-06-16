@@ -20,11 +20,64 @@ import (
 	"taskwiz.app/core/internal/telemetry"
 )
 
+const (
+	// maxMessageBytes caps the size of a single inbound WebSocket message. WS
+	// payloads are small JSON mutations, so anything larger is rejected to avoid
+	// memory abuse from a flooding client.
+	maxMessageBytes = 32 * 1024
+	// messageRatePerSecond and messageBurst bound how frequently a single
+	// connection may send messages, mirroring the rate limiting applied to REST
+	// routes.
+	messageRatePerSecond = 20
+	messageBurst         = 40
+)
+
+// tokenBucket is a small, self-contained token-bucket rate limiter used to bound
+// the message rate of a single WebSocket connection.
+type tokenBucket struct {
+	mu         sync.Mutex
+	tokens     float64
+	maxTokens  float64
+	refillRate float64
+	last       time.Time
+}
+
+func newTokenBucket(ratePerSecond, burst float64) *tokenBucket {
+	return &tokenBucket{
+		tokens:     burst,
+		maxTokens:  burst,
+		refillRate: ratePerSecond,
+		last:       time.Now(),
+	}
+}
+
+// allow reports whether a message may be processed now, consuming one token when
+// it can.
+func (b *tokenBucket) allow() bool {
+	b.mu.Lock()
+	defer b.mu.Unlock()
+
+	now := time.Now()
+	b.tokens += now.Sub(b.last).Seconds() * b.refillRate
+	if b.tokens > b.maxTokens {
+		b.tokens = b.maxTokens
+	}
+	b.last = now
+
+	if b.tokens < 1 {
+		return false
+	}
+
+	b.tokens--
+	return true
+}
+
 // connection represents a single websocket connection with associated identity.
 type connection struct {
 	ws       *websocket.Conn
 	identity *models.SignedInIdentity
 	writeMu  sync.Mutex // Protects concurrent writes to websocket
+	limiter  *tokenBucket
 }
 
 // WSServer keeps track of active websocket connections.
@@ -146,7 +199,11 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 		return
 	}
 
-	conn := &connection{ws: wsConn, identity: identity}
+	conn := &connection{
+		ws:       wsConn,
+		identity: identity,
+		limiter:  newTokenBucket(messageRatePerSecond, messageBurst),
+	}
 
 	s.mu.Lock()
 	s.connections[wsConn] = conn
@@ -162,6 +219,7 @@ func (s *WSServer) HandleConnection(c *gin.Context) {
 // listen waits for messages on a connection and removes it when closed.
 func (s *WSServer) listen(ctx context.Context, conn *connection) {
 	wsConn := conn.ws
+	wsConn.SetReadLimit(maxMessageBytes)
 	if err := wsConn.SetReadDeadline(time.Now().Add(s.pongWait)); err != nil {
 		logging.FromContext(ctx).Errorf("set read deadline error: %v", err)
 	}
@@ -268,6 +326,21 @@ func (s *WSServer) handleMessage(ctx context.Context, conn *connection, msg WSMe
 	s.mu.RUnlock()
 
 	log := logging.FromContext(ctx)
+
+	if conn.limiter != nil && !conn.limiter.allow() {
+		log.Warnf("rate limit exceeded for user %d on action %s", conn.identity.UserID, msg.Action)
+		telemetry.TrackWarning(context.Background(), "ws_rate_limited", "ws-server", "Too many messages", nil)
+		resp := &WSResponse{
+			Action:    msg.Action,
+			RequestID: msg.RequestID,
+			Status:    http.StatusTooManyRequests,
+			Data:      map[string]string{"error": "Too many requests"},
+		}
+		if err := conn.safeWriteJSON(resp); err != nil {
+			log.Errorf("failed to write JSON to WebSocket: %v", err)
+		}
+		return
+	}
 
 	if !ok {
 		log.Errorf("no handler registered for action %s", msg.Action)
