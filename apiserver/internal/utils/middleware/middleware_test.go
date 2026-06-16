@@ -174,6 +174,10 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTP() {
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusMovedPermanently, w.Code)
 	s.Equal("https://example.com/path?q=1", w.Header().Get("Location"))
+	s.Equal("nosniff", w.Header().Get("X-Content-Type-Options"))
+	s.Equal("DENY", w.Header().Get("X-Frame-Options"))
+	s.Equal("strict-origin-when-cross-origin", w.Header().Get("Referrer-Policy"))
+	s.Equal(contentSecurityPolicy, w.Header().Get("Content-Security-Policy"))
 }
 
 func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTPNonStandardPort() {

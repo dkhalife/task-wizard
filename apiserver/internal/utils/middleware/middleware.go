@@ -83,6 +83,12 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 
 	return func(c *gin.Context) {
 		scheme := EffectiveScheme(c)
+
+		c.Header("Content-Security-Policy", contentSecurityPolicy)
+		c.Header("X-Content-Type-Options", "nosniff")
+		c.Header("X-Frame-Options", "DENY")
+		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
+
 		if scheme == "http" && hostName != "" {
 			target := fmt.Sprintf("https://%s", hostName)
 			if port != 443 {
@@ -93,11 +99,6 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-
-		c.Header("Content-Security-Policy", contentSecurityPolicy)
-		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
-		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 
 		if scheme == "https" {
 			c.Header("Strict-Transport-Security", "max-age=31536000; includeSubDomains; preload")
