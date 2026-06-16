@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -49,13 +50,34 @@ func RateLimitMiddleware(limiter *limiter.Limiter) gin.HandlerFunc {
 	}
 }
 
-func effectiveScheme(c *gin.Context) string {
-	if forwarded := c.GetHeader("X-Forwarded-Proto"); forwarded != "" {
-		scheme := forwarded
-		if i := strings.IndexByte(scheme, ','); i >= 0 {
-			scheme = scheme[:i]
+func isTrustedPeer(c *gin.Context, trusted []*net.IPNet) bool {
+	if len(trusted) == 0 {
+		return false
+	}
+
+	ip := net.ParseIP(c.RemoteIP())
+	if ip == nil {
+		return false
+	}
+
+	for _, n := range trusted {
+		if n.Contains(ip) {
+			return true
 		}
-		return strings.ToLower(strings.TrimSpace(scheme))
+	}
+
+	return false
+}
+
+func effectiveScheme(c *gin.Context, trusted []*net.IPNet) string {
+	if isTrustedPeer(c, trusted) {
+		if forwarded := c.GetHeader("X-Forwarded-Proto"); forwarded != "" {
+			scheme := forwarded
+			if i := strings.IndexByte(scheme, ','); i >= 0 {
+				scheme = scheme[:i]
+			}
+			return strings.ToLower(strings.TrimSpace(scheme))
+		}
 	}
 
 	if c.Request.TLS != nil {
@@ -69,8 +91,13 @@ func SecurityHeaders(cfg *config.Config) gin.HandlerFunc {
 	hostName := cfg.Server.HostName
 	port := cfg.Server.Port
 
+	trusted, err := config.ParseTrustedProxies(cfg.Server.TrustedProxies)
+	if err != nil {
+		panic(fmt.Sprintf("invalid trusted_proxies configuration: %s", err.Error()))
+	}
+
 	return func(c *gin.Context) {
-		scheme := effectiveScheme(c)
+		scheme := effectiveScheme(c, trusted)
 		if scheme == "http" && hostName != "" {
 			target := fmt.Sprintf("https://%s", hostName)
 			if port != 443 {

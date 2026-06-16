@@ -2,7 +2,9 @@ package config
 
 import (
 	"fmt"
+	"net"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/spf13/viper"
@@ -48,6 +50,7 @@ type ServerConfig struct {
 	AllowCorsCredentials bool          `mapstructure:"allow_cors_credentials" yaml:"allow_cors_credentials"`
 	SessionDuration      time.Duration `mapstructure:"session_duration" yaml:"session_duration" default:"720h"`
 	AllowInsecureNoAuth  bool          `mapstructure:"allow_insecure_no_auth" yaml:"allow_insecure_no_auth"`
+	TrustedProxies       []string      `mapstructure:"trusted_proxies" yaml:"trusted_proxies"`
 }
 
 type SchedulerConfig struct {
@@ -118,4 +121,37 @@ func ValidateCorsConfig(cfg *Config) error {
 	}
 
 	return nil
+}
+
+// ParseTrustedProxies converts the configured trusted proxy entries into
+// network ranges. Each entry may be a CIDR (e.g. "10.0.0.0/8") or a bare IP
+// address (e.g. "192.168.1.1"), which is treated as a single-host range. An
+// empty configuration yields no trusted ranges, meaning no proxy is trusted.
+func ParseTrustedProxies(entries []string) ([]*net.IPNet, error) {
+	nets := make([]*net.IPNet, 0, len(entries))
+
+	for _, entry := range entries {
+		entry = strings.TrimSpace(entry)
+		if entry == "" {
+			continue
+		}
+
+		if _, ipNet, err := net.ParseCIDR(entry); err == nil {
+			nets = append(nets, ipNet)
+			continue
+		}
+
+		ip := net.ParseIP(entry)
+		if ip == nil {
+			return nil, fmt.Errorf("invalid trusted proxy entry: %q", entry)
+		}
+
+		bits := 32
+		if ip.To4() == nil {
+			bits = 128
+		}
+		nets = append(nets, &net.IPNet{IP: ip, Mask: net.CIDRMask(bits, bits)})
+	}
+
+	return nets, nil
 }

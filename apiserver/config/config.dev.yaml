@@ -16,6 +16,7 @@ server:
   allowed_origins:
     - http://localhost:5173
   allow_cors_credentials: true
+  trusted_proxies: []
 scheduler_jobs:
   due_frequency: 1m
   overdue_frequency: 1m

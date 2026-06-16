@@ -18,6 +18,7 @@ server:
   serve_frontend: true
   registration: true
   log_level: "warn"
+  trusted_proxies: []
 scheduler_jobs:
   due_frequency: 5m
   overdue_frequency: 24h

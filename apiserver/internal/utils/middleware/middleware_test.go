@@ -96,8 +96,9 @@ func (s *MiddlewareTestSuite) TestRateLimitMiddlewareStoreFailure() {
 func (s *MiddlewareTestSuite) TestSecurityHeadersAddsHSTS() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
-			HostName: "example.com",
-			Port:     443,
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"192.0.2.0/24"},
 		},
 	}
 
@@ -108,6 +109,7 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersAddsHSTS() {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
 	s.Equal(http.StatusOK, w.Code)
@@ -200,6 +202,29 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersRedirectsHTTPNonStandardPort() 
 func (s *MiddlewareTestSuite) TestSecurityHeadersNoRedirectForHTTPS() {
 	cfg := &config.Config{
 		Server: config.ServerConfig{
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"192.0.2.0/24"},
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusOK, w.Code)
+	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersIgnoresForwardedProtoFromUntrustedPeer() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
 			HostName: "example.com",
 			Port:     443,
 		},
@@ -212,8 +237,32 @@ func (s *MiddlewareTestSuite) TestSecurityHeadersNoRedirectForHTTPS() {
 
 	w := httptest.NewRecorder()
 	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "192.0.2.1:1234"
 	req.Header.Set("X-Forwarded-Proto", "https")
 	s.router.ServeHTTP(w, req)
-	s.Equal(http.StatusOK, w.Code)
-	s.Equal("max-age=31536000; includeSubDomains; preload", w.Header().Get("Strict-Transport-Security"))
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
+}
+
+func (s *MiddlewareTestSuite) TestSecurityHeadersIgnoresForwardedProtoFromOutsideTrustedRange() {
+	cfg := &config.Config{
+		Server: config.ServerConfig{
+			HostName:       "example.com",
+			Port:           443,
+			TrustedProxies: []string{"10.0.0.0/8"},
+		},
+	}
+
+	s.router.Use(SecurityHeaders(cfg))
+	s.router.GET("/", func(c *gin.Context) {
+		c.String(http.StatusOK, "OK")
+	})
+
+	w := httptest.NewRecorder()
+	req, _ := http.NewRequest("GET", "/", nil)
+	req.RemoteAddr = "203.0.113.5:1234"
+	req.Header.Set("X-Forwarded-Proto", "https")
+	s.router.ServeHTTP(w, req)
+	s.Equal(http.StatusMovedPermanently, w.Code)
+	s.Empty(w.Header().Get("Strict-Transport-Security"))
 }
