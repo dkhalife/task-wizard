@@ -22,6 +22,10 @@ import (
 
 const SessionCookieName = "tw_session"
 
+// clockSkewLeeway tolerates small clock differences between the identity
+// provider and this server when validating time-based token claims.
+const clockSkewLeeway = 2 * time.Minute
+
 type AuthMiddleware struct {
 	enabled     bool
 	keySet      oidc.KeySet
@@ -37,8 +41,21 @@ type accessTokenClaims struct {
 	Issuer    string `json:"iss"`
 	Audience  string `json:"aud"`
 	ExpiresAt int64  `json:"exp"`
+	NotBefore int64  `json:"nbf"`
 	TenantID  string `json:"tid"`
 	ObjectID  string `json:"oid"`
+}
+
+func validateTemporalClaims(claims accessTokenClaims, now time.Time, leeway time.Duration) error {
+	if now.Add(-leeway).Unix() > claims.ExpiresAt {
+		return fmt.Errorf("token has expired")
+	}
+
+	if claims.NotBefore != 0 && now.Add(leeway).Unix() < claims.NotBefore {
+		return fmt.Errorf("token is not yet valid")
+	}
+
+	return nil
 }
 
 func NewAuthMiddleware(cfg *config.Config, userRepo uRepo.IUserRepo, sessionRepo sRepo.ISessionRepo) (*AuthMiddleware, error) {
@@ -151,8 +168,8 @@ func (m *AuthMiddleware) verifyAccessToken(ctx context.Context, rawToken string)
 		return nil, fmt.Errorf("invalid token audience")
 	}
 
-	if time.Now().Unix() > claims.ExpiresAt {
-		return nil, fmt.Errorf("token has expired")
+	if err := validateTemporalClaims(claims, time.Now(), clockSkewLeeway); err != nil {
+		return nil, err
 	}
 
 	if claims.TenantID == "" || claims.ObjectID == "" {
