@@ -12,7 +12,16 @@ import (
 )
 
 func SendNotificationViaWebhook(c context.Context, provider models.NotificationProvider, message string) error {
-	// Create the payload
+	parsedURL, err := validateOutboundURL(provider.URL)
+	if err != nil {
+		return err
+	}
+
+	method, err := validateOutboundMethod(provider.Method)
+	if err != nil {
+		return err
+	}
+
 	payload := map[string]string{
 		"message": message,
 	}
@@ -22,14 +31,14 @@ func SendNotificationViaWebhook(c context.Context, provider models.NotificationP
 		return fmt.Errorf("error marshalling payload: %s", err.Error())
 	}
 
-	req, err := http.NewRequest(provider.Method, provider.URL, bytes.NewBuffer(payloadBytes))
+	req, err := http.NewRequestWithContext(c, method, parsedURL.String(), bytes.NewBuffer(payloadBytes))
 	if err != nil {
 		return fmt.Errorf("error creating HTTP request: %s", err.Error())
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
-	client := &http.Client{Timeout: 10 * time.Second}
+	client := newSafeHTTPClient(10 * time.Second)
 	resp, err := client.Do(req)
 	if err != nil {
 		return fmt.Errorf("error sending HTTP request: %s", err.Error())
