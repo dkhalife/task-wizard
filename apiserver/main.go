@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
@@ -119,6 +120,21 @@ func main() {
 
 }
 
+const (
+	defaultReadTimeout       = 2 * time.Second
+	defaultWriteTimeout      = 1 * time.Second
+	defaultReadHeaderTimeout = 10 * time.Second
+	defaultIdleTimeout       = 60 * time.Second
+	defaultMaxHeaderBytes    = http.DefaultMaxHeaderBytes
+)
+
+func timeoutOrDefault(configured, fallback time.Duration) time.Duration {
+	if configured <= 0 {
+		return fallback
+	}
+	return configured
+}
+
 func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *scheduler.Scheduler) *gin.Engine {
 	if cfg.Server.LogLevel == "debug" {
 		gin.SetMode(gin.DebugMode)
@@ -128,10 +144,13 @@ func newServer(lc fx.Lifecycle, cfg *config.Config, db *gorm.DB, bgScheduler *sc
 
 	r := gin.New()
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%d", cfg.Server.Port),
-		Handler:      r,
-		ReadTimeout:  cfg.Server.ReadTimeout,
-		WriteTimeout: cfg.Server.WriteTimeout,
+		Addr:              fmt.Sprintf(":%d", cfg.Server.Port),
+		Handler:           r,
+		ReadTimeout:       timeoutOrDefault(cfg.Server.ReadTimeout, defaultReadTimeout),
+		WriteTimeout:      timeoutOrDefault(cfg.Server.WriteTimeout, defaultWriteTimeout),
+		ReadHeaderTimeout: defaultReadHeaderTimeout,
+		IdleTimeout:       defaultIdleTimeout,
+		MaxHeaderBytes:    defaultMaxHeaderBytes,
 	}
 	if len(cfg.Server.AllowedOrigins) > 0 {
 		corsCfg := cors.DefaultConfig()
