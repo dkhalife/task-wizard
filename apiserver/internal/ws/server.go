@@ -274,8 +274,8 @@ func (s *WSServer) listen(ctx context.Context, conn *connection) {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
 				logging.FromContext(ctx).Debugf("websocket connection closed: %v", err)
 			} else {
-					logging.FromContext(ctx).Warnf("websocket read error: %v", err)
-					telemetry.TrackWarning(context.Background(), "ws_read_failed", "ws-server", err.Error(), nil)
+				logging.FromContext(ctx).Warnf("websocket read error: %v", err)
+				telemetry.TrackWarning(context.Background(), "ws_read_failed", "ws-server", err.Error(), nil)
 			}
 			return
 		}
