@@ -55,7 +55,7 @@ func (m *UniqueLabelNamesMigration) Up(ctx context.Context, db *gorm.DB) error {
 		)`,
 	}
 
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 	if dialect == "mysql" {
 		dedup = []string{
 			`INSERT IGNORE INTO task_labels (task_id, label_id)
@@ -100,7 +100,7 @@ func (m *UniqueLabelNamesMigration) Up(ctx context.Context, db *gorm.DB) error {
 func (m *UniqueLabelNamesMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
 
-	if db.Dialector.Name() == "mysql" {
+	if db.Name() == "mysql" {
 		return dbCtx.Exec("DROP INDEX idx_labels_created_by_name ON labels").Error
 	}
 

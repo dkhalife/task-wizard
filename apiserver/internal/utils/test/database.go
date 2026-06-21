@@ -40,7 +40,7 @@ func (suite *DatabaseTestSuite) TearDownTest() {
 		log.Printf("failed to get database connection: %v", err)
 		return
 	}
-	db.Close()
+	_ = db.Close()
 
 	// Remove the temporary database file created for the test
 	if suite.dbFilePath != "" {

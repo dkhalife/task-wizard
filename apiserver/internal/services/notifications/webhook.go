@@ -44,7 +44,7 @@ func SendNotificationViaWebhook(c context.Context, provider models.NotificationP
 		return fmt.Errorf("error sending HTTP request: %s", err.Error())
 	}
 
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("received non-OK response: %d", resp.StatusCode)

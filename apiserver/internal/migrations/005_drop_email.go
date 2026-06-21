@@ -23,7 +23,7 @@ func (m *DropPIIMigration) Name() string {
 
 func (m *DropPIIMigration) Up(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	switch dialect {
 	case "sqlite":
@@ -61,7 +61,7 @@ func (m *DropPIIMigration) Up(ctx context.Context, db *gorm.DB) error {
 
 func (m *DropPIIMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	switch dialect {
 	case "sqlite":

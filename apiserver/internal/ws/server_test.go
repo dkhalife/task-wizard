@@ -81,7 +81,7 @@ func (s *WSServerTestSuite) TestHandleConnection_Unauthorized() {
 	header := http.Header{}
 	conn, _, err := websocket.DefaultDialer.Dial(url, header)
 	if conn != nil {
-		conn.Close()
+		_ = conn.Close()
 	}
 	s.Error(err)
 	s.Equal(0, len(s.server.connections))
@@ -97,7 +97,7 @@ func (s *WSServerTestSuite) TestHandleConnection_Authorized() {
 	s.waitForConnections(1)
 	s.Equal(1, len(s.server.userConnections))
 
-	conn.Close()
+	_ = conn.Close()
 	s.waitForConnections(0)
 	s.Equal(0, len(s.server.userConnections))
 }
@@ -115,8 +115,8 @@ func (s *WSServerTestSuite) TestMultipleConnectionsAndCleanup() {
 	s.Equal(1, len(s.server.userConnections))
 	s.Equal(2, len(s.server.userConnections[1]))
 
-	conn1.Close()
-	conn2.Close()
+	_ = conn1.Close()
+	_ = conn2.Close()
 	s.waitForConnections(0)
 	s.Equal(0, len(s.server.userConnections))
 }
@@ -149,7 +149,7 @@ func (s *WSServerTestSuite) TestPingPongKeepsConnectionAlive() {
 	time.Sleep(3 * s.server.pingPeriod)
 	s.Equal(1, len(s.server.connections))
 
-	conn.Close()
+	_ = conn.Close()
 	<-done
 	s.waitForConnections(0)
 }
@@ -197,7 +197,7 @@ func (s *WSServerTestSuite) TestHandleMessageRoutesResponse() {
 
 	conn, _, err := s.dial(ts)
 	s.Require().NoError(err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	s.waitForConnections(1)
 
@@ -217,7 +217,7 @@ func (s *WSServerTestSuite) TestOversizedMessageClosesConnection() {
 
 	conn, _, err := s.dial(ts)
 	s.Require().NoError(err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	s.waitForConnections(1)
 
@@ -248,7 +248,7 @@ func (s *WSServerTestSuite) TestRateLimitRejectsFlood() {
 
 	conn, _, err := s.dial(ts)
 	s.Require().NoError(err)
-	defer conn.Close()
+	defer func() { _ = conn.Close() }()
 
 	s.waitForConnections(1)
 

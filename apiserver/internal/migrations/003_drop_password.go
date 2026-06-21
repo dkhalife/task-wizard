@@ -37,7 +37,7 @@ func (m *DropPasswordMigration) Up(ctx context.Context, db *gorm.DB) error {
 func (m *DropPasswordMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
 	migrator := dbCtx.Migrator()
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	if !migrator.HasColumn("users", "password") {
 		var colType string
