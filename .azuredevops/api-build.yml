@@ -1,0 +1,48 @@
+name: $(Date:yyMMdd).00.$(Rev:r)
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - apiserver/**
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - apiserver/**
+
+resources:
+  repositories:
+  - repository: templates
+    type: github
+    name: dkhalife/Pipeline.Templates
+    endpoint: github
+    ref: refs/tags/latest
+
+extends:
+  template: pipeline.yml@templates
+  parameters:
+    stages:
+    - stage: build
+      templateContext:
+        intent: build
+      jobs:
+      - job: app
+        templateContext:
+          go:
+          - name: api
+            goVersion: '1.25'
+            workingDirectory: apiserver
+            buildArgs: >-
+              -v
+              -ldflags "-X dkhalife.com/tasks/core/internal/version.Version=$(Build.BuildNumber)
+              -X dkhalife.com/tasks/core/internal/version.BuildNumber=0
+              -X dkhalife.com/tasks/core/internal/version.CommitHash=$(Build.SourceVersion)"
+              ./...
+            testArgs: '-v -coverprofile=coverage.txt ./...'
+            vet: false
