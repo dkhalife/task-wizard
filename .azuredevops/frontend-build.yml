@@ -33,6 +33,7 @@ extends:
         intent: build
       jobs:
       - job: app
+        container: mcr.microsoft.com/playwright:v1.55.1-noble
         templateContext:
           node:
           - name: frontend
