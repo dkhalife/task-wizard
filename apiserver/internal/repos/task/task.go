@@ -249,15 +249,16 @@ func ScheduleNextDueDate(task *models.Task, completedDate time.Time) (*time.Time
 		nextDueDate = baseDate.AddDate(1, 0, 0)
 	} else if freq.Type == "custom" {
 		if freq.On == "interval" {
-			if freq.Unit == "hours" {
+			switch freq.Unit {
+			case "hours":
 				nextDueDate = baseDate.Add(time.Duration(freq.Every) * time.Hour)
-			} else if freq.Unit == "days" {
+			case "days":
 				nextDueDate = baseDate.AddDate(0, 0, freq.Every)
-			} else if freq.Unit == "weeks" {
+			case "weeks":
 				nextDueDate = baseDate.AddDate(0, 0, 7*freq.Every)
-			} else if freq.Unit == "months" {
+			case "months":
 				nextDueDate = baseDate.AddDate(0, freq.Every, 0)
-			} else if freq.Unit == "years" {
+			case "years":
 				nextDueDate = baseDate.AddDate(freq.Every, 0, 0)
 			}
 		} else if freq.On == "days_of_the_week" {

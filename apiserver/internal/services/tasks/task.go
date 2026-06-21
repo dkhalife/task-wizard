@@ -515,7 +515,7 @@ func (s *TaskService) CompleteTask(ctx context.Context, userID, taskID int, endR
 		return http.StatusNotFound, gin.H{"error": "Task not found"}
 	}
 
-	var completedDate time.Time = time.Now().UTC()
+	completedDate := time.Now().UTC()
 	var nextDueDate *time.Time = nil
 
 	if !endRecurrence {

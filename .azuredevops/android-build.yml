@@ -1,0 +1,42 @@
+name: $(Date:yyMMdd).00.$(Rev:r)
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - android/**
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - android/**
+
+resources:
+  repositories:
+  - repository: templates
+    type: github
+    name: dkhalife/Pipeline.Templates
+    endpoint: github
+    ref: refs/tags/latest
+
+extends:
+  template: pipeline.yml@templates
+  parameters:
+    stages:
+    - stage: build
+      templateContext:
+        intent: build
+      jobs:
+      - job: app
+        templateContext:
+          android:
+          - name: android
+            jdkVersion: '21'
+            workingDirectory: android
+            gradleTasks: assembleDebug
+            sign: false

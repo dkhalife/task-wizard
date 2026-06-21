@@ -24,7 +24,7 @@ func (m *EntraAuthMigration) Name() string {
 func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
 	migrator := dbCtx.Migrator()
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	var colType string
 	switch dialect {
@@ -88,7 +88,7 @@ func (m *EntraAuthMigration) Up(ctx context.Context, db *gorm.DB) error {
 func (m *EntraAuthMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
 	migrator := dbCtx.Migrator()
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	if migrator.HasIndex("users", "idx_users_entra_id") {
 		if err := migrator.DropIndex("users", "idx_users_entra_id"); err != nil {

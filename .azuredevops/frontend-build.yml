@@ -1,0 +1,43 @@
+name: $(Date:yyMMdd).00.$(Rev:r)
+
+trigger:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - frontend/**
+
+pr:
+  branches:
+    include:
+    - main
+  paths:
+    include:
+    - frontend/**
+
+resources:
+  repositories:
+  - repository: templates
+    type: github
+    name: dkhalife/Pipeline.Templates
+    endpoint: github
+    ref: refs/tags/latest
+
+extends:
+  template: pipeline.yml@templates
+  parameters:
+    stages:
+    - stage: build
+      templateContext:
+        intent: build
+      jobs:
+      - job: app
+        container: mcr.microsoft.com/playwright:v1.55.1-noble
+        templateContext:
+          node:
+          - name: frontend
+            nodeVersion: 24.x
+            workingDirectory: frontend
+            e2e: true
+            e2eReportPath: frontend/playwright-report

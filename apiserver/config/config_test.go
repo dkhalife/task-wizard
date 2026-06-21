@@ -15,8 +15,8 @@ func TestLoadConfig_Success(t *testing.T) {
 	f, err := os.Create("./config/config.yaml")
 	assert.NoError(t, err, "failed to create config.yaml")
 
-	defer os.Remove("./config/config.yaml")
-	defer f.Close()
+	defer func() { _ = os.Remove("./config/config.yaml") }()
+	defer func() { _ = f.Close() }()
 	_, err = f.WriteString(`server:
   port: 1234
   log_level: debug
@@ -112,8 +112,8 @@ func TestLoadConfig_EntraEnvOverride(t *testing.T) {
 	_ = os.MkdirAll("./config", 0755)
 	f, err := os.Create("./config/config.yaml")
 	assert.NoError(t, err)
-	defer os.Remove("./config/config.yaml")
-	defer f.Close()
+	defer func() { _ = os.Remove("./config/config.yaml") }()
+	defer func() { _ = f.Close() }()
 
 	_, err = f.WriteString(`entra:
   enabled: false
@@ -125,10 +125,10 @@ server:
 `)
 	assert.NoError(t, err)
 
-	os.Setenv("TW_ENTRA_ENABLED", "true")
-	os.Setenv("TW_ENTRA_TENANT_ID", "env-tenant")
-	os.Setenv("TW_ENTRA_CLIENT_ID", "env-client")
-	os.Setenv("TW_ENTRA_AUDIENCE", "api://env-client")
+	_ = os.Setenv("TW_ENTRA_ENABLED", "true")
+	_ = os.Setenv("TW_ENTRA_TENANT_ID", "env-tenant")
+	_ = os.Setenv("TW_ENTRA_CLIENT_ID", "env-client")
+	_ = os.Setenv("TW_ENTRA_AUDIENCE", "api://env-client")
 
 	viper.Reset()
 	cfg := LoadConfig("./config/config.yaml")
@@ -138,56 +138,56 @@ server:
 	assert.Equal(t, "env-client", cfg.Entra.ClientID)
 	assert.Equal(t, "api://env-client", cfg.Entra.Audience)
 
-	os.Unsetenv("TW_ENTRA_ENABLED")
-	os.Unsetenv("TW_ENTRA_TENANT_ID")
-	os.Unsetenv("TW_ENTRA_CLIENT_ID")
-	os.Unsetenv("TW_ENTRA_AUDIENCE")
+	_ = os.Unsetenv("TW_ENTRA_ENABLED")
+	_ = os.Unsetenv("TW_ENTRA_TENANT_ID")
+	_ = os.Unsetenv("TW_ENTRA_CLIENT_ID")
+	_ = os.Unsetenv("TW_ENTRA_AUDIENCE")
 }
 
 func TestLoadConfig_EnvFile(t *testing.T) {
 	f, err := os.Create("envconfig.yaml")
 	assert.NoError(t, err)
-	defer os.Remove("envconfig.yaml")
-	defer f.Close()
+	defer func() { _ = os.Remove("envconfig.yaml") }()
+	defer func() { _ = f.Close() }()
 
 	_, err = f.WriteString("server:\n  port: 4444\n")
 	assert.NoError(t, err)
 
-	os.Setenv("TW_CONFIG_FILE", "envconfig.yaml")
+	_ = os.Setenv("TW_CONFIG_FILE", "envconfig.yaml")
 	viper.Reset()
 	cfg := LoadConfig("")
 	assert.Equal(t, 4444, cfg.Server.Port)
-	os.Unsetenv("TW_CONFIG_FILE")
+	_ = os.Unsetenv("TW_CONFIG_FILE")
 }
 
 func TestLoadConfig_CLIOverridesEnv(t *testing.T) {
 	f1, err := os.Create("env.yaml")
 	assert.NoError(t, err)
-	defer os.Remove("env.yaml")
-	defer f1.Close()
+	defer func() { _ = os.Remove("env.yaml") }()
+	defer func() { _ = f1.Close() }()
 	_, err = f1.WriteString("server:\n  port: 3333\n")
 	assert.NoError(t, err)
 
 	f2, err := os.Create("cli.yaml")
 	assert.NoError(t, err)
-	defer os.Remove("cli.yaml")
-	defer f2.Close()
+	defer func() { _ = os.Remove("cli.yaml") }()
+	defer func() { _ = f2.Close() }()
 	_, err = f2.WriteString("server:\n  port: 2222\n")
 	assert.NoError(t, err)
 
-	os.Setenv("TW_CONFIG_FILE", "env.yaml")
+	_ = os.Setenv("TW_CONFIG_FILE", "env.yaml")
 	viper.Reset()
 	cfg := LoadConfig("cli.yaml")
 	assert.Equal(t, 2222, cfg.Server.Port)
-	os.Unsetenv("TW_CONFIG_FILE")
+	_ = os.Unsetenv("TW_CONFIG_FILE")
 }
 
 func TestLoadConfig_DatabaseEnvOverride(t *testing.T) {
 	_ = os.MkdirAll("./config", 0755)
 	f, err := os.Create("./config/config.yaml")
 	assert.NoError(t, err)
-	defer os.Remove("./config/config.yaml")
-	defer f.Close()
+	defer func() { _ = os.Remove("./config/config.yaml") }()
+	defer func() { _ = f.Close() }()
 
 	_, err = f.WriteString(`database:
   type: sqlite
@@ -197,12 +197,12 @@ server:
 `)
 	assert.NoError(t, err)
 
-	os.Setenv("TW_DATABASE_TYPE", "mysql")
-	os.Setenv("TW_DATABASE_HOST", "localhost")
-	os.Setenv("TW_DATABASE_PORT", "3307")
-	os.Setenv("TW_DATABASE_NAME", "taskwizard")
-	os.Setenv("TW_DATABASE_USERNAME", "dbuser")
-	os.Setenv("TW_DATABASE_PASSWORD", "dbpass")
+	_ = os.Setenv("TW_DATABASE_TYPE", "mysql")
+	_ = os.Setenv("TW_DATABASE_HOST", "localhost")
+	_ = os.Setenv("TW_DATABASE_PORT", "3307")
+	_ = os.Setenv("TW_DATABASE_NAME", "taskwizard")
+	_ = os.Setenv("TW_DATABASE_USERNAME", "dbuser")
+	_ = os.Setenv("TW_DATABASE_PASSWORD", "dbpass")
 
 	viper.Reset()
 	cfg := LoadConfig("./config/config.yaml")
@@ -214,20 +214,20 @@ server:
 	assert.Equal(t, "dbuser", cfg.Database.Username)
 	assert.Equal(t, "dbpass", cfg.Database.Password)
 
-	os.Unsetenv("TW_DATABASE_TYPE")
-	os.Unsetenv("TW_DATABASE_HOST")
-	os.Unsetenv("TW_DATABASE_PORT")
-	os.Unsetenv("TW_DATABASE_NAME")
-	os.Unsetenv("TW_DATABASE_USERNAME")
-	os.Unsetenv("TW_DATABASE_PASSWORD")
+	_ = os.Unsetenv("TW_DATABASE_TYPE")
+	_ = os.Unsetenv("TW_DATABASE_HOST")
+	_ = os.Unsetenv("TW_DATABASE_PORT")
+	_ = os.Unsetenv("TW_DATABASE_NAME")
+	_ = os.Unsetenv("TW_DATABASE_USERNAME")
+	_ = os.Unsetenv("TW_DATABASE_PASSWORD")
 }
 
 func TestLoadConfig_MySQLConfig(t *testing.T) {
 	_ = os.MkdirAll("./config", 0755)
 	f, err := os.Create("./config/config.yaml")
 	assert.NoError(t, err)
-	defer os.Remove("./config/config.yaml")
-	defer f.Close()
+	defer func() { _ = os.Remove("./config/config.yaml") }()
+	defer func() { _ = f.Close() }()
 
 	_, err = f.WriteString(`database:
   type: mysql

@@ -51,7 +51,7 @@ func SendNotificationViaGotify(c context.Context, provider models.NotificationPr
 	if err != nil {
 		return fmt.Errorf("failed to send HTTP request: %s", err.Error())
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		return fmt.Errorf("gotify returned non-OK status: %d", resp.StatusCode)

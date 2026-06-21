@@ -23,7 +23,7 @@ func (m *SessionsMigration) Name() string {
 
 func (m *SessionsMigration) Up(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	switch dialect {
 	case "sqlite":

@@ -36,7 +36,7 @@ func (s *DatabaseTestSuite) TearDownTest() {
 	if s.db != nil {
 		sqlDB, err := s.db.DB()
 		if err == nil {
-			sqlDB.Close()
+			_ = sqlDB.Close()
 		}
 	}
 }

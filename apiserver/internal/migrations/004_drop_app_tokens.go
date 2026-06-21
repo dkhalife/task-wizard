@@ -37,7 +37,7 @@ func (m *DropAppTokensMigration) Up(ctx context.Context, db *gorm.DB) error {
 func (m *DropAppTokensMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
 	migrator := dbCtx.Migrator()
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	if !migrator.HasTable("app_tokens") {
 		switch dialect {

@@ -23,7 +23,7 @@ func (m *AccountDeletionMigration) Name() string {
 
 func (m *AccountDeletionMigration) Up(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	switch dialect {
 	case "sqlite":
@@ -37,7 +37,7 @@ func (m *AccountDeletionMigration) Up(ctx context.Context, db *gorm.DB) error {
 
 func (m *AccountDeletionMigration) Down(ctx context.Context, db *gorm.DB) error {
 	dbCtx := db.WithContext(ctx)
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	switch dialect {
 	case "sqlite":

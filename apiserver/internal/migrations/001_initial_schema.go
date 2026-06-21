@@ -22,7 +22,7 @@ func (m *InitialSchemaMigration) Name() string {
 }
 
 func (m *InitialSchemaMigration) Up(ctx context.Context, db *gorm.DB) error {
-	dialect := db.Dialector.Name()
+	dialect := db.Name()
 
 	var (
 		autoInc     string
