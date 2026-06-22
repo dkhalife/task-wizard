@@ -235,12 +235,36 @@ class TaskEditImpl extends React.Component<TaskEditProps, TaskEditState> {
     document.removeEventListener('keydown', this.onKeyDown)
   }
 
+  private isOverlayOpen = (): boolean => {
+    if (this.confirmModalRef.current?.isOpen) {
+      return true
+    }
+
+    // MUI Joy renders Select/Menu popups in a portal only while they are open,
+    // so their presence in the DOM means an overlay should consume the Escape.
+    if (document.querySelector('[role="listbox"], [role="menu"]')) {
+      return true
+    }
+
+    // Native date/time inputs open a browser picker whose Escape should close
+    // the picker rather than the whole edit page.
+    const active = document.activeElement as HTMLInputElement | null
+    if (
+      active?.tagName === 'INPUT' &&
+      ['date', 'time', 'datetime-local'].includes(active.type)
+    ) {
+      return true
+    }
+
+    return false
+  }
+
   private onKeyDown = (e: KeyboardEvent) => {
     if (e.key !== 'Escape' || e.defaultPrevented) {
       return
     }
 
-    if (this.confirmModalRef.current?.isOpen) {
+    if (this.isOverlayOpen()) {
       return
     }
 
