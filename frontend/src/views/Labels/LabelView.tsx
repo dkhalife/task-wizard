@@ -1,6 +1,6 @@
 import { Label } from '@/models/label'
 import { colorOptionFromColor, getTextColorFromBackgroundColor } from '@/utils/colors'
-import { Add } from '@mui/icons-material'
+import { Add, Delete as DeleteIcon, Edit as EditIcon } from '@mui/icons-material'
 import {
   Box,
   CircularProgress,
@@ -12,8 +12,6 @@ import {
 } from '@mui/joy'
 import React from 'react'
 import { LabelModal } from '../Modals/Inputs/LabelModal'
-import DeleteIcon from '@mui/icons-material/Delete'
-import EditIcon from '@mui/icons-material/Edit'
 import { setTitle } from '@/utils/dom'
 import { ConfirmationModal } from '../Modals/Inputs/ConfirmationModal'
 import { AppDispatch, RootState } from '@/store/store'
